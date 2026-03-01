@@ -54,6 +54,9 @@ subprojects {
         // 테스트 공통
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+        // Eureka Client (공통 - 모든 서비스가 Eureka에 등록됨)
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     }
 
     test {
@@ -75,6 +78,12 @@ subprojects {
 // ─────────────────────────────────────────────
 project(':common') {
     jar { enabled = true }
+}
+
+project(':eurekaServer') {
+    apply plugin: 'org.springframework.boot'
+    bootJar { enabled = true }
+    jar     { enabled = false }
 }
 
 // ─────────────────────────────────────────────

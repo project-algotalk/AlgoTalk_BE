@@ -1,4 +1,8 @@
 ﻿# =====================================================
 # communityService 모듈 고유 .gitignore
-# 공통 항목은 루트 Algotalk .gitignore에서 처리
+# 공통 항목은 루트 AlgoTalk .gitignore에서 처리
 # =====================================================
+
+# 로컬 환경 설정
+application-*.yml
+application-*.yaml

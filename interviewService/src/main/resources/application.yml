@@ -1,1 +1,5 @@
-spring.application.name=interviewService
+spring:
+  application:
+    name: interview-service
+  profiles:
+    active: local

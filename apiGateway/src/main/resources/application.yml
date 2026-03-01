@@ -1,1 +1,5 @@
-spring.application.name=apiGateway
+spring:
+  application:
+    name: api-gateway
+  profiles:
+    active: local

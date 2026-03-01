@@ -1,2 +1,2 @@
 rootProject.name = 'AlgoTalk'
-include 'common', 'apiGateway', 'communityService', 'interviewService', 'userService'
+include 'eurekaServer', 'common', 'apiGateway', 'communityService', 'interviewService', 'userService'

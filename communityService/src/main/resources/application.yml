@@ -1,1 +1,5 @@
-spring.application.name=communityService
+spring:
+  application:
+    name: community-service
+  profiles:
+    active: local
