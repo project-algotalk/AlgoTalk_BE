@@ -1,27 +1,20 @@
 package com.algotalk.common.response;
 
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * 공통 API 성공 응답 래퍼
  *
  * 단건:  ApiResponse.ok(data)
- * 메시지만: ApiResponse.ok("삭제되었습니다.")
+ * 빈 응답: ApiResponse.ok()
  *
  * {
  *   "success": true,
- *   "data": { ... }
+ *   "data": { ... }      ← data가 null이면 JSON에서 생략
  * }
  */
-@Getter
-public class ApiResponse<T> {
-    private final boolean success;
-    private final T data;
-
-    private ApiResponse(boolean success, T data) {
-        this.success = success;
-        this.data    = data;
-    }
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ApiResponse<T>(boolean success, T data) {
 
     public static <T> ApiResponse<T> ok(T data) {
         return new ApiResponse<>(true, data);
