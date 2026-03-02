@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 public class LoginLogEntity {
     private Long logId;
     private Long userId;
-    private String triedEmail;
+    private String triedLoginId;
     private String loginType;
     private String result;
     private String ipAddress;

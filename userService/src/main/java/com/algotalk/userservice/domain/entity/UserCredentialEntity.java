@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter
 public class UserCredentialEntity {
     private Long userId;
-    private String email;
+    private String loginId;
     private String password;
     private LocalDateTime lockedUntil;
     private LocalDateTime createdAt;

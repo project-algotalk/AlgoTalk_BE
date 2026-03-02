@@ -13,8 +13,11 @@ public class UserEntity {
     private Long userId;
     private String nickname;
     private String name;
+    private String email;
     private UserRole role;
     private String profileImgUrl;
+    private String addr1;
+    private String addr2;
     private LocalDateTime deletedAt;
     private LocalDateTime createdAt;
     private Long createdBy;
