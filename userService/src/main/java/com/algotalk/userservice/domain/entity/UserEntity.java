@@ -4,7 +4,6 @@ import com.algotalk.userservice.auth.UserRole;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor

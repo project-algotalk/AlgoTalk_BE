@@ -31,7 +31,7 @@ public record UserInfoResponseDTO(
                 .userId(String.valueOf(entity.getUserId()))
                 .nickname(entity.getNickname())
                 .name(entity.getName())
-                .name(entity.getEmail())
+                .email(entity.getEmail())
                 .role(entity.getRole().getValue())
                 .profileImgUrl(entity.getProfileImgUrl())
                 .addr1(entity.getAddr1())
