@@ -3,22 +3,23 @@ package com.algotalk.userservice.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
+import java.util.List;
+
 /**
  * 로그인 성공 시 반환되는 DTO
- * @param accessToken
- * @param tokenType
  * @param userId
  * @param nickname
- * @param role
+ * @param roles
+ * @param tokenType
  */
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record LoginResponseDTO(
-        String accessToken,
-//        String refreshToken,
-        String tokenType, // "Bearer"
-        String userId,
+        Long userId,
         String nickname,
-        String role
+        List<String> roles,
+        String tokenType // "Bearer"
+//        , String accessToken,
+//        , String refreshToken,
 ) {
 }

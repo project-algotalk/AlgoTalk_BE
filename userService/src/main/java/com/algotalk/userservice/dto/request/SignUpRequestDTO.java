@@ -19,6 +19,7 @@ public record SignUpRequestDTO(
 
         @NotBlank(message = "비밀번호를 입력해주세요.")
         @Size(min = 8, message = "비밀번호는 8자 이상이어야 하며 영문, 숫자, 특수문자를 모두 포함해야 합니다.")
+        @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[\\W_]).+$", message = "비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.")
         String password,
 
         @NotBlank(message = "비밀번호를 입력해주세요.")
