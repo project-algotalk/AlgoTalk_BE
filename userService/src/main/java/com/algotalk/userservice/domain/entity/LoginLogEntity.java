@@ -16,7 +16,7 @@ public class LoginLogEntity {
     private String ipAddress;
     private String userAgent;
     private LocalDateTime createdAt;
-    private Long createdBy;
+    private String createdBy;
     private LocalDateTime updatedAt;
-    private Long updatedBy;
+    private String updatedBy;
 }

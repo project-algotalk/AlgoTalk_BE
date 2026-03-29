@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IUserRegMapper">
+
+    <!--  회원가입 전 아이디 중복 확인  -->
+    <select id="getLoginIdExists"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            IF(COUNT(LOGIN_ID) > 0, 'Y', 'N') AS existsYn
+        FROM USER_CREDENTIAL
+        WHERE LOGIN_ID = #{loginId}
+    </select>
+
+
+    <!--  회원가입 전 닉네임 중복 확인  -->
+    <select id="getNicknameExists"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            IF(COUNT(NICKNAME) > 0, 'Y', 'N') AS existsYn
+        FROM USERS
+        WHERE NICKNAME = #{nickname}
+    </select>
+
+
+    <!--  회원가입 전 이메일 중복 확인  -->
+    <select id="getEmailExists"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            IF(COUNT(EMAIL) > 0, 'Y', 'N') AS existsYn
+        FROM USERS
+        WHERE EMAIL = #{email}
+    </select>
+
+
+    <!--  회원 가입  -->
+    <!--  1. USERS  -->
+    <insert id="insertUser"
+            parameterType="UserInfoCommand"
+            useGeneratedKeys="true"
+            keyProperty="userId">
+        INSERT INTO USERS (
+                               NICKNAME, NAME, EMAIL,
+                               PROFILE_IMG_URL, ADDR1, ADDR2, DELETED_AT,
+                               CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
+        VALUES (#{nickname}, #{name}, #{email},
+                #{profileImgUrl}, #{addr1}, #{addr2}, NULL,
+                NOW(), 'system', NOW(), 'system')
+    </insert>
+
+    <!--  2. USER_CREDENTIAL  -->
+    <insert id="insertUserCredential"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_CREDENTIAL (
+                                        USER_ID, LOGIN_ID, PASSWORD,
+                                        CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
+        VALUES (#{userId}, #{loginId}, #{password},
+                NOW(), #{userId}, NOW(), #{userId})
+    </insert>
+
+    <!--  3. USER_ROLES  -->
+    <insert id="insertUserRoles"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_ROLES (
+                                    USER_ID, ROLE,
+                                    CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
+        VALUES (#{userId}, #{role},
+                NOW(), #{userId}, NOW(), #{userId})
+    </insert>
+
+    <!--  4. USER_TARGET_JOB  -->
+    <insert id="insertUserTargetJob"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_TARGET_JOB (
+                                        USER_ID, CATEGORY_ID,
+                                        START_DATE, END_DATE,
+                                        CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
+        VALUES (#{userId}, #{categoryId},
+                #{startDate}, #{endDate},
+                NOW(), #{userId}, NOW(), #{userId})
+    </insert>
+    
+    <!--  5. USER_EMPLOYMENT  -->
+    <insert id="insertUserEmployment"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_EMPLOYMENT (
+                                        USER_ID, CATEGORY_ID, COMPANY_NAME,
+                                        START_DATE, END_DATE,
+                                        CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
+        VALUES (#{userId}, #{categoryId}, #{companyName},
+                #{startDate}, #{endDate},
+                NOW(), #{userId}, NOW(), #{userId})
+    </insert>
+
+
+<!--    <select id="selectUser" resultType="UserInfoResponseDTO">-->
+<!--#         SELECT * FROM USERS WHERE id = #{id}-->
+<!--    </select>-->
+
+</mapper>
