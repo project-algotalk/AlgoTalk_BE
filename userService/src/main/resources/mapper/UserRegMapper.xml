@@ -75,10 +75,10 @@
     <insert id="insertUserTargetJob"
             parameterType="UserInfoCommand">
         INSERT INTO USER_TARGET_JOB (
-                                        USER_ID, CATEGORY_ID,
+                                        USER_ID, CATEGORY_ID, CATEGORY_NAME,
                                         START_DATE, END_DATE,
                                         CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
-        VALUES (#{userId}, #{categoryId},
+        VALUES (#{userId}, #{categoryId}, #{categoryName},
                 #{startDate}, #{endDate},
                 NOW(), #{userId}, NOW(), #{userId})
     </insert>
@@ -87,10 +87,10 @@
     <insert id="insertUserEmployment"
             parameterType="UserInfoCommand">
         INSERT INTO USER_EMPLOYMENT (
-                                        USER_ID, CATEGORY_ID, COMPANY_NAME,
+                                        USER_ID, CATEGORY_ID, CATEGORY_NAME, COMPANY_NAME,
                                         START_DATE, END_DATE,
                                         CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
-        VALUES (#{userId}, #{categoryId}, #{companyName},
+        VALUES (#{userId}, #{categoryId}, #{categoryName}, #{companyName},
                 #{startDate}, #{endDate},
                 NOW(), #{userId}, NOW(), #{userId})
     </insert>

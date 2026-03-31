@@ -119,9 +119,12 @@ class UserRegMapperTest {
         List<Long> targetCategoryIds = List.of(1L, 2L);  // 목표 직무 2개
 
         for (Long categoryId : targetCategoryIds) {
-            cmd.setCategoryId(categoryId);
-            cmd.setStartDate(of(2026, 1, 1));
-            cmd.setEndDate(null);  // null = 현재 준비 중
+            cmd.toBuilder()
+                            .categoryId(categoryId)
+                            .startDate(of(2026, 1, 1))
+                            .endDate(null)  // null = 현재 준비 중
+                            .build();
+
             int jobResult = userRegMapper.insertUserTargetJob(cmd);
             log.info("USER_TARGET_JOB INSERT: categoryId={} / result={}", categoryId, jobResult);
             assertThat(jobResult).isEqualTo(1);
@@ -145,7 +148,9 @@ class UserRegMapperTest {
         );
 
         for (UserInfoCommand emp : employments) {
-            emp.setUserId(cmd.getUserId());  // 채번된 userId 세팅
+            emp.toBuilder()
+                            .userId(emp.getUserId())
+                            .build();
             int empResult = userRegMapper.insertUserEmployment(emp);
             log.info("USER_EMPLOYMENT INSERT: company={} / result={}", emp.getCompanyName(), empResult);
             assertThat(empResult).isEqualTo(1);

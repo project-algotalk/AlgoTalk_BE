@@ -1,5 +1,6 @@
 package com.algotalk.userservice.dto.command;
 
+import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
@@ -13,8 +14,7 @@ import java.util.List;
  * 회원가입, 로그인, 마이페이지 등 다양한 상황에서 필요한 정보를 담을 수 있도록 설계
  */
 @Getter
-@Setter
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserInfoCommand {
@@ -36,6 +36,7 @@ public class UserInfoCommand {
 
     // USER_TARGET_JOB, USER_EMPLOYMENT
     private Long categoryId;
+    private String categoryName;
     private String companyName;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -52,4 +53,16 @@ public class UserInfoCommand {
      * 회원 가입시 인증번호 발송 후 검증 용으로 사용
      */
     private int authNumber;
+
+    public static UserInfoCommand from(SignUpRequestDTO pDTO) {
+        return UserInfoCommand.builder()
+                .email(pDTO.email())
+                .nickname(pDTO.resolvedNickname())
+                .name(pDTO.name())
+                .addr1(pDTO.addr1())
+                .addr2(pDTO.addr2())
+                .loginId(pDTO.loginId())
+                .password(pDTO.password())
+                .build();
+    }
 }

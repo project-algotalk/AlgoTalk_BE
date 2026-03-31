@@ -20,8 +20,12 @@ public enum UserErrorCode implements ErrorCode {
     REFRESH_TOKEN_NOT_FOUND ("USER_012", "리프레시 토큰이 존재하지 않습니다.",                HttpStatus.UNAUTHORIZED),
 
     // 회원가입
-    DUPLICATE_EMAIL         ("USER_020", "이미 사용 중인 이메일입니다.",                    HttpStatus.CONFLICT),
-    DUPLICATE_NICKNAME      ("USER_021", "이미 사용 중인 닉네임입니다.",                    HttpStatus.CONFLICT),
+    DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 로그인 아이디입니다.",                    HttpStatus.CONFLICT),
+    DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.",                    HttpStatus.CONFLICT),
+    DUPLICATE_NICKNAME      ("USER_022", "이미 사용 중인 닉네임입니다.",                    HttpStatus.CONFLICT),
+    PASSWORD_MISMATCH     ("USER_023", "비밀번호가 일치하지 않습니다.",                    HttpStatus.UNAUTHORIZED),
+
+    SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.",                       HttpStatus.BAD_REQUEST),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_030", "이미 연동된 소셜 계정입니다.",                    HttpStatus.CONFLICT),

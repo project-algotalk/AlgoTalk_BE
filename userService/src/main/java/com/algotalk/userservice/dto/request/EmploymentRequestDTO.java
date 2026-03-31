@@ -11,6 +11,8 @@ public record EmploymentRequestDTO(
         @NotNull(message = "직무 카테고리를 선택해주세요.")
         Long categoryId,
 
+        String categoryName,
+
         @NotBlank(message = "회사명을 입력해주세요.")
         String companyName,
 
