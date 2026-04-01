@@ -27,6 +27,12 @@ public enum UserErrorCode implements ErrorCode {
 
     SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.",                       HttpStatus.BAD_REQUEST),
 
+
+    // 이메일
+    EMAIL_CODE_EXPIRED("EMAIL_001", "인증번호가 만료되었습니다.", HttpStatus.GONE),
+    EMAIL_CODE_MISMATCH("EMAIL_002", "인증번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_VERIFIED("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
+
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_030", "이미 연동된 소셜 계정입니다.",                    HttpStatus.CONFLICT),
     LAST_USER_METHOD        ("USER_031", "마지막 로그인 수단은 해제할 수 없습니다.",            HttpStatus.BAD_REQUEST),

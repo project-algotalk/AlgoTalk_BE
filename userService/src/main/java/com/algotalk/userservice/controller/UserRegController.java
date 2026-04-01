@@ -4,6 +4,7 @@ import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.service.IUserRegService;
+import com.algotalk.userservice.service.impl.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserRegController {
 
     private final IUserRegService userRegService;
+    private final EmailService emailService;
 
     // 회원가입 페이지 진입
     @GetMapping("/signup")
@@ -55,8 +57,6 @@ public class UserRegController {
 
         log.info("SignUpRequestDTO : {}", pDTO);
 
-        //
-
         // 아이디 중복 확인 로직 처리
         boolean loginIdDuplicated = userRegService.isLoginIdDuplicated(pDTO);
 
@@ -91,10 +91,12 @@ public class UserRegController {
     // TODO - 이메일 인증번호 발송 로직 작성(이메일 인증번호 Redis 저장)
     // 이메일 인증번호 발송
     @PostMapping("reg/send/email-code")
-    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode() throws Exception {
+    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.sendEmailVerificationCode Start!");
+        log.info("email: {}", pDTO.email());
 
         // 이메일 인증번호 발송 로직 처리
+        emailService.sendEmailVerificationCode(pDTO.email());
 
         log.info("UserRegController.sendEmailVerificationCode End!");
         return ResponseEntity.ok(ApiResponse.ok());
@@ -103,10 +105,11 @@ public class UserRegController {
     // TODO - 이메일 인증번호 확인 로직 작성(이메일 인증번호 Redis에서 조회 후 비교)
     // 이메일 인증번호 확인
     @PostMapping("reg/check/email-code")
-    public ResponseEntity<ApiResponse<Void>> verifyEmailCode() {
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(@RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.verifyEmailCode Start!");
 
         // 이메일 인증번호 확인 로직 처리
+        emailService.verifyEmailCode(pDTO.email(), String.valueOf(pDTO.password()));
 
         log.info("UserRegController.verifyEmailCode End!");
         return ResponseEntity.ok(ApiResponse.ok());

@@ -1,7 +1,6 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
-import com.algotalk.common.exception.ErrorCode;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.EmploymentRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
@@ -9,6 +8,7 @@ import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserRegMapper;
+import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
 import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.EncryptUtil;
@@ -26,6 +26,7 @@ import java.util.List;
 public class UserRegService implements IUserRegService {
 
     private final IUserRegMapper userRegMapper;
+    private final IEmailService emailService;
 
     @Override
     public boolean isLoginIdDuplicated(SignUpRequestDTO pDTO) throws Exception {
@@ -118,6 +119,11 @@ public class UserRegService implements IUserRegService {
             throw new BusinessException(UserErrorCode.PASSWORD_MISMATCH);
         }
 
+        // 1.2. 이메일 인증 여부 확인
+        if (!emailService.isEmailVerified(pDTO.email())) {
+            throw new BusinessException(UserErrorCode.EMAIL_NOT_VERIFIED);
+        }
+
         // 비즈니스 로직 try-catch문으로 감싸서 예외 발생 시 적절한 에러 코드와 메시지로 변환하여 던지기
         try {
 
@@ -126,7 +132,7 @@ public class UserRegService implements IUserRegService {
             throw new BusinessException(UserErrorCode.SIGN_UP_FAIL);
         }
 
-        // 1.2. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
+        // 1.3. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 // USERS
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
@@ -139,7 +145,7 @@ public class UserRegService implements IUserRegService {
                 .password(EncryptUtil.encHashSHA256(CmmUtil.nvl(pDTO.password())))
                 .build();
 
-        // 1.3. USER 테이블에 INSERT (userId 채번)
+        // 1.4. USER 테이블에 INSERT (userId 채번)
         userRegMapper.insertUser(pCommand);
 
         // 2. USER_CREDENTIAL
