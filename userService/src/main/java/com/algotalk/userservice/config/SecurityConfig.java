@@ -42,9 +42,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                                "/user/signup",
-                                "/user/login",
-                                "/user/token/refresh",
+                                "/user/v1/reg/**",
+                                "/user/v1/signup",
+                                "/user/v1/login",
+                                "/user/v1/token/refresh",
                                 "/user/v1/logout/current",
                                 "/actuator/**",
                                 "/swagger-ui/**",

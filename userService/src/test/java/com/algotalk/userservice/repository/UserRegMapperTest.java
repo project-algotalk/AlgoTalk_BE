@@ -16,7 +16,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 @Slf4j
 @SpringBootTest
 @ActiveProfiles("local")
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class UserRegMapperTest {
 
     @Autowired
@@ -119,13 +118,14 @@ class UserRegMapperTest {
         List<Long> targetCategoryIds = List.of(1L, 2L);  // 목표 직무 2개
 
         for (Long categoryId : targetCategoryIds) {
-            cmd.toBuilder()
-                            .categoryId(categoryId)
-                            .startDate(of(2026, 1, 1))
-                            .endDate(null)  // null = 현재 준비 중
-                            .build();
+            UserInfoCommand targetJobCmd = cmd.toBuilder()
+                    .categoryId(categoryId)
+                    .categoryName("CATEGORY-" + categoryId)
+                    .startDate(of(2026, 1, 1))
+                    .endDate(null)  // null = 현재 준비 중
+                    .build();
 
-            int jobResult = userRegMapper.insertUserTargetJob(cmd);
+            int jobResult = userRegMapper.insertUserTargetJob(targetJobCmd);
             log.info("USER_TARGET_JOB INSERT: categoryId={} / result={}", categoryId, jobResult);
             assertThat(jobResult).isEqualTo(1);
         }
@@ -135,12 +135,14 @@ class UserRegMapperTest {
         List<UserInfoCommand> employments = List.of(
                 UserInfoCommand.builder()
                         .categoryId(1L)
+                        .categoryName("CATEGORY-1")
                         .companyName("알고톡주식회사")
                         .startDate(of(2026, 3, 1))
                         .endDate(of(9999, 12, 31)) // 9999-12-31 = 현재 재직 중
                         .build(),
                 UserInfoCommand.builder()
                         .categoryId(2L)
+                        .categoryName("CATEGORY-2")
                         .companyName("이전회사")
                         .startDate(of(2021, 1, 1))
                         .endDate(of(2026, 2, 28))
@@ -148,11 +150,11 @@ class UserRegMapperTest {
         );
 
         for (UserInfoCommand emp : employments) {
-            emp.toBuilder()
-                            .userId(emp.getUserId())
-                            .build();
-            int empResult = userRegMapper.insertUserEmployment(emp);
-            log.info("USER_EMPLOYMENT INSERT: company={} / result={}", emp.getCompanyName(), empResult);
+            UserInfoCommand employmentCmd = emp.toBuilder()
+                    .userId(cmd.getUserId())
+                    .build();
+            int empResult = userRegMapper.insertUserEmployment(employmentCmd);
+            log.info("USER_EMPLOYMENT INSERT: company={} / result={}", employmentCmd.getCompanyName(), empResult);
             assertThat(empResult).isEqualTo(1);
         }
     }

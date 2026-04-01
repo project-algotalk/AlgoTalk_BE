@@ -1,11 +1,9 @@
 package com.algotalk.userservice.controller;
 
-import com.algotalk.common.exception.BusinessException;
-import com.algotalk.common.exception.ErrorCode;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
-import com.algotalk.userservice.service.impl.UserRegService;
+import com.algotalk.userservice.service.IUserRegService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserRegController {
 
-    private final UserRegService userRegService;
+    private final IUserRegService userRegService;
 
     // 회원가입 페이지 진입
     @GetMapping("/signup")
@@ -50,11 +48,14 @@ public class UserRegController {
         return "employment"; // 리액트로 프론트 구현 시 "employment" 대신 프론트 URL로 변경
     }
 
-    // TODO: 아이디 중복, 이메일 중복, 이메일 인증번호 발송/확인, 회원가입 로직 완성
     // 아이디 중복 확인
     @PostMapping("reg/check/loginId")
-    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@RequestParam SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkLoginId Start!");
+
+        log.info("SignUpRequestDTO : {}", pDTO);
+
+        //
 
         // 아이디 중복 확인 로직 처리
         boolean loginIdDuplicated = userRegService.isLoginIdDuplicated(pDTO);
@@ -65,7 +66,7 @@ public class UserRegController {
 
     // 이메일 중복 확인
     @PostMapping("reg/check/email")
-    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@RequestParam SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkEmail Start!");
 
         // 이메일 중복 확인 로직 처리
@@ -77,7 +78,7 @@ public class UserRegController {
 
     // 닉네임 중복 확인
     @PostMapping("reg/check/nickname")
-    public ResponseEntity<ApiResponse<Boolean>>  checkNickname(@RequestParam SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>>  checkNickname(@RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkNickname Start!");
 
         // 닉네임 중복 확인 로직 처리
@@ -87,6 +88,7 @@ public class UserRegController {
         return ResponseEntity.ok(ApiResponse.ok(nicknameDuplicated));
     }
 
+    // TODO - 이메일 인증번호 발송 로직 작성(이메일 인증번호 Redis 저장)
     // 이메일 인증번호 발송
     @PostMapping("reg/send/email-code")
     public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode() throws Exception {
@@ -98,6 +100,7 @@ public class UserRegController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
+    // TODO - 이메일 인증번호 확인 로직 작성(이메일 인증번호 Redis에서 조회 후 비교)
     // 이메일 인증번호 확인
     @PostMapping("reg/check/email-code")
     public ResponseEntity<ApiResponse<Void>> verifyEmailCode() {

@@ -4,6 +4,7 @@ import com.algotalk.common.exception.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 
 import java.time.LocalDateTime;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @JsonInclude(JsonInclude.Include.NON_NULL)  // null 필드(fieldErrors 등)는 JSON에서 생략
 public class ErrorResponse {
 
+    private final int status;
     private final String code;
     private final String message;
 
@@ -49,7 +51,8 @@ public class ErrorResponse {
     /** @Valid 실패 시에만 포함. null이면 클래스 레벨 @JsonInclude로 생략 */
     private final List<FieldError> fieldErrors;
 
-    private ErrorResponse(String code, String message, List<FieldError> fieldErrors) {
+    private ErrorResponse(int status, String code, String message, List<FieldError> fieldErrors) {
+        this.status      = status;
         this.code        = code;
         this.message     = message;
         this.timestamp   = LocalDateTime.now();
@@ -58,17 +61,17 @@ public class ErrorResponse {
 
     /** 비즈니스 예외 (BusinessException) */
     public static ErrorResponse of(ErrorCode errorCode) {
-        return new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), null);
+        return new ErrorResponse(errorCode.getHttpStatus().value(), errorCode.getCode(), errorCode.getMessage(), null);
     }
 
     /** 비즈니스 예외 + 커스텀 메시지 */
     public static ErrorResponse of(ErrorCode errorCode, String detail) {
-        return new ErrorResponse(errorCode.getCode(), detail, null);
+        return new ErrorResponse(errorCode.getHttpStatus().value(), errorCode.getCode(), detail, null);
     }
 
     /** 코드/메시지만 있을 때 (Validation 코드 직접 지정 등) */
-    public static ErrorResponse of(String code, String message) {
-        return new ErrorResponse(code, message, null);
+    public static ErrorResponse of(int status, String code, String message) {
+        return new ErrorResponse(status, code, message, null);
     }
 
     /** @Valid / @Validated 실패 → 필드별 오류 목록 포함 */
@@ -80,7 +83,7 @@ public class ErrorResponse {
                         e.getDefaultMessage())) // 왜 실패했는지
                 .collect(Collectors.toList());
 
-        return new ErrorResponse("VALID_001", "입력값 검증에 실패했습니다.", fieldErrors);
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(),"VALID_001", "입력값 검증에 실패했습니다.", fieldErrors);
     }
 
     /**

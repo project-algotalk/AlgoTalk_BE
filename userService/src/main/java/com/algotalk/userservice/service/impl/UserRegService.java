@@ -44,6 +44,7 @@ public class UserRegService implements IUserRegService {
 
         // 3. DB 조회 결과에 따라 중복 여부 판단 후 반환
         boolean loginIdDuplicated = existsYn.equals("Y");
+        log.info("loginIdDuplicated: {}", loginIdDuplicated);
 
         log.info("{}.isLoginIdDuplicated End!", this.getClass().getName());
         if(loginIdDuplicated) {
@@ -200,7 +201,7 @@ public class UserRegService implements IUserRegService {
 
         SignUpResponseDTO rDTO = SignUpResponseDTO.builder()
                 .userId(pCommand.getUserId())
-                .email(pCommand.getEmail())
+                .email(EncryptUtil.decAES128CBC(pCommand.getEmail()))
                 .nickname(pCommand.getNickname())
                 .targetJobs(targetJobNames)
 //                .createdAt(pCommand.getCreatedAt())
