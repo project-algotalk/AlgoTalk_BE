@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
-import lombok.ToString;
 
 import java.util.List;
 
@@ -31,7 +30,7 @@ public record SignUpRequestDTO(
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
 
-        Integer authNumber, // 인증번호(6자리)
+        String authNumber, // 인증번호(6자리)
 
         String addr1,
         String addr2,

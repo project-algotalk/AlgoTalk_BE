@@ -21,6 +21,11 @@ public class EncryptUtil {
     private static final String addMessage = "PolyDataAnalysis";
 
     /**
+     * TODO: 보안 개선 필요할 것 같음
+     * 현재는 고정 IV를 사용 중인 데 랜덤 IV로 변경 필요한 것 같음
+     * 변경 시 기존 암호화된 데이터가 존재한다면 마이그레이션 필요함
+     */
+    /**
      * AES CBC 모드에서 사용할 초기 벡터(IV) - 16바이트
      * - 암호화 초기화 값으로 동일해야 복호화 가능
      */

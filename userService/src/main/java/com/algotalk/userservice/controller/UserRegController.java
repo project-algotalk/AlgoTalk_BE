@@ -5,7 +5,6 @@ import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
-import com.algotalk.userservice.service.impl.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -59,10 +58,10 @@ public class UserRegController {
         log.info("SignUpRequestDTO : {}", pDTO);
 
         // 아이디 중복 확인 로직 처리
-        boolean loginIdDuplicated = userRegService.isLoginIdDuplicated(pDTO);
+        userRegService.validateLoginIdUnique(pDTO);
 
         log.info("UserRegController.checkLoginId End!");
-        return ResponseEntity.ok(ApiResponse.ok(loginIdDuplicated));
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     // 이메일 중복 확인
@@ -71,10 +70,10 @@ public class UserRegController {
         log.info("UserRegController.checkEmail Start!");
 
         // 이메일 중복 확인 로직 처리
-        boolean emailDuplicated = userRegService.isEmailDuplicated(pDTO);
+        userRegService.validateEmailUnique(pDTO);
 
         log.info("UserRegController.checkEmail End!");
-        return ResponseEntity.ok(ApiResponse.ok(emailDuplicated));
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     // 닉네임 중복 확인
@@ -83,10 +82,10 @@ public class UserRegController {
         log.info("UserRegController.checkNickname Start!");
 
         // 닉네임 중복 확인 로직 처리
-        boolean nicknameDuplicated = userRegService.isNicknameDuplicated(pDTO);
+        userRegService.validateNicknameUnique(pDTO);
 
         log.info("UserRegController.checkNickname End!");
-        return ResponseEntity.ok(ApiResponse.ok(nicknameDuplicated));
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 
     // TODO - 이메일 인증번호 발송 로직 작성(이메일 인증번호 Redis 저장)

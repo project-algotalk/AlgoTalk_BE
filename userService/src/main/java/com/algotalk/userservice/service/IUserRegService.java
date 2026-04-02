@@ -7,27 +7,48 @@ import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 public interface IUserRegService {
     /**
      * loginId 중복 확인(중복이면 true)
-     * @param pDTO
+     * @param pCommand
      * @return
      * @throws Exception
      */
-    boolean isLoginIdDuplicated(SignUpRequestDTO pDTO) throws Exception;
+    boolean isLoginIdDuplicated(UserInfoCommand pCommand) throws Exception;
 
     /**
      * nickname 중복 확인(중복이면 true)
-     * @param pDTO
+     * @param pCommand
      * @return
      * @throws Exception
      */
-    boolean isNicknameDuplicated(SignUpRequestDTO pDTO) throws Exception;
+    boolean isNicknameDuplicated(UserInfoCommand pCommand) throws Exception;
 
     /**
      * email 중복 확인(중복이면 true)
-     * @param pDTO
+     * @param pCommand
      * @return
      * @throws Exception
      */
-    boolean isEmailDuplicated(SignUpRequestDTO pDTO) throws Exception;
+    boolean isEmailDuplicated(UserInfoCommand pCommand) throws Exception;
+
+    /**
+     * loginId 중복 여부 검증(중복이면 예외 발생)
+     * @param pDTO
+     * @throws Exception
+     */
+    void validateLoginIdUnique(SignUpRequestDTO pDTO) throws Exception;
+
+    /**
+     * nickname 중복 여부 검증(중복이면 예외 발생)
+     * @param pDTO
+     * @throws Exception
+     */
+    void validateNicknameUnique(SignUpRequestDTO pDTO) throws Exception;
+
+    /**
+     * email 중복 여부 검증(중복이면 예외 발생)
+     * @param pDTO
+     * @throws Exception
+     */
+    void validateEmailUnique(SignUpRequestDTO pDTO) throws Exception;
 
     /**
      * 회원 가입 처리
