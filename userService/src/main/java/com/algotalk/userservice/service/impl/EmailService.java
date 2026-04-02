@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -38,60 +39,76 @@ public class EmailService implements IEmailService {
 
         log.info("email: {}", email);
 
-        // 1. 6자리 인증번호 생성
-        String code = generateVerificationCode();
-        log.info("생성한 인증번호: {}", code);
+        try {
+            // 1. 6자리 인증번호 생성
+            String code = generateVerificationCode();
+            log.info("생성한 인증번호: {}", code);
 
-        // 2. Redis에 인증번호 저장 (TTL 3분)
-        String authCodeKey = AUTH_CODE_KEY + email;
-        stringRedisTemplate.opsForValue().set(authCodeKey, code, authCodeTtlMinutes, TimeUnit.MINUTES);
-        log.info("Redis에 인증번호 저장: key={}, value={}, ttl={}분", authCodeKey, code, authCodeTtlMinutes);
+            // 2. Redis에 인증번호 저장 (TTL 3분)
+            String authCodeKey = AUTH_CODE_KEY + email;
+            stringRedisTemplate.opsForValue().set(authCodeKey, code, authCodeTtlMinutes, TimeUnit.MINUTES);
+            log.info("Redis에 인증번호 저장: key={}, value={}, ttl={}분", authCodeKey, code, authCodeTtlMinutes);
 
-        // 3. 이메일 발송
-        sendMail(email, code);
-
-        log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
+            // 3. 이메일 발송
+            sendMail(email, code);
+        } catch (BusinessException e) {
+            log.error("{}.sendEmailVerificationCode BusinessException:, message={}", this.getClass().getName(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("이메일 인증번호 발송 중 예상치 못한 오류 발생: {}", e.getMessage());
+            throw new BusinessException(UserErrorCode.EMAIL_SEND_FAIL);
+        } finally {
+            log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
+        }
     }
 
     @Override
     public void verifyEmailCode(String email, String code) throws Exception {
         log.info("{}.sendEmailVerificationCode Start!", this.getClass().getName());
-
         log.info("email: {}, code: {}", email, code);
 
-        // 1. Redis에서 인증번호 조회
-        String savedCode = stringRedisTemplate.opsForValue().get(AUTH_CODE_KEY + email);
-        log.info("Redis에서 조회한 인증번호: {}", savedCode);
+        try {
+            // 1. Redis에서 인증번호 조회
+            String savedCode = stringRedisTemplate.opsForValue().get(AUTH_CODE_KEY + email);
+            log.info("Redis에서 조회한 인증번호: {}", savedCode);
 
-        // 2. 만료여부 확인
-        if(savedCode == null) {
-            log.info("인증번호가 만료되었거나 존재하지 않습니다.");
-            throw new BusinessException(UserErrorCode.EMAIL_CODE_EXPIRED);
+            // 2. 만료여부 확인
+            if(savedCode == null) {
+                log.info("인증번호가 만료되었거나 존재하지 않습니다.");
+                throw new BusinessException(UserErrorCode.EMAIL_CODE_EXPIRED);
+            }
+
+            // 3. 입력값과 비교
+            if(!savedCode.equals(code)) {
+                log.info("인증번호가 일치하지 않습니다.");
+                throw new BusinessException(UserErrorCode.EMAIL_CODE_MISMATCH);
+            }
+
+            // 4. 인증완료 플래그 저장 (TTL 30분)
+            String verifiedKey = VERIFIED_KEY + email;
+            stringRedisTemplate.opsForValue().set(verifiedKey, "true", verifiedTtlMinutes, TimeUnit.MINUTES);
+            log.info("Redis에 인증완료 플래그 저장: key={}, value=true, ttl={}분", verifiedKey, verifiedTtlMinutes);
+
+            // 5. Redis에서 인증번호 삭제
+            stringRedisTemplate.delete(AUTH_CODE_KEY + email);
+            log.info("Redis에서 인증번호 삭제: key={}", AUTH_CODE_KEY + email);
+        } catch (BusinessException e) {
+            log.error("{}.sendEmailVerificationCode BusinessException:, message={}", this.getClass().getName(), e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("이메일 인증 확인 중 예상치 못한 오류 발생: {}", e.getMessage());
+            throw new BusinessException(UserErrorCode.EMAIL_SEND_FAIL);
+        } finally {
+            log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
+
         }
-
-        // 3. 입력값과 비교
-        if(!savedCode.equals(code)) {
-            log.info("인증번호가 일치하지 않습니다.");
-            throw new BusinessException(UserErrorCode.EMAIL_CODE_MISMATCH);
-        }
-
-        // 4. 인증완료 플래그 저장 (TTL 30분)
-        String verifiedKey = VERIFIED_KEY + email;
-        stringRedisTemplate.opsForValue().set(verifiedKey, "true", verifiedTtlMinutes, TimeUnit.MINUTES);
-        log.info("Redis에 인증완료 플래그 저장: key={}, value=true, ttl={}분", verifiedKey, verifiedTtlMinutes);
-
-        // 5. Redis에서 인증번호 삭제
-        stringRedisTemplate.delete(AUTH_CODE_KEY + email);
-        log.info("Redis에서 인증번호 삭제: key={}", AUTH_CODE_KEY + email);
-
-        log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
-
     }
 
     @Override
     public boolean isEmailVerified(String email) throws Exception {
         log.info("{}.isEmailVerified Start!", this.getClass().getName());
         log.info("email: {}", email);
+
         String verified = stringRedisTemplate.opsForValue().get(VERIFIED_KEY + email);
         log.info("Redis에서 조회한 인증완료 플래그: {}", verified);
 

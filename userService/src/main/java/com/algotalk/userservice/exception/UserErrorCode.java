@@ -24,7 +24,6 @@ public enum UserErrorCode implements ErrorCode {
     DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.",                    HttpStatus.CONFLICT),
     DUPLICATE_NICKNAME      ("USER_022", "이미 사용 중인 닉네임입니다.",                    HttpStatus.CONFLICT),
     PASSWORD_MISMATCH     ("USER_023", "비밀번호가 일치하지 않습니다.",                    HttpStatus.UNAUTHORIZED),
-
     SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.",                       HttpStatus.BAD_REQUEST),
 
 
@@ -32,6 +31,7 @@ public enum UserErrorCode implements ErrorCode {
     EMAIL_CODE_EXPIRED("EMAIL_001", "인증번호가 만료되었습니다.", HttpStatus.GONE),
     EMAIL_CODE_MISMATCH("EMAIL_002", "인증번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     EMAIL_NOT_VERIFIED("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAIL("EMAIL_004", "이메일 인증 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_030", "이미 연동된 소셜 계정입니다.",                    HttpStatus.CONFLICT),

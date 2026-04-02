@@ -3,6 +3,7 @@ package com.algotalk.userservice.controller;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
+import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
 import com.algotalk.userservice.service.impl.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserRegController {
 
     private final IUserRegService userRegService;
-    private final EmailService emailService;
+    private final IEmailService emailService;
 
     // 회원가입 페이지 진입
     @GetMapping("/signup")

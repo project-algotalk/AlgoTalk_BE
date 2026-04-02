@@ -4,6 +4,7 @@ import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
+import com.algotalk.userservice.service.IEmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,6 +22,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +44,9 @@ class UserRegControllerTest {
 
     @Autowired
     private IUserRegMapper userRegMapper;
+
+    @MockBean
+    private IEmailService emailService;
 
     // TODO - 각 메서드에 대해서 경우의 수 별로 테스트 코드 작성
     @Test
@@ -174,6 +181,9 @@ class UserRegControllerTest {
                 .nickname("길동이")
                 .build();
 
+        given(emailService.isEmailVerified(any()))
+                .willReturn(true);
+
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
@@ -187,6 +197,7 @@ class UserRegControllerTest {
     @Transactional
     @DisplayName("회원가입 성공 - 목표직무 포함")
     void signUp_withTargetJobs() throws Exception {
+        // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
                 .loginId("ctrltest02")
                 .password("Test1234!")
@@ -203,6 +214,10 @@ class UserRegControllerTest {
                 ))
                 .build();
 
+        given(emailService.isEmailVerified(any()))
+                .willReturn(true);
+
+        // when & then
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))

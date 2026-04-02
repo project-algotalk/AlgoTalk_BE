@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.parameters.P;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,9 @@ class UserRegServiceTest {
 
     @Autowired
     IUserRegMapper userRegMapper;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @Test
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
@@ -165,6 +169,9 @@ class UserRegServiceTest {
                 .nickname("둘리")
                 .build();
 
+        stringRedisTemplate.opsForValue()
+                .set("email:verified:" + pDTO.email(), "true");
+
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
         log.info("회원 가입 결과: {}", rDTO);
@@ -173,7 +180,9 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.nickname()).isEqualTo(pDTO.nickname());
-        assertThat(EncryptUtil.decAES128CBC(rDTO.email())).isEqualTo(pDTO.email());
+        assertThat(rDTO.email()).isEqualTo(pDTO.email());
+
+        stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
     @Test
@@ -189,6 +198,9 @@ class UserRegServiceTest {
                 .name("홍길동")
                 .build();
 
+        stringRedisTemplate.opsForValue()
+                .set("email:verified:" + pDTO.email(), "true");
+
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
         log.info("회원 가입 결과: {}", rDTO);
@@ -197,7 +209,9 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.nickname()).isEqualTo(pDTO.name());
-        assertThat(EncryptUtil.decAES128CBC(rDTO.email())).isEqualTo(pDTO.email());
+        assertThat(rDTO.email()).isEqualTo(pDTO.email());
+
+        stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
     @Test
@@ -223,6 +237,9 @@ class UserRegServiceTest {
                 .targetJobs(targetJobs)
                 .build();
 
+        stringRedisTemplate.opsForValue()
+                .set("email:verified:" + pDTO.email(), "true");
+
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
         log.info("회원 가입 결과: {}", rDTO);
@@ -231,9 +248,11 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.nickname()).isEqualTo(pDTO.name());
-        assertThat(EncryptUtil.decAES128CBC(rDTO.email())).isEqualTo(pDTO.email());
+        assertThat(rDTO.email()).isEqualTo(pDTO.email());
         assertThat(rDTO.targetJobs()).isNotNull();
         assertThat(rDTO.targetJobs()).hasSize(1);
+
+        stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
     @Test
@@ -275,6 +294,9 @@ class UserRegServiceTest {
                 .targetJobs(targetJobs)
                 .build();
 
+        stringRedisTemplate.opsForValue()
+                .set("email:verified:" + pDTO.email(), "true");
+
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
         log.info("회원 가입 결과: {}", rDTO);
@@ -283,9 +305,11 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.nickname()).isEqualTo(pDTO.name());
-        assertThat(EncryptUtil.decAES128CBC(rDTO.email())).isEqualTo(pDTO.email());
+        assertThat(rDTO.email()).isEqualTo(pDTO.email());
         assertThat(rDTO.targetJobs()).isNotNull();
         assertThat(rDTO.targetJobs()).hasSize(3);
+
+        stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
     @Test
@@ -323,6 +347,9 @@ class UserRegServiceTest {
                 .employments(employments)
                 .build();
 
+        stringRedisTemplate.opsForValue()
+                .set("email:verified:" + pDTO.email(), "true");
+
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
         log.info("회원 가입 결과: {}", rDTO);
@@ -331,7 +358,9 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.nickname()).isEqualTo(pDTO.name());
-        assertThat(EncryptUtil.decAES128CBC(rDTO.email())).isEqualTo(pDTO.email());
+        assertThat(rDTO.email()).isEqualTo(pDTO.email());
+
+        stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
 
