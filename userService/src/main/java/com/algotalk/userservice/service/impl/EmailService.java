@@ -64,12 +64,12 @@ public class EmailService implements IEmailService {
     @Override
     public void verifyEmailCode(String email, String code) throws Exception {
         log.info("{}.sendEmailVerificationCode Start!", this.getClass().getName());
-        log.info("email: {}, code: {}", email, code);
+        log.info("email: {}", email);
 
         try {
             // 1. Redis에서 인증번호 조회
             String savedCode = stringRedisTemplate.opsForValue().get(AUTH_CODE_KEY + email);
-            log.info("Redis에서 조회한 인증번호: {}", savedCode);
+            log.info("Redis에서 이메일 인증번호를 조회했습니다.");
 
             // 2. 만료여부 확인
             if(savedCode == null) {
