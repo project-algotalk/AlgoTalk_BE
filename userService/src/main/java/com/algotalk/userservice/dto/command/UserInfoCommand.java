@@ -30,7 +30,7 @@ public class UserInfoCommand {
     private String password;    // 암호화한 비밀번호
 
     // USER_CREDENTIAL
-    String role; // List<String> roles -> String role (단일 역할)로 변경, "ROLE_USER", "ROLE_ADMIN" 등으로 저장
+    private String role; // List<String> roles -> String role (단일 역할)로 변경, "ROLE_USER", "ROLE_ADMIN" 등으로 저장
 
     // USER_TARGET_JOB, USER_EMPLOYMENT
     private Long categoryId;
