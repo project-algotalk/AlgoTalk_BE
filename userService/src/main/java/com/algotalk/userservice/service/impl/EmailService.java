@@ -41,12 +41,12 @@ public class EmailService implements IEmailService {
         try {
             // 1. 6자리 인증번호 생성
             String code = generateVerificationCode();
-            log.info("생성한 인증번호: {}", code);
+            log.info("이메일 인증번호 생성 완료");
 
             // 2. Redis에 인증번호 저장 (TTL 3분)
             String authCodeKey = AUTH_CODE_KEY + email;
             stringRedisTemplate.opsForValue().set(authCodeKey, code, authCodeTtlMinutes, TimeUnit.MINUTES);
-            log.info("Redis에 인증번호 저장: key={}, value={}, ttl={}분", authCodeKey, code, authCodeTtlMinutes);
+            log.info("Redis에 인증번호 저장: key={}, ttl={}분", authCodeKey, authCodeTtlMinutes);
 
             // 3. 이메일 발송
             sendMail(email, code);
