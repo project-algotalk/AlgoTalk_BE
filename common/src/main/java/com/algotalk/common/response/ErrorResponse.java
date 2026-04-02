@@ -4,6 +4,7 @@ import com.algotalk.common.exception.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 
 import java.time.LocalDateTime;
@@ -30,21 +31,28 @@ import java.util.stream.Collectors;
  *     { "field": "password", "rejectedValue": "",    "reason": "비밀번호는 필수입니다." }
  *   ]
  * }
+ *
+ * ※ record 미사용 이유:
+ *   timestamp = LocalDateTime.now() 처럼 생성 시점에 값을 주입하는 필드가 있어
+ *   record의 canonical constructor와 맞지 않음.
+ *   불변 클래스 + 정적 팩토리 메서드 패턴으로 동일한 불변성을 보장한다.
  */
 @Getter
+@JsonInclude(JsonInclude.Include.NON_NULL)  // null 필드(fieldErrors 등)는 JSON에서 생략
 public class ErrorResponse {
 
+    private final int status;
     private final String code;
     private final String message;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private final LocalDateTime timestamp;
 
-    /** @Valid 실패 시에만 포함. null이면 JSON에서 생략 */
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    /** @Valid 실패 시에만 포함. null이면 클래스 레벨 @JsonInclude로 생략 */
     private final List<FieldError> fieldErrors;
 
-    private ErrorResponse(String code, String message, List<FieldError> fieldErrors) {
+    private ErrorResponse(int status, String code, String message, List<FieldError> fieldErrors) {
+        this.status      = status;
         this.code        = code;
         this.message     = message;
         this.timestamp   = LocalDateTime.now();
@@ -53,43 +61,33 @@ public class ErrorResponse {
 
     /** 비즈니스 예외 (BusinessException) */
     public static ErrorResponse of(ErrorCode errorCode) {
-        return new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), null);
+        return new ErrorResponse(errorCode.getHttpStatus().value(), errorCode.getCode(), errorCode.getMessage(), null);
     }
 
     /** 비즈니스 예외 + 커스텀 메시지 */
     public static ErrorResponse of(ErrorCode errorCode, String detail) {
-        return new ErrorResponse(errorCode.getCode(), detail, null);
+        return new ErrorResponse(errorCode.getHttpStatus().value(), errorCode.getCode(), detail, null);
     }
 
     /** 코드/메시지만 있을 때 (Validation 코드 직접 지정 등) */
-    public static ErrorResponse of(String code, String message) {
-        return new ErrorResponse(code, message, null);
+    public static ErrorResponse of(int status, String code, String message) {
+        return new ErrorResponse(status, code, message, null);
     }
 
     /** @Valid / @Validated 실패 → 필드별 오류 목록 포함 */
     public static ErrorResponse ofValidation(BindingResult bindingResult) {
         List<FieldError> fieldErrors = bindingResult.getFieldErrors().stream()
                 .map(e -> new FieldError(
-                        e.getField(),
-                        e.getRejectedValue() == null ? "" : e.getRejectedValue().toString(),
-                        e.getDefaultMessage()))
+                        e.getField(), // 어떤 필드인지
+                        e.getRejectedValue() == null ? "" : e.getRejectedValue().toString(), // 어떤 값이 들어왔는지
+                        e.getDefaultMessage())) // 왜 실패했는지
                 .collect(Collectors.toList());
 
-        return new ErrorResponse("VALID_001", "입력값 검증에 실패했습니다.", fieldErrors);
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(),"VALID_001", "입력값 검증에 실패했습니다.", fieldErrors);
     }
 
-    // ── 내부 DTO ────────────────────────────────────────────────────────────
-
-    @Getter
-    public static class FieldError {
-        private final String field;
-        private final String rejectedValue;
-        private final String reason;
-
-        public FieldError(String field, String rejectedValue, String reason) {
-            this.field         = field;
-            this.rejectedValue = rejectedValue;
-            this.reason        = reason;
-        }
-    }
+    /**
+     * 필드 단위 검증 오류 (record: 불변 + 자동 accessor + equals/hashCode/toString)
+     */
+    public record FieldError(String field, String rejectedValue, String reason) {}
 }
