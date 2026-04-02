@@ -5,7 +5,6 @@ import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
-import com.algotalk.userservice.service.impl.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
