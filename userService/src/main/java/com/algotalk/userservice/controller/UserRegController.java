@@ -110,7 +110,7 @@ public class UserRegController {
         log.info("UserRegController.verifyEmailCode Start!");
 
         // 이메일 인증번호 확인 로직 처리
-        emailService.verifyEmailCode(pDTO.email(), String.valueOf(pDTO.password()));
+        emailService.verifyEmailCode(pDTO.email(), String.valueOf(pDTO.authNumber()));
 
         log.info("UserRegController.verifyEmailCode End!");
         return ResponseEntity.ok(ApiResponse.ok());
