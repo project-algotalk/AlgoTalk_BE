@@ -14,7 +14,7 @@ public class SocialAccountEntity {
     private String providerUid;
     private String socialEmail;
     private LocalDateTime createdAt;
-    private Long createdBy;
+    private String createdBy;
     private LocalDateTime updatedAt;
-    private Long updatedBy;
+    private String updatedBy;
 }
