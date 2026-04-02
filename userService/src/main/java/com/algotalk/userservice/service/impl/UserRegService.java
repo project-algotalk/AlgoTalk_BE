@@ -83,7 +83,7 @@ public class UserRegService implements IUserRegService {
             log.error("{}.isNicknameDuplicated BusinessException: {}", this.getClass().getName(), e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("회원 가입 중 예상치 못한 오류 발생: {}", e.getMessage());
+            log.error("닉네임 중복 확인 중 예상치 못한 오류 발생: {}", e.getMessage());
             throw new BusinessException(UserErrorCode.SIGN_UP_FAIL);
         } finally {
             log.info("{}.isNicknameDuplicated End!", this.getClass().getName());
