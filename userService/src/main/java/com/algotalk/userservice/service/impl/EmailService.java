@@ -39,7 +39,7 @@ public class EmailService implements IEmailService {
     @Override
     public void sendEmailVerificationCode(EmailSendRequestDTO pDTO) throws Exception {
         log.info("{}.sendEmailVerificationCode Start!", this.getClass().getName());
-        log.info("EmailCheckRequestDTO: {}", pDTO);
+        log.info("EmailSendRequestDTO: {}", pDTO);
         String email = pDTO.email();
 
         // 1. 6자리 인증번호 생성
