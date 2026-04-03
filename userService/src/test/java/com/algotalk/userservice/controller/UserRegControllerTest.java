@@ -1,6 +1,7 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
@@ -48,19 +49,18 @@ class UserRegControllerTest {
     @MockBean
     private IEmailService emailService;
 
-    // TODO - 각 메서드에 대해서 경우의 수 별로 테스트 코드 작성
     @Test
     @Transactional
     @DisplayName("loginId 중복 확인 - 중복 되지 않은 경우")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("not_exist_id")
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+                .loginId("notExistId")
                 .build();
 
         // when & then
         mockMvc.perform(post("/user/v1/reg/check/loginId")
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -77,7 +77,7 @@ class UserRegControllerTest {
                 .nickname("플로우테스트")
                 .name("테스트")
                 .email("test@algotalk.com")
-                .loginId("existing_id")
+                .loginId("existId")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();
@@ -86,11 +86,28 @@ class UserRegControllerTest {
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("existing_id") // 실제 DB에 존재하는 loginId로 변경
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+                .loginId("existId") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
         // 2. 중복되는 로그인 아이디로 테스트
+        mockMvc.perform(post("/user/v1/reg/check/loginId")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(pDTO)))
+                .andDo(print())
+                .andExpect(status().is4xxClientError())
+        ;
+    }
+
+    @Test
+    @DisplayName("loginId 중복 확인 - loginId 누락")
+    void checkLoginId_missingLoginId()  throws Exception {
+        // given
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+                .loginId("") // 빈 문자열로 설정
+                .build();
+
+        // when & then
         mockMvc.perform(post("/user/v1/reg/check/loginId")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
@@ -237,6 +254,22 @@ class UserRegControllerTest {
                 .passwordConfirm("Wrong1234!")
                 .email("ctrl03@algotalk.com")
                 .name("홍길동")
+                .build();
+
+        mockMvc.perform(post("/user/v1/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pDTO)))
+                .andDo(print())
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 필수 입력값 누락")
+    void signUp_missingRequiredFields() throws Exception {
+        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+                .password("Test1234!")
+                .passwordConfirm("Test1234!")
+                .email("")
                 .build();
 
         mockMvc.perform(post("/user/v1/signup")

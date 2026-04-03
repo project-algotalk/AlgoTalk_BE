@@ -46,12 +46,6 @@ public class UserInfoCommand {
      */
     private String existsYn;
 
-    /**
-     * DB 테이블에 존재하지 않는 가상의 컬럼
-     * 회원 가입시 인증번호 발송 후 검증 용으로 사용
-     */
-    private int authNumber;
-
     public static UserInfoCommand from(SignUpRequestDTO pDTO) {
         return UserInfoCommand.builder()
                 .email(pDTO.email())

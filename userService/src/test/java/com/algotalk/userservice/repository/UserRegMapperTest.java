@@ -1,6 +1,8 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
+import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,13 +27,13 @@ class UserRegMapperTest {
     @DisplayName("DB 연결 확인 - USERS 테이블 조회")
     void dbConnectionTest() throws Exception {
         // USERS 테이블이 존재하고 연결되면 예외 없이 통과
-        UserInfoCommand cmd = UserInfoCommand.builder()
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
                 .loginId("connection_test")
                 .build();
-        UserInfoCommand result = userRegMapper.getLoginIdExists(cmd);
-        log.info("DB 연결 확인 결과: {}", result.getExistsYn());
-        assertThat(result).isNotNull();
-        assertThat(result.getExistsYn()).isIn("Y", "N");
+        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(pDTO);
+        log.info("DB 연결 확인 결과: {}", rDTO.existsYn());
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.existsYn()).isIn("Y", "N");
     }
 
     @Test

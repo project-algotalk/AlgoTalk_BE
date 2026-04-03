@@ -5,8 +5,8 @@
 
     <!--  회원가입 전 아이디 중복 확인  -->
     <select id="getLoginIdExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="LoginIdCheckRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(LOGIN_ID) > 0, 'Y', 'N') AS existsYn
         FROM USER_CREDENTIAL
@@ -16,8 +16,8 @@
 
     <!--  회원가입 전 닉네임 중복 확인  -->
     <select id="getNicknameExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="NicknameCheckRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(NICKNAME) > 0, 'Y', 'N') AS existsYn
         FROM USERS
@@ -27,8 +27,8 @@
 
     <!--  회원가입 전 이메일 중복 확인  -->
     <select id="getEmailExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="EmailCheckRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(EMAIL) > 0, 'Y', 'N') AS existsYn
         FROM USERS

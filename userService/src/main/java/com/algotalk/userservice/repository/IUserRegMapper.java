@@ -1,19 +1,23 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.EmailCheckRequestDTO;
+import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
+import com.algotalk.userservice.dto.request.NicknameCheckRequestDTO;
+import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface IUserRegMapper {
 
     // 회원가입 전 아이디 중복 확인
-    UserInfoCommand getLoginIdExists(UserInfoCommand pCommand) throws Exception;
+    ExistsResponseDTO getLoginIdExists(LoginIdCheckRequestDTO pDTO) throws Exception;
 
     // 회원가입 전 닉네임 중복 확인
-    UserInfoCommand getNicknameExists(UserInfoCommand pCommand) throws Exception;
+    ExistsResponseDTO getNicknameExists(NicknameCheckRequestDTO pDTO) throws Exception;
 
     // 회원가입 전 이메일 중복 확인
-    UserInfoCommand getEmailExists(UserInfoCommand pCommand) throws Exception;
+    ExistsResponseDTO getEmailExists(EmailCheckRequestDTO pDTO) throws Exception;
 
     // 회원 가입 - USER 테이블
     int insertUser(UserInfoCommand pCommand) throws Exception;

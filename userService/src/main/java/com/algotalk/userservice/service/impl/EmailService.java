@@ -1,6 +1,9 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.request.EmailCheckRequestDTO;
+import com.algotalk.userservice.dto.request.EmailSendRequestDTO;
+import com.algotalk.userservice.dto.request.EmailVerifyRequestDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.service.IEmailService;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +37,10 @@ public class EmailService implements IEmailService {
     private long verifiedTtlMinutes; // 인증 완료 플래그 TTL (기본 30분)
 
     @Override
-    public void sendEmailVerificationCode(String email) throws Exception {
+    public void sendEmailVerificationCode(EmailSendRequestDTO pDTO) throws Exception {
         log.info("{}.sendEmailVerificationCode Start!", this.getClass().getName());
-        log.info("email: {}", email);
+        log.info("EmailSendRequestDTO: {}", pDTO);
+        String email = pDTO.email();
 
         // 1. 6자리 인증번호 생성
         String code = generateVerificationCode();
@@ -53,8 +57,10 @@ public class EmailService implements IEmailService {
     }
 
     @Override
-    public void verifyEmailCode(String email, String code) throws Exception {
+    public void verifyEmailCode(EmailVerifyRequestDTO pDTO) throws Exception {
         log.info("{}.verifyEmailCode Start!", this.getClass().getName());
+        String email = pDTO.email();
+        String authNumber = pDTO.authNumber();
 
         // 1. Redis에서 인증번호 조회
         String savedCode = stringRedisTemplate.opsForValue().get(AUTH_CODE_KEY + email);
@@ -67,7 +73,7 @@ public class EmailService implements IEmailService {
         }
 
         // 3. 입력값과 비교
-        if(!savedCode.equals(code)) {
+        if(!savedCode.equals(authNumber)) {
             log.info("인증번호가 일치하지 않습니다.");
             throw new BusinessException(UserErrorCode.EMAIL_CODE_MISMATCH);
         }
