@@ -1,6 +1,5 @@
 package com.algotalk.userservice.dto.command;
 
-import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import lombok.*;
 
