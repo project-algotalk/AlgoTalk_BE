@@ -26,13 +26,8 @@ public record SignUpRequestDTO(
         String passwordConfirm,
 
         // TB: USER
-//        @NotBlank(message = "이메일을 입력해주세요.") // 선택 입력(소셜 로그인 고려)
         @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
-
-        @NotBlank(message = "인증번호를 입력해주세요.")
-        @Pattern(regexp = "\\d{6}", message = "인증번호는 6자리 숫자입니다.")
-        String authNumber, // 인증번호(6자리)
 
         String addr1,
         String addr2,
@@ -40,6 +35,9 @@ public record SignUpRequestDTO(
         @NotBlank(message = "이름을 입력해주세요.")
         String name,
 
+        @NotBlank(message = "닉네임을 입력해주세요.")
+        @Size(min = 2, max = 10, message = "닉네임은 2자 이상 10자 이하로 입력해주세요.")
+        @Pattern(regexp = "^[a-zA-Z0-9가-힣]*$", message = "닉네임은 영문, 숫자, 한글만 사용 가능합니다.")
         String nickname,
 
         // 목표 직무(최대 3개)

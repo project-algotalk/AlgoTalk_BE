@@ -2,9 +2,8 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.EmploymentRequestDTO;
-import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
+import com.algotalk.userservice.dto.request.*;
+import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserRegMapper;
@@ -32,12 +31,12 @@ public class UserRegService implements IUserRegService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public boolean isLoginIdDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isLoginIdDuplicated(LoginIdCheckRequestDTO pDTO) throws Exception {
         log.info("{}.isLoginIdDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getLoginIdExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(pDTO);
+        String existsYn = rDTO.existsYn();
         log.info("existsYn from DB: {}", existsYn);
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
@@ -47,24 +46,24 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isNicknameDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isNicknameDuplicated(NicknameCheckRequestDTO pDTO) throws Exception {
         log.info("{}.isNicknameDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getNicknameExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getNicknameExists(pDTO);
+        String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
         return existsYn.equals("Y"); // true면 중복, false면 미중복
     }
 
     @Override
-    public boolean isEmailDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isEmailDuplicated(EmailCheckRequestDTO pDTO) throws Exception {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getEmailExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getEmailExists(pDTO);
+        String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
         log.info("{}.isEmailDuplicated End!", this.getClass().getName());
@@ -72,51 +71,46 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateLoginIdUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateLoginIdUnique(LoginIdCheckRequestDTO pDTO) throws Exception {
         log.info("{}.validateLoginIdUnique Start!", this.getClass().getName());
 
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
-
         // 1. 값 잘 넘어왔는지 확인(로그인 아이디)
-        String loginId = CmmUtil.nvl(pCommand.getLoginId());
+        String loginId = CmmUtil.nvl(pDTO.loginId());
         log.info("loginId: {}", loginId);
 
         log.info("{}.validateLoginIdUnique End!", this.getClass().getName());
 
-        if(isLoginIdDuplicated(pCommand)) {
+        if(isLoginIdDuplicated(pDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_LOGIN_ID);
         }
     }
 
     @Override
-    public void validateNicknameUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateNicknameUnique(NicknameCheckRequestDTO pDTO) throws Exception {
         log.info("{}.validateNicknameUnique Start!", this.getClass().getName());
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
-
         // 1. 값 잘 넘어왔는지 확인(닉네임)
-        String nickName = CmmUtil.nvl(pCommand.getNickname());
+        String nickName = CmmUtil.nvl(pDTO.nickname());
         log.info("nickName: {}", nickName);
 
         log.info("{}.validateNicknameUnique End!", this.getClass().getName());
 
-        if (isNicknameDuplicated(pCommand)) {
+        if (isNicknameDuplicated(pDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_NICKNAME);
         }
 
     }
 
     @Override
-    public void validateEmailUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateEmailUnique(EmailCheckRequestDTO pDTO) throws Exception {
         log.info("{}.validateEmailUnique Start!", this.getClass().getName());
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
 
         // 1. 값 잘 넘어왔는지 확인(이메일)
-        String email = CmmUtil.nvl(pCommand.getEmail());
+        String email = CmmUtil.nvl(pDTO.email());
         log.info("email: {}", email);
 
         log.info("{}.validateEmailUnique End!", this.getClass().getName());
 
-        if(isEmailDuplicated(pCommand)) {
+        if(isEmailDuplicated(pDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
         }
     }

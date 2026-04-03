@@ -1,5 +1,6 @@
 package com.algotalk.userservice.dto.command;
 
+import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import lombok.*;
 
@@ -45,12 +46,6 @@ public class UserInfoCommand {
      * 회원 가입시 중복 체크 용으로 사용(Y/N)
      */
     private String existsYn;
-
-    /**
-     * DB 테이블에 존재하지 않는 가상의 컬럼
-     * 회원 가입시 인증번호 발송 후 검증 용으로 사용
-     */
-    private int authNumber;
 
     public static UserInfoCommand from(SignUpRequestDTO pDTO) {
         return UserInfoCommand.builder()

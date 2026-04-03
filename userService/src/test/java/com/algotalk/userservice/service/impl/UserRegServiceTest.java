@@ -2,9 +2,7 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.EmploymentRequestDTO;
-import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUserRegService;
@@ -47,7 +45,7 @@ class UserRegServiceTest {
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
                 .loginId("not_exist_id")
                 .build();
 
@@ -77,7 +75,7 @@ class UserRegServiceTest {
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
                 .loginId("existing_id") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
@@ -104,7 +102,7 @@ class UserRegServiceTest {
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        NicknameCheckRequestDTO pDTO = NicknameCheckRequestDTO.builder()
                 .nickname("중복 닉네임") // 실제 DB에 존재하는 nickname
                 .build();
 
@@ -118,7 +116,7 @@ class UserRegServiceTest {
     @DisplayName("email 중복 확인 - 존재하지 않으면 false 반환")
     void isEmailDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
                 .email("not_exist@algotalk.com")
                 .build();
 
@@ -147,7 +145,7 @@ class UserRegServiceTest {
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
                 .email("test@algotalk.com") // 실제 DB에 존재하는 email
                 .build();
 
