@@ -1,7 +1,6 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
-import com.algotalk.userservice.dto.request.EmailCheckRequestDTO;
 import com.algotalk.userservice.dto.request.EmailSendRequestDTO;
 import com.algotalk.userservice.dto.request.EmailVerifyRequestDTO;
 import com.algotalk.userservice.service.IEmailService;
