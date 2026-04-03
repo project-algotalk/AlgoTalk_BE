@@ -1,6 +1,5 @@
 package com.algotalk.userservice.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
@@ -19,7 +18,7 @@ import java.util.List;
 public record SignUpResponseDTO(
         Long userId,        // 사용자 ID
         String nickname,    // 사용자 닉네임
-        String email,       // 사용자 이메일 (암호화된 상태)
+        String email,       // 사용자 이메일
         List<String> targetJobs, // 사용자 목표 직무 리스트
         String createdAt    // 사용자 가입 일시
 ) {

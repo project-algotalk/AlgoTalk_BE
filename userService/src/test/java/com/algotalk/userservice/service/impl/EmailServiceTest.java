@@ -7,11 +7,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @Slf4j
 @SpringBootTest
@@ -24,11 +30,18 @@ class EmailServiceTest {
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
-    private static final String TEST_EMAIL = "gnstm831@gmail.com";
+    @MockBean
+    JavaMailSender mailSender;
+
+    private static final String TEST_EMAIL = "test@example.com";
 
     @Test
     @DisplayName("이메일 인증번호 발송 - Redis 저장 확인")
     void sendEmailVerificationCode_redisStored() throws Exception {
+        // given
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
+        stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+
         // when
         emailService.sendEmailVerificationCode(TEST_EMAIL);
 
@@ -41,12 +54,19 @@ class EmailServiceTest {
         assertThat(savedCode).isNotNull();
         assertThat(savedCode).hasSize(6);
         assertThat(savedCode).matches("\\d{6}");  // 6자리 숫자
+        verify(mailSender, times(1)).send(any(SimpleMailMessage.class)); // 메일 발송 메서드 호출 확인
+
+        stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
     }
 
     @Test
     @DisplayName("이메일 인증번호 확인 - 올바른 코드 입력 시 인증 완료")
     void verifyEmailCode_success() throws Exception {
         // given: 인증번호 발송 후 Redis에서 직접 조회
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
+        stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+        stringRedisTemplate.delete("email:verified:" + TEST_EMAIL);
+
         emailService.sendEmailVerificationCode(TEST_EMAIL);
         String code = stringRedisTemplate.opsForValue()
                 .get("email:auth:" + TEST_EMAIL);
@@ -60,7 +80,7 @@ class EmailServiceTest {
         // then: 인증 완료 플래그 확인
         String verified = stringRedisTemplate.opsForValue()
                 .get("email:verified:" + TEST_EMAIL);
-        assertThat(verified).isEqualTo("true");
+        assertThat(verified).isEqualTo("Y");
 
         // then: 인증번호 삭제 확인
         String deletedCode = stringRedisTemplate.opsForValue()
@@ -68,6 +88,7 @@ class EmailServiceTest {
         assertThat(deletedCode).isNull();
 
         // 테스트 후 정리
+        stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
         stringRedisTemplate.delete("email:verified:" + TEST_EMAIL);
     }
 
@@ -75,6 +96,9 @@ class EmailServiceTest {
     @DisplayName("이메일 인증번호 확인 - 틀린 코드 입력 시 예외 발생")
     void verifyEmailCode_wrongCode() throws Exception {
         // given
+        doNothing().when(mailSender).send(any(SimpleMailMessage.class));
+        stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+
         emailService.sendEmailVerificationCode(TEST_EMAIL);
 
         // when & then
@@ -114,7 +138,7 @@ class EmailServiceTest {
     void isEmailVerified_verified() throws Exception {
         // given: verified 플래그 직접 세팅
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + TEST_EMAIL, "true");
+                .set("email:verified:" + TEST_EMAIL, "Y");
 
         // when
         boolean result = emailService.isEmailVerified(TEST_EMAIL);

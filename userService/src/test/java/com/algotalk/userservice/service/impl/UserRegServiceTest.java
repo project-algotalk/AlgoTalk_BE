@@ -14,6 +14,7 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.parameters.P;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("local")
 class UserRegServiceTest {
 
@@ -50,11 +52,11 @@ class UserRegServiceTest {
                 .build();
 
         // when
-        boolean result = userRegService.isLoginIdDuplicated(pDTO);
-        log.info("loginId 중복 여부: {}", result);
+       userRegService.validateLoginIdUnique(pDTO);
+//        log.info("loginId 중복 여부: {}", result);
 
         // then
-        assertThat(result).isFalse();
+//        assertThat(result).isFalse();
     }
 
     @Test
@@ -81,7 +83,7 @@ class UserRegServiceTest {
 
         // when, then
         assertThrows(BusinessException.class, () -> {
-            userRegService.isLoginIdDuplicated(pDTO);
+            userRegService.validateLoginIdUnique(pDTO);
         });
     }
 
@@ -108,7 +110,7 @@ class UserRegServiceTest {
 
         // when, then
         assertThrows(BusinessException.class, () -> {
-            userRegService.isNicknameDuplicated(pDTO);
+            userRegService.validateNicknameUnique(pDTO);
         });
     }
 
@@ -121,11 +123,11 @@ class UserRegServiceTest {
                 .build();
 
         // when
-        boolean result = userRegService.isEmailDuplicated(pDTO);
-        log.info("email 중복 여부: {}", result);
+        userRegService.validateEmailUnique(pDTO);
+//        log.info("email 중복 여부: {}", result);
 
         // then
-        assertThat(result).isFalse();
+//        assertThat(result).isFalse();
     }
 
     @Test
@@ -151,7 +153,7 @@ class UserRegServiceTest {
 
         // when, then
         assertThrows(BusinessException.class, () -> {
-            userRegService.isEmailDuplicated(pDTO);
+            userRegService.validateEmailUnique(pDTO);
         });
     }
 
@@ -170,7 +172,7 @@ class UserRegServiceTest {
                 .build();
 
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + pDTO.email(), "true");
+                .set("email:verified:" + pDTO.email(), "Y");
 
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
@@ -199,7 +201,7 @@ class UserRegServiceTest {
                 .build();
 
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + pDTO.email(), "true");
+                .set("email:verified:" + pDTO.email(), "Y");
 
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
@@ -238,7 +240,7 @@ class UserRegServiceTest {
                 .build();
 
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + pDTO.email(), "true");
+                .set("email:verified:" + pDTO.email(), "Y");
 
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
@@ -295,7 +297,7 @@ class UserRegServiceTest {
                 .build();
 
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + pDTO.email(), "true");
+                .set("email:verified:" + pDTO.email(), "Y");
 
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);
@@ -314,8 +316,8 @@ class UserRegServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("회원 가입 성공 - 재직이력 한개 포함")
-    void insertUser_OneEmployment() throws Exception {
+    @DisplayName("회원 가입 성공 - 재직이력 두개 포함")
+    void insertUser_TwoEmployment() throws Exception {
         // given
         List<EmploymentRequestDTO> employments = new ArrayList<>();
         employments.add(
@@ -348,7 +350,7 @@ class UserRegServiceTest {
                 .build();
 
         stringRedisTemplate.opsForValue()
-                .set("email:verified:" + pDTO.email(), "true");
+                .set("email:verified:" + pDTO.email(), "Y");
 
         // when
         SignUpResponseDTO rDTO = userRegService.insertUser(pDTO);

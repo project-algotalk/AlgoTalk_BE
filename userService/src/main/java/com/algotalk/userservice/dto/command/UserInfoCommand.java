@@ -1,11 +1,9 @@
 package com.algotalk.userservice.dto.command;
 
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.List;
 
 /**
  * Service 계층에서 Controller로부터 전달받은 회원정보를 담는 DTO
