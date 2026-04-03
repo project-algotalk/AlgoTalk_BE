@@ -5,6 +5,7 @@ import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -52,7 +53,7 @@ public class UserRegController {
 
     // 아이디 중복 확인
     @PostMapping("reg/check/loginId")
-    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkLoginId Start!");
 
         log.info("SignUpRequestDTO : {}", pDTO);
@@ -66,7 +67,7 @@ public class UserRegController {
 
     // 이메일 중복 확인
     @PostMapping("reg/check/email")
-    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkEmail Start!");
 
         // 이메일 중복 확인 로직 처리
@@ -78,7 +79,7 @@ public class UserRegController {
 
     // 닉네임 중복 확인
     @PostMapping("reg/check/nickname")
-    public ResponseEntity<ApiResponse<Boolean>>  checkNickname(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkNickname Start!");
 
         // 닉네임 중복 확인 로직 처리
@@ -88,10 +89,9 @@ public class UserRegController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    // TODO - 이메일 인증번호 발송 로직 작성(이메일 인증번호 Redis 저장)
     // 이메일 인증번호 발송
     @PostMapping("reg/send/email-code")
-    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.sendEmailVerificationCode Start!");
         log.info("email: {}", pDTO.email());
 
@@ -102,10 +102,9 @@ public class UserRegController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
-    // TODO - 이메일 인증번호 확인 로직 작성(이메일 인증번호 Redis에서 조회 후 비교)
     // 이메일 인증번호 확인
     @PostMapping("reg/check/email-code")
-    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.verifyEmailCode Start!");
 
         // 이메일 인증번호 확인 로직 처리
@@ -117,7 +116,7 @@ public class UserRegController {
 
     // 회원가입
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<SignUpResponseDTO>> register(@RequestBody SignUpRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<SignUpResponseDTO>> register(@Valid @RequestBody SignUpRequestDTO pDTO) throws Exception {
         log.info("UserRegController.register Start!");
 
         // 회원가입 로직 처리

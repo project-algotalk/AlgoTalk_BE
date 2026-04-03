@@ -316,8 +316,8 @@ class UserRegServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("회원 가입 성공 - 재직이력 한개 포함")
-    void insertUser_OneEmployment() throws Exception {
+    @DisplayName("회원 가입 성공 - 재직이력 두개 포함")
+    void insertUser_TwoEmployment() throws Exception {
         // given
         List<EmploymentRequestDTO> employments = new ArrayList<>();
         employments.add(
