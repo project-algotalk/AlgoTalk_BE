@@ -1,6 +1,5 @@
 package com.algotalk.userservice.service;
 
-import com.algotalk.userservice.dto.request.EmailCheckRequestDTO;
 import com.algotalk.userservice.dto.request.EmailSendRequestDTO;
 import com.algotalk.userservice.dto.request.EmailVerifyRequestDTO;
 
