@@ -24,6 +24,7 @@ public class UserInfoCommand {
     private String profileImgUrl;
     private String addr1;
     private String addr2;
+    private String deletedYn;    // "Y"는 탈퇴, "N"은 회원
 
     // USER_CREDENTIAL
     private String loginId;

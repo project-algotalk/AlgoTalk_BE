@@ -44,10 +44,10 @@
             keyProperty="userId">
         INSERT INTO USERS (
                                NICKNAME, NAME, EMAIL,
-                               PROFILE_IMG_URL, ADDR1, ADDR2, DELETED_AT,
+                               PROFILE_IMG_URL, ADDR1, ADDR2,
                                CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
         VALUES (#{nickname}, #{name}, #{email},
-                #{profileImgUrl}, #{addr1}, #{addr2}, NULL,
+                #{profileImgUrl}, #{addr1}, #{addr2},
                 NOW(), 'system', NOW(), 'system')
     </insert>
 

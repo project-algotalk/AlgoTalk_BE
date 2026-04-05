@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IUserLoginMapper">
+
+    <!--
+        loginId로 인증 정보 조회
+        - USERS: userId, nickname, email, deletedYn
+        - USER_CREDENTIAL: loginId, password
+        - USER_ROLES: role
+      -->
+    <select id="getUserAuthInfo"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            U.user_id AS userId,
+            U.nickname AS nickname,
+            U.email AS email,
+            U.deleted_yn AS deletedYn,
+            UC.login_id AS loginId,
+            UC.password AS password,
+            UR.role AS role
+        FROM USER_CREDENTIAL UC
+        JOIN USERS U ON UC.user_id = U.user_id
+        JOIN USER_ROLES UR ON U.user_id = UR.user_id
+        WHERE 1=1
+        AND UC.login_id = #{loginId}
+        AND U.DELETED_YN = 'N'
+    </select>
+
+</mapper>
