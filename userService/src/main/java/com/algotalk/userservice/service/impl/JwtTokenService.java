@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -20,9 +21,9 @@ public class JwtTokenService implements IJwtTokenService {
     private final JwtDecoder jwtDecoder;
 
     @Value("${jwt.access.token.expiration}")
-    private long accessTokenExpiration; // 15분
+    private long accessTokenExpiration; // ms
     @Value("${jwt.refresh.token.expiration}")
-    private long refreshTokenExpiration; // 7일
+    private long refreshTokenExpiration; // ms
 
     @Override
     public String generateAccessToken(UserInfoCommand pCommand) throws Exception {
@@ -41,6 +42,7 @@ public class JwtTokenService implements IJwtTokenService {
                 .subject(String.valueOf(pCommand.getUserId())) // 사용자 ID를 subject로 설정
                 .claim("loginId", pCommand.getLoginId()) // 추가 클레임
                 .claim("nickname", pCommand.getNickname()) // 추가 클레임
+                .claim("roles", List.of(pCommand.getRole())) // 토큰 권한 정보
                 .build();
 
         String accessToken = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -17,7 +19,7 @@ public class RefreshTokenService implements IRefreshTokenService {
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
 
     @Value("${jwt.refresh.token.expiration}")
-    private long refreshTokenExpiration; // 7일 (밀리초 단위)
+    private long refreshTokenExpiration; // ms
 
     @Override
     public void saveRefreshToken(Long userId, String refreshToken) throws Exception {
@@ -26,9 +28,8 @@ public class RefreshTokenService implements IRefreshTokenService {
         String key = REFRESH_TOKEN_KEY_PREFIX + userId;
         // ms -> 초 변환
         long expirationSeconds = refreshTokenExpiration / 1000;
-        stringRedisTemplate.opsForValue().set(key, refreshToken, expirationSeconds);
-        log.info("Refresh Token 저장: key={}, value={}, expiration={}초",
-                key, refreshToken, expirationSeconds);
+        stringRedisTemplate.opsForValue().set(key, refreshToken, expirationSeconds, TimeUnit.SECONDS);
+        log.info("Refresh Token 저장 완료: key={}", key);
 
         log.info("{}.saveFreshToken End!", this.getClass().getName());
     }
@@ -39,7 +40,7 @@ public class RefreshTokenService implements IRefreshTokenService {
 
         String key = REFRESH_TOKEN_KEY_PREFIX + userId;
         String refreshToken = stringRedisTemplate.opsForValue().get(key);
-        log.info("Refresh Token 조회: key={}, value={}", key, refreshToken);
+        log.info("Refresh Token 조회: key={}", key);
 
         log.info("{}.getRefreshToken End!", this.getClass().getName());
         return refreshToken;
@@ -62,8 +63,7 @@ public class RefreshTokenService implements IRefreshTokenService {
 
         String key = REFRESH_TOKEN_KEY_PREFIX + userId;
         String storedToken = stringRedisTemplate.opsForValue().get(key);
-        log.info("Refresh Token 검증: key={}, storedToken={}, providedToken={}",
-                key, storedToken, refreshToken);
+        log.info("Refresh Token 검증: key={},", key);
         if(storedToken != null && storedToken.equals(refreshToken)) {
             log.info("Refresh Token 검증 성공!");
             return true;
