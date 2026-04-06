@@ -217,8 +217,8 @@ class UserRegControllerTest {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
                 .loginId("ctrltest02")
-                .password("Test1234!")
-                .passwordConfirm("Test1234!")
+                .password("test1234!")
+                .passwordConfirm("test1234!")
                 .email("ctrl02@algotalk.com")
                 .name("홍길동")
                 .nickname("길동이2")

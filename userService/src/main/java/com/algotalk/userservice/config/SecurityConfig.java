@@ -46,7 +46,6 @@ public class SecurityConfig {
                                 "/user/v1/signup",
                                 "/user/v1/login",
                                 "/user/v1/token/refresh",
-                                "/user/v1/logout/current",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
