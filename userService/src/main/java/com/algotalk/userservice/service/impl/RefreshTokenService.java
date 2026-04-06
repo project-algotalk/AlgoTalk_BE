@@ -31,7 +31,7 @@ public class RefreshTokenService implements IRefreshTokenService {
         stringRedisTemplate.opsForValue().set(key, refreshToken, expirationSeconds, TimeUnit.SECONDS);
         log.info("Refresh Token 저장 완료: key={}", key);
 
-        log.info("{}.saveFreshToken End!", this.getClass().getName());
+        log.info("{}.saveRefreshToken End!", this.getClass().getName());
     }
 
     @Override
