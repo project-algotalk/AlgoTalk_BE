@@ -17,12 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Controller
+@Service
 @RequiredArgsConstructor
 public class UserLoginService implements IUserLoginService {
 
