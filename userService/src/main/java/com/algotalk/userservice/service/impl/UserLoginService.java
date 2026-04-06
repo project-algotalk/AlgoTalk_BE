@@ -154,7 +154,6 @@ public class UserLoginService implements IUserLoginService {
         Cookie cookie = new Cookie(refreshCookieName, refreshToken);
         cookie.setHttpOnly(true);           // 항상 true (XSS 방어)
         cookie.setSecure(cookieSecure);     // yml 설정값 사용
-        cookie.setSecure(true);
         cookie.setPath("/");
         cookie.setMaxAge((int)(refreshTokenExpiration / 1000)); // ms -> 초 변환
         response.addCookie(cookie);
