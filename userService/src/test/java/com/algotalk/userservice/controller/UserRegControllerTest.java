@@ -216,10 +216,10 @@ class UserRegControllerTest {
     void signUp_withTargetJobs() throws Exception {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("ctrltest02")
                 .password("test1234!")
                 .passwordConfirm("test1234!")
-                .email("test@algotalk.com")
+                .email("ctrl02@algotalk.com")
                 .name("홍길동")
                 .nickname("길동이2")
                 .targetJobs(List.of(
