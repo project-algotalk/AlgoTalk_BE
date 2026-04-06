@@ -221,7 +221,7 @@ class UserRegControllerTest {
                 .passwordConfirm("test1234!")
                 .email("ctrl02@algotalk.com")
                 .name("홍길동")
-                .nickname("길동이2")
+                .nickname("둘리")
                 .targetJobs(List.of(
                         TargetJobRequestDTO.builder()
                                 .categoryId(101L)

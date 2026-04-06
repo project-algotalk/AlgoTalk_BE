@@ -1,6 +1,7 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
+import com.algotalk.userservice.service.IJwtTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,9 @@ public class UserLoginControllerTest {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @Autowired
+    IJwtTokenService jwtTokenService;
 
     @Autowired
     StringRedisTemplate stringRedisTemplate;
@@ -58,7 +62,14 @@ public class UserLoginControllerTest {
         log.info("응답 Body: {}", result.getResponse().getContentAsString());
 
         // cleanup
-        stringRedisTemplate.delete("refresh:*");
+        // readTree: JSON을 자바 객체가 아닌 트리 구조로 읽고 특정 값을 접근할 수 있게 해줌
+        String accessToken = objectMapper.readTree(
+                result.getResponse().getContentAsString())
+                .path("data").path("accessToken").asText();
+
+        long userId = jwtTokenService.getUserIdFromToken(accessToken);
+
+        stringRedisTemplate.delete("refresh:" + userId);
     }
 
     @Test

@@ -43,7 +43,7 @@ class UserRegMapperTest {
         UserInfoCommand cmd = UserInfoCommand.builder()
                 .nickname("테스트유저")
                 .name("홍길동")
-                .email("test@algotalk.com")
+                .email("reg01@algotalk.com")
                 .addr1("서울시 강서구")
                 .addr2("8316")
                 .build();
@@ -62,8 +62,8 @@ class UserRegMapperTest {
         UserInfoCommand cmd = UserInfoCommand.builder()
                 .nickname("플로우테스트")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email("reg02@algotalk.com")
+                .loginId("reg02")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();
@@ -91,10 +91,10 @@ class UserRegMapperTest {
 
         // 1. 기본 정보
         UserInfoCommand cmd = UserInfoCommand.builder()
-                .nickname("플로우테스트")
+                .nickname("플로우테스트1")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email("reg03@algotalk.com")
+                .loginId("reg03")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();

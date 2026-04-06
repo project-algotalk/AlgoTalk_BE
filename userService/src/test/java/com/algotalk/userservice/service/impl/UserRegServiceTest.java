@@ -65,8 +65,8 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("플로우테스트")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("existing_id")
+                .email("reg01@algotalk.com")
+                .loginId("reg01")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();
@@ -76,7 +76,7 @@ class UserRegServiceTest {
         assertThat(oldCmd.getUserId()).isNotNull();
 
         LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
-                .loginId("existing_id") // 실제 DB에 존재하는 loginId로 변경
+                .loginId("reg01") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
         // when, then
@@ -93,8 +93,8 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email("reg02@algotalk.com")
+                .loginId("reg02")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();
@@ -136,8 +136,8 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email("reg03@algotalk.com")
+                .loginId("reg03")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
                 .build();
@@ -146,7 +146,7 @@ class UserRegServiceTest {
         assertThat(oldCmd.getUserId()).isNotNull();
 
         EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
-                .email("test@algotalk.com") // 실제 DB에 존재하는 email
+                .email("reg03@algotalk.com") // 실제 DB에 존재하는 email
                 .build();
 
         // when, then
@@ -161,10 +161,10 @@ class UserRegServiceTest {
     void insertUser_baseOnly() throws Exception {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg04")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg04@algotalk.com")
                 .name("홍길동")
                 .nickname("둘리")
                 .build();
@@ -191,10 +191,10 @@ class UserRegServiceTest {
     void insertUser_nicknameResolvedFromName() throws Exception {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg05")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg05@algotalk.com")
                 .name("홍길동")
                 .build();
 
@@ -229,10 +229,10 @@ class UserRegServiceTest {
         );
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg06")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg06@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -286,10 +286,10 @@ class UserRegServiceTest {
         );
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg07")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg07@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -339,10 +339,10 @@ class UserRegServiceTest {
 
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg08")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg08@algotalk.com")
                 .name("홍길동")
                 .employments(employments)
                 .build();

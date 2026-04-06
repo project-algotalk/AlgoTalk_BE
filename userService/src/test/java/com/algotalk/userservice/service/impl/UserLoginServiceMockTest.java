@@ -50,8 +50,6 @@ class UserLoginServiceMockTest {
 
     @BeforeEach
     void setUp() {
-        IUserLoginService userService = new UserLoginService(userLoginMapper, jwtTokenService, refreshTokenService, passwordEncoder, stringRedisTemplate);
-
         // 내부 상태 설정(내부의 private 필드에 직접 값 주입)
         ReflectionTestUtils.setField(userLoginService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(userLoginService, "cookieSecure", false);
