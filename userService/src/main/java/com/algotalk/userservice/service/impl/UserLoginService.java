@@ -138,7 +138,7 @@ public class UserLoginService implements IUserLoginService {
         // 실패 횟수 증가
         Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
         log.info("로그인 실패 횟수 증가: key={}, failCount={}", failKey, failCount);
-        stringRedisTemplate.expire(failKey, accessTokenExpiration, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(failKey, lockMinutes, TimeUnit.MINUTES);
 
         // 최대 실패 횟수 초과 시 계정 잠금
         if(failCount != null && failCount >= maxFailCount) {
