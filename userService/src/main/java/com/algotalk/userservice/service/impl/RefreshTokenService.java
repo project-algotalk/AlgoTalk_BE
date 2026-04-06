@@ -63,7 +63,7 @@ public class RefreshTokenService implements IRefreshTokenService {
 
         String key = REFRESH_TOKEN_KEY_PREFIX + userId;
         String storedToken = stringRedisTemplate.opsForValue().get(key);
-        log.info("Refresh Token 검증: key={},", key);
+        log.info("Refresh Token 검증: key={}", key);
         if(storedToken != null && storedToken.equals(refreshToken)) {
             log.info("Refresh Token 검증 성공!");
             return true;
