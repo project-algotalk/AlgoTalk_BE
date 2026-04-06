@@ -17,7 +17,7 @@ public class RefreshTokenService implements IRefreshTokenService {
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
 
     @Value("${jwt.refresh.token.expiration}")
-    private long refreshTokenExpiration; // 7일 (초 단위)
+    private long refreshTokenExpiration; // 7일 (밀리초 단위)
 
     @Override
     public void saveRefreshToken(Long userId, String refreshToken) throws Exception {
