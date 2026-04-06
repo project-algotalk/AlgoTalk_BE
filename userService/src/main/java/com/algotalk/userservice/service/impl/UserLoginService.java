@@ -72,8 +72,8 @@ public class UserLoginService implements IUserLoginService {
                         .build()
         );
 
-        // 3. 사용자 존재 여부 및 탈퇴 계정 확인
-        if (rCommand == null || rCommand.getDeletedYn().equals("Y")) {
+        // 3. 사용자 존재 여부 확인
+        if (rCommand == null) {
             log.warn("사용자 정보가 존재하지 않습니다: loginId={}", loginId);
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
