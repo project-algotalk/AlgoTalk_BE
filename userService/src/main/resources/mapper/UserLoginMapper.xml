@@ -24,8 +24,15 @@
         JOIN USERS U ON UC.user_id = U.user_id
         JOIN USER_ROLES UR ON U.user_id = UR.user_id
         WHERE 1=1
-        AND UC.login_id = #{loginId}
         AND U.DELETED_YN = 'N'
+        <choose>
+            <when test="loginId != null and loginId != ''">
+                AND UC.login_id = #{loginId}
+            </when>
+            <when test="userId != null">
+                AND U.user_id = #{userId}
+            </when>
+        </choose>
     </select>
 
 </mapper>

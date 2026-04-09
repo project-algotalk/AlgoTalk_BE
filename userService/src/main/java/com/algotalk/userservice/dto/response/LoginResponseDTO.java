@@ -20,6 +20,6 @@ public record LoginResponseDTO(
         List<String> roles,
         String tokenType, // "Bearer"
         String accessToken,
-        long expiresIn
+        Long expiresIn
 ) {
 }

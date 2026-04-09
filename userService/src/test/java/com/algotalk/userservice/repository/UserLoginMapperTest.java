@@ -24,12 +24,28 @@ class UserLoginMapperTest {
     @Autowired
     IUserLoginMapper userLoginMapper;
 
+    @Autowired
+    IUserRegMapper userRegMapper;
+
     @Test
+    @Transactional
     @DisplayName("존재하는 loginId 조회 - 인증 정보 반환")
     void getUserAuthInfo_exists() throws Exception {
-        // given: DB에 실제 존재하는 loginId
+        // given
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트1")
+                .name("테스트")
+                .email("login01@algotalk.com")
+                .loginId("login01")
+                .password("$2a$10$hashedpassword")
+                .role("ROLE_USER")
+                .build();
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
         UserInfoCommand pCommand = UserInfoCommand.builder()
-                .loginId("test")
+                .loginId("login01")
                 .build();
 
         // when
@@ -62,5 +78,44 @@ class UserLoginMapperTest {
 
         // then
         assertThat(result).isNull();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("userId로 조회 - 인증 정보 반환")
+    void getUserAuthInfo_userIdExists() throws Exception {
+        // given
+        // given
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트3")
+                .name("테스트")
+                .email("login03@algotalk.com")
+                .loginId("login03")
+                .password("$2a$10$hashedpassword")
+                .role("ROLE_USER")
+                .build();
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        Long userId = cmd.getUserId();
+        log.info("userId: {}", userId);
+
+        UserInfoCommand pCommand = UserInfoCommand.builder()
+                .userId(userId)
+                .build();
+
+        // when
+        UserInfoCommand result = userLoginMapper.getUserAuthInfo(pCommand);
+
+        log.info("userId: {}", result.getLoginId());
+        log.info("loginId: {}", result.getLoginId());
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isNotNull();
+        assertThat(result.getPassword()).isNotNull();
+        assertThat(result.getRole()).isEqualTo("ROLE_USER");
+        assertThat(result.getDeletedYn()).isEqualTo("N");
     }
 }

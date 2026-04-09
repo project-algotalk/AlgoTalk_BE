@@ -70,4 +70,22 @@ public class RefreshTokenService implements IRefreshTokenService {
         }
         return false;
     }
+
+    @Override
+    public void rotateRefreshToken(Long userId, String newRefreshToken) throws Exception {
+        log.info("{}.rotateRefreshToken Start!", this.getClass().getName());
+
+        String key = REFRESH_TOKEN_KEY_PREFIX + userId;
+        // ms -> 초 변환
+        long expirationSeconds = refreshTokenExpiration / 1000;
+
+        // 기존 Refresh Token 삭제
+        stringRedisTemplate.delete(key);
+
+        // 새로운 Refresh Token 저장
+        stringRedisTemplate.opsForValue().set(key, newRefreshToken, expirationSeconds, TimeUnit.SECONDS);
+        log.info("Refresh Token RTR 완료: key={}", key);
+
+        log.info("{}.rotateRefreshToken End!", this.getClass().getName());
+    }
 }

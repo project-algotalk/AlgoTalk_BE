@@ -15,4 +15,5 @@ public interface IUserLoginMapper {
      * @throws Exception
      */
     UserInfoCommand getUserAuthInfo(UserInfoCommand pCommand) throws Exception;
+
 }
