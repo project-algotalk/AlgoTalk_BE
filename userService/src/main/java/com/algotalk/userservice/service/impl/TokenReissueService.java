@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import static com.algotalk.userservice.exception.UserErrorCode.*;
+import static com.algotalk.userservice.exception.UserErrorCode.REFRESH_TOKEN_NOT_FOUND;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,7 +49,7 @@ public class TokenReissueService implements ITokenReissueService {
         if(refreshToken == null) {
             // Refresh Token이 없는 경우 예외 처리
             log.warn("Refresh Token이 쿠키에 존재하지 않습니다.");
-            throw new BusinessException(UserErrorCode.REFRESH_TOKEN_NOT_FOUND);
+            throw new BusinessException(REFRESH_TOKEN_NOT_FOUND);
         }
 
         // 2. Refresh Token Decode해서 userId 추출
@@ -63,12 +66,12 @@ public class TokenReissueService implements ITokenReissueService {
 
         if(stored == null) {
             log.warn("Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않습니다: userId={}", userId);
-            throw new BusinessException(UserErrorCode.TOKEN_EXPIRED);
+            throw new BusinessException(TOKEN_EXPIRED);
         }
 
         if(!stored.equals(refreshToken)) {
             log.warn("제공된 Refresh Token이 Redis에 저장된 토큰과 일치하지 않습니다: userId={}", userId);
-            throw new BusinessException(UserErrorCode.TOKEN_MISMATCH);
+            throw new BusinessException(TOKEN_MISMATCH);
         }
         
         // 4. DB에서 사용자 정보를 조회(Access Token 재발급할 때 필요)
@@ -78,7 +81,7 @@ public class TokenReissueService implements ITokenReissueService {
 
         if(rCommand == null) {
             log.warn("해당 userId로 사용자 정보를 DB에서 조회할 수 없습니다: userId={}", userId);
-            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
+            throw new BusinessException(USER_NOT_FOUND);
         }
 
         // 5. 새로운 Access Token과 Refresh Token 생성
