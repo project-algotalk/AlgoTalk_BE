@@ -32,6 +32,9 @@
             <when test="userId != null">
                 AND U.user_id = #{userId}
             </when>
+            <otherwise>
+                AND 1 = 0
+            </otherwise>
         </choose>
     </select>
 
