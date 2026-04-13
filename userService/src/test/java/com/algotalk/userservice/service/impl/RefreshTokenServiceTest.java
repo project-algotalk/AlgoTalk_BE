@@ -8,7 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import static org.assertj.core.api.AssertionsForClassTypes.*;
+import java.util.UUID;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @Slf4j
@@ -23,7 +24,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 저장 - Redis에 정상 저장 확인")
     void saveRefreshToken_success() throws Exception {
         // given
-        Long userId = System.currentTimeMillis(); // 고유한 userId 생성
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
         // when
@@ -41,7 +42,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 조회 - 존재하지 않는 경우 null 반환")
     public void getRefreshToken_notExists() throws Exception {
         // given
-        Long userId = System.currentTimeMillis();
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
 
         // when
         String stored = refreshTokenService.getRefreshToken(userId);
@@ -54,7 +55,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 검증 - 일치하는 경우 true 반환")
     public void validateRefreshToken_match() throws Exception {
         // given
-        Long userId = System.currentTimeMillis();
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
         refreshTokenService.saveRefreshToken(userId, refreshToken);
@@ -73,7 +74,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 검증 - 불일치하는 경우 false 반환")
     public void validateRefreshToken_mismatch() throws Exception {
         // given
-        Long userId = System.currentTimeMillis();
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
         refreshTokenService.saveRefreshToken(userId, refreshToken);
@@ -92,7 +93,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 교체(RTR) - 기존 토큰 삭제 후 새 토큰 저장")
     public void rotateRefreshToken() throws Exception {
         // given
-        Long userId = System.currentTimeMillis();
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String oldToken = "old.refresh";
         String newToken = "new.refresh";
 
@@ -114,7 +115,7 @@ class RefreshTokenServiceTest {
     @DisplayName("RefreshToken 삭제 - 삭제 후 null 반환")
     public void deleteRefreshToken() throws Exception {
         // given
-        Long userId = System.currentTimeMillis();
+        Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
         refreshTokenService.saveRefreshToken(userId, refreshToken);

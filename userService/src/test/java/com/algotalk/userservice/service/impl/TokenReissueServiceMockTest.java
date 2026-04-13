@@ -22,7 +22,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -80,6 +79,8 @@ class TokenReissueServiceMockTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.accessToken()).isEqualTo("new.access.token");
+        assertThat(result.tokenType()).isEqualTo("Bearer");
+        assertThat(result.expiresIn()).isEqualTo(600L);
 
         verify(refreshTokenService).rotateRefreshToken(1L, "new.refresh.token");
 
