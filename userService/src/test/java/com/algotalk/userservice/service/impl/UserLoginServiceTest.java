@@ -153,8 +153,9 @@ public class UserLoginServiceTest {
                     assertThat(be.getErrorCode()).isEqualTo(UserErrorCode.LOGIN_FAIL);
                 });
 
-        // cleanup: 실패 횟수 초기화
+        // cleanup: 실패 횟수 및 이메일 인증 상태 초기화
         stringRedisTemplate.delete("login:fail:" + loginId);
+        stringRedisTemplate.delete("email:verified:" + email);
     }
 
     @Test
