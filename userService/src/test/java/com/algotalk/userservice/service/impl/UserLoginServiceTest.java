@@ -2,10 +2,12 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
+import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.response.LoginResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
+import com.algotalk.userservice.service.IUserRegService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -27,24 +30,44 @@ public class UserLoginServiceTest {
     IUserLoginService userLoginService;
 
     @Autowired
+    IUserRegService userRegService;
+
+    @Autowired
     IJwtTokenService jwtTokenService;
 
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
-    // DB에 실제 존재하는 계정
-    private static final String EXIST_LOGIN_ID = "test";
-    private static final String EXIST_PASSWORD = "test1234!";
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
 
     @Test
-    @DisplayName("로그인 성공 - Access Token 반환 및 RT Cookie 설정")
+    @Transactional
+    @DisplayName("로그인 성공 - Access Token 반환 및 RefreshToken Cookie 설정")
     void login_success() throws Exception {
         // given
+        String loginId = "test" + System.currentTimeMillis();
+        String password = "test1234!";
+        String email = loginId + "@algotalk.com";
+        String name = "테스터";
+
+        // 이메일 인증
+        stringRedisTemplate.opsForValue().set("email:verified:" + email, "Y");
+
+        // 회원가입
+        userRegService.insertUser(
+                SignUpRequestDTO.builder()
+                .loginId(loginId)
+                .password(password)
+                .passwordConfirm(password)
+                .name(name)
+                .email(email)
+                .build());
+
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
-                .loginId(EXIST_LOGIN_ID)
-                .password(EXIST_PASSWORD)
+                .loginId(loginId)
+                .password(password)
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
@@ -72,9 +95,12 @@ public class UserLoginServiceTest {
     @DisplayName("로그인 실패 - 존재하지 않는 loginId")
     void login_fail_userNotFound() {
         // given
+        String loginId = "notExistId" + System.currentTimeMillis();
+        String password = "test1234!";
+
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
-                .loginId("not_exist_id_xyz")
-                .password("Test1234!")
+                .loginId(loginId)
+                .password(password)
                 .build();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -88,13 +114,35 @@ public class UserLoginServiceTest {
     }
 
     @Test
+    @Transactional
     @DisplayName("로그인 실패 - 비밀번호 불일치")
-    void login_fail_wrongPassword() {
+    void login_fail_wrongPassword() throws Exception {
         // given
+        String loginId = "test" + System.currentTimeMillis();
+        String password = "test1234!";
+        String email = loginId + "@algotalk.com";
+        String name = "테스터";
+
+        String wrongPassword = "WrongPassword!";
+
+        // 이메일 인증
+        stringRedisTemplate.opsForValue().set("email:verified:" + email, "Y");
+
+        // 회원가입
+        userRegService.insertUser(
+                SignUpRequestDTO.builder()
+                        .loginId(loginId)
+                        .password(password)
+                        .passwordConfirm(password)
+                        .name(name)
+                        .email(email)
+                        .build());
+
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
-                .loginId(EXIST_LOGIN_ID)
-                .password("WrongPassword!")
+                .loginId(loginId)
+                .password(wrongPassword)
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when & then
@@ -106,19 +154,23 @@ public class UserLoginServiceTest {
                 });
 
         // cleanup: 실패 횟수 초기화
-        stringRedisTemplate.delete("login:fail:" + EXIST_LOGIN_ID);
+        stringRedisTemplate.delete("login:fail:" + loginId);
     }
 
     @Test
     @DisplayName("로그인 실패 - 계정 잠금 (5회 실패)")
     void login_fail_accountLocked() {
-        // given: 강제로 계정 잠금 상태 만들기
+        // given
+        String loginId = "test" + System.currentTimeMillis();
+        String password = "test1234!";
+
+        // 강제로 계정 잠금 상태 만들기
         stringRedisTemplate.opsForValue()
-                .set("login:lock:" + EXIST_LOGIN_ID, "locked");
+                .set("login:lock:" + loginId, "locked");
 
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
-                .loginId(EXIST_LOGIN_ID)
-                .password(EXIST_PASSWORD)
+                .loginId(loginId)
+                .password(password)
                 .build();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -131,19 +183,39 @@ public class UserLoginServiceTest {
                 });
 
         // cleanup
-        stringRedisTemplate.delete("login:lock:" + EXIST_LOGIN_ID);
+        stringRedisTemplate.delete("login:lock:" + loginId);
     }
 
     @Test
-    @DisplayName("로그아웃 - RT 삭제 및 Cookie 만료")
+    @Transactional
+    @DisplayName("로그아웃 - RefreshToken 삭제 및 Cookie 만료")
     void logout_success() throws Exception {
-        // given: 로그인해서 RT 저장
-        LoginRequestDTO loginDTO = LoginRequestDTO.builder()
-                .loginId(EXIST_LOGIN_ID)
-                .password(EXIST_PASSWORD)
+        // given
+        String loginId = "test" + System.currentTimeMillis();
+        String password = "test1234!";
+        String email = loginId + "@algotalk.com";
+        String name = "테스터";
+
+        // 이메일 인증
+        stringRedisTemplate.opsForValue().set("email:verified:" + email, "Y");
+
+        // 회원가입
+        userRegService.insertUser(
+                SignUpRequestDTO.builder()
+                        .loginId(loginId)
+                        .password(password)
+                        .passwordConfirm(password)
+                        .name(name)
+                        .email(email)
+                        .build());
+
+        LoginRequestDTO pDTO = LoginRequestDTO.builder()
+                .loginId(loginId)
+                .password(password)
                 .build();
+
         MockHttpServletResponse loginResponse = new MockHttpServletResponse();
-        LoginResponseDTO loginResult = userLoginService.login(loginDTO, loginResponse);
+        LoginResponseDTO loginResult = userLoginService.login(pDTO, loginResponse);
 
         // AT에서 실제 userId 추출
         Long userId = jwtTokenService.getUserIdFromToken(loginResult.accessToken());
