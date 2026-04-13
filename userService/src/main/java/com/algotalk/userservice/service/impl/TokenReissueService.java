@@ -40,6 +40,20 @@ public class TokenReissueService implements ITokenReissueService {
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration;
 
+    private boolean isTokenExpiredException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String simpleName = current.getClass().getSimpleName();
+            if ("ExpiredJwtException".equals(simpleName)
+                    || "TokenExpiredException".equals(simpleName)
+                    || "JwtValidationException".equals(simpleName)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
     @Override
     public TokenReissueResponseDTO reissueToken(HttpServletRequest request,
                                                 HttpServletResponse response) throws Exception {
@@ -57,8 +71,13 @@ public class TokenReissueService implements ITokenReissueService {
         try {
             userId = jwtTokenService.getUserIdFromToken(refreshToken);
             log.info("추출된 userId: {}", userId);
-        } catch(Exception e) {
-            throw new BusinessException(UserErrorCode.TOKEN_INVALID);
+        } catch (Exception e) {
+            if (isTokenExpiredException(e)) {
+                log.warn("만료된 Refresh Token입니다.", e);
+                throw new BusinessException(TOKEN_EXPIRED);
+            }
+            log.warn("유효하지 않은 Refresh Token입니다.", e);
+            throw new BusinessException(TOKEN_INVALID);
         }
 
         // 3. Redis에서 userId로 저장된 Refresh Token 조회 및 비교 검증(유효성 검증)
