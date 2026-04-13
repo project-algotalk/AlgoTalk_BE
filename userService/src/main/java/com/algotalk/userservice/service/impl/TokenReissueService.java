@@ -46,9 +46,9 @@ public class TokenReissueService implements ITokenReissueService {
 
         // 1. Cookie에서 Refresh Token 추출
         String refreshToken = extractRefreshTokenFromCookie(request);
-        if(refreshToken == null) {
-            // Refresh Token이 없는 경우 예외 처리
-            log.warn("Refresh Token이 쿠키에 존재하지 않습니다.");
+        if(refreshToken == null || refreshToken.isBlank()) {
+            // Refresh Token이 없거나 빈 값인 경우 예외 처리
+            log.warn("Refresh Token이 쿠키에 존재하지 않거나 비어 있습니다.");
             throw new BusinessException(REFRESH_TOKEN_NOT_FOUND);
         }
 
