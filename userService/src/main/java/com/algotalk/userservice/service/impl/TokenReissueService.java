@@ -14,6 +14,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
@@ -37,8 +39,12 @@ public class TokenReissueService implements ITokenReissueService {
     @Value("${cookie.secure}")
     private boolean cookieSecure;
 
+    @Value("${cookie.same-site}")
+    private String sameSite;
+
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration;
+
 
     private boolean isTokenExpiredException(Throwable throwable) {
         Throwable current = throwable;
@@ -149,12 +155,15 @@ public class TokenReissueService implements ITokenReissueService {
         log.info("{}.setRefreshTokenCookie Start!", this.getClass().getName());
 
         // 새로운 Refresh Token이 저장된 쿠키 생성 및 추가
-        Cookie cookie = new Cookie(refreshCookieName, refreshToken);
-        cookie.setHttpOnly(true);           // 항상 true (XSS 방어)
-        cookie.setSecure(cookieSecure);     // yml 설정값 사용
-        cookie.setPath("/");
-        cookie.setMaxAge((int)(refreshTokenExpiration / 1000)); // ms -> 초 변환
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(refreshCookieName, refreshToken)
+                .httpOnly(true) // 항상 true (XSS 방어)
+                .secure(cookieSecure) // yml 설정값 사용
+                .path("/")
+                .sameSite(sameSite) // yml 설정값 사용
+                .maxAge(refreshTokenExpiration / 1000) // ms -> 초 변환
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         log.info("{}.setRefreshTokenCookie End!", this.getClass().getName());
     }

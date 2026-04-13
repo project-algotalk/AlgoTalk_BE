@@ -19,7 +19,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Slf4j
@@ -77,8 +76,9 @@ public class UserLoginControllerTest {
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.data.expiresIn").isNumber())
-                .andExpect(cookie().exists("RefreshToken"))
-                .andExpect(cookie().httpOnly("RefreshToken", true))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("RefreshToken=")))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("SameSite")))
                 .andReturn();
 
         log.info("응답 Body: {}", result.getResponse().getContentAsString());
@@ -262,7 +262,7 @@ public class UserLoginControllerTest {
         mockMvc.perform(post("/user/v1/logout")
                         .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(cookie().maxAge("RefreshToken", 0));
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
 
         // cleanup
         stringRedisTemplate.delete("login:lock:" + loginId);

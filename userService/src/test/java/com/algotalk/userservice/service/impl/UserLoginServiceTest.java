@@ -82,8 +82,13 @@ public class UserLoginServiceTest {
         assertThat(rDTO.accessToken()).isNotNull();
         assertThat(rDTO.tokenType()).isEqualTo("Bearer");
         assertThat(rDTO.expiresIn()).isPositive();
-        assertThat(response.getCookie("RefreshToken")).isNotNull();
-        assertThat(response.getCookie("RefreshToken").isHttpOnly()).isTrue();
+
+        String setCookie = response.getHeader("Set-Cookie");
+
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("RefreshToken=");
+        assertThat(setCookie).contains("HttpOnly");
+        assertThat(setCookie).contains("SameSite");
 
         // cleanup: AT에서 실제 userId 추출 후 Redis 정리
         Long userId = jwtTokenService.getUserIdFromToken(rDTO.accessToken());
@@ -232,7 +237,10 @@ public class UserLoginServiceTest {
         assertThat(savedRT).isNull();
 
         // then: Cookie 만료 확인
-        assertThat(logoutResponse.getCookie("RefreshToken")).isNotNull();
-        assertThat(logoutResponse.getCookie("RefreshToken").getMaxAge()).isZero();
+        String setCookie = logoutResponse.getHeader("Set-Cookie");
+
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("RefreshToken=");
+        assertThat(setCookie).contains("Max-Age=0");
     }
 }
