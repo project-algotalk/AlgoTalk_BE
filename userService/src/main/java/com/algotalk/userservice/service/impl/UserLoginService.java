@@ -10,7 +10,6 @@ import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
 import com.algotalk.userservice.util.CmmUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -94,6 +94,7 @@ public class UserLoginServiceTest {
         Long userId = jwtTokenService.getUserIdFromToken(rDTO.accessToken());
         log.info("cleanup - userId: {}", userId);
         stringRedisTemplate.delete(REFRESH_TOKEN_KEY_PREFIX + userId);
+        stringRedisTemplate.delete("email:verified:" + email);
     }
 
     @Test
@@ -242,5 +243,8 @@ public class UserLoginServiceTest {
         assertThat(setCookie).isNotNull();
         assertThat(setCookie).contains("RefreshToken=");
         assertThat(setCookie).contains("Max-Age=0");
+
+        // cleanup
+        stringRedisTemplate.delete("email:verified:" + email);
     }
 }
