@@ -62,7 +62,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/loginId")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -94,7 +93,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/loginId")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError())
         ;
     }
@@ -111,7 +109,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/loginId")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError())
         ;
     }
@@ -129,7 +126,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/nickname")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -160,7 +156,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/nickname")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError())
         ;
     }
@@ -178,7 +173,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/email")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -204,7 +198,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").isNotEmpty())
                 .andExpect(jsonPath("$.data.nickname").value("길동이"));
@@ -238,7 +231,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").isNotEmpty())
                 .andExpect(jsonPath("$.data.targetJobs[0]").value("백엔드 개발자"));
@@ -259,7 +251,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError());
     }
 
@@ -275,7 +266,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError());
     }
 }

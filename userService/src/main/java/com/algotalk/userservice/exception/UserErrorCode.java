@@ -16,9 +16,10 @@ public enum UserErrorCode implements ErrorCode {
     USER_NOT_FOUND          ("USER_004", "존재하지 않는 사용자입니다.", HttpStatus.UNAUTHORIZED),
 
     // 토큰
-    TOKEN_EXPIRED           ("AUTH_001", "액세스 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
-    TOKEN_INVALID           ("AUTH_002", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED),
-    REFRESH_TOKEN_NOT_FOUND ("AUTH_003", "리프레시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_EXPIRED           ("AUTH_001", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_INVALID           ("AUTH_002", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED), // 토큰 형식 자체가 문제가 있을 때(위변조, 구조 오류 등)
+    REFRESH_TOKEN_NOT_FOUND ("AUTH_003", "토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_MISMATCH          ("AUTH_004", "토큰이 일치하지 않습니다.", HttpStatus.UNAUTHORIZED), // DB에 저장된 Refresh Token과 비교해서 일치하지 않을 때
 
     // 회원가입
     DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 로그인 아이디입니다.", HttpStatus.CONFLICT),

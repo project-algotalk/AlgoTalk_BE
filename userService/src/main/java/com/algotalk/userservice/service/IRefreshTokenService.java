@@ -34,4 +34,11 @@ public interface IRefreshTokenService {
      */
     boolean validateRefreshToken(Long userId, String refreshToken) throws Exception;
 
+    /**
+     * Refresh Toke 교체 (RTR)
+     * @param userId
+     * @param newRefreshToken
+     * @throws Exception
+     */
+    void rotateRefreshToken(Long userId, String newRefreshToken) throws Exception;
 }

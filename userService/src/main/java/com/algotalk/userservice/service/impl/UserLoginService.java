@@ -10,12 +10,13 @@ import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
 import com.algotalk.userservice.util.CmmUtil;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -49,6 +50,9 @@ public class UserLoginService implements IUserLoginService {
 
     @Value("${cookie.secure}")
     private boolean cookieSecure;
+
+    @Value("${cookie.same-site}")
+    private String sameSite;
 
     @Value("${jwt.refresh.token.expiration}")
     private long refreshTokenExpiration;
@@ -151,12 +155,15 @@ public class UserLoginService implements IUserLoginService {
     private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
         log.info("{}.setRefreshTokenCookie Start!", this.getClass().getName());
 
-        Cookie cookie = new Cookie(refreshCookieName, refreshToken);
-        cookie.setHttpOnly(true);           // 항상 true (XSS 방어)
-        cookie.setSecure(cookieSecure);     // yml 설정값 사용
-        cookie.setPath("/");
-        cookie.setMaxAge((int)(refreshTokenExpiration / 1000)); // ms -> 초 변환
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(refreshCookieName, refreshToken)
+                .httpOnly(true) // 항상 true (XSS 방어)
+                .secure(cookieSecure) // yml 설정값 사용
+                .path("/")
+                .sameSite(sameSite) // yml 설정값 사용
+                .maxAge(refreshTokenExpiration / 1000) // ms -> 초 변환
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         log.info("{}.setRefreshTokenCookie End!", this.getClass().getName());
     }
@@ -164,12 +171,15 @@ public class UserLoginService implements IUserLoginService {
     private void expireRefreshTokenCookie(HttpServletResponse response) {
         log.info("{}.expireRefreshTokenCookie Start!", this.getClass().getName());
 
-        Cookie cookie = new Cookie(refreshCookieName, null);
-        cookie.setHttpOnly(true);           // 항상 true (XSS 방어)
-        cookie.setSecure(cookieSecure);     // yml 설정값 사용
-        cookie.setPath("/");
-        cookie.setMaxAge(0); // 쿠키 즉시 삭제
-        response.addCookie(cookie);
+        ResponseCookie cookie = ResponseCookie.from(refreshCookieName, "")
+                .httpOnly(true) // 항상 true (XSS 방어)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         log.info("{}.expireRefreshTokenCookie End!", this.getClass().getName());
     }

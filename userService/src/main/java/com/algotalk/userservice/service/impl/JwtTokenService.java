@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -67,6 +68,7 @@ public class JwtTokenService implements IJwtTokenService {
                 .expiresAt(expiry) // 만료 시간
                 .subject(String.valueOf(pCommand.getUserId())) // 사용자 ID를 subject로 설정
                 .claim("userId", pCommand.getUserId()) // 토큰 권한 정보
+                .claim("jti", UUID.randomUUID().toString())
                 .build();
 
         String refreshToken = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
