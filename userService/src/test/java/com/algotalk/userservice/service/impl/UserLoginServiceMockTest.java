@@ -53,6 +53,7 @@ class UserLoginServiceMockTest {
         // 내부 상태 설정(내부의 private 필드에 직접 값 주입)
         ReflectionTestUtils.setField(userLoginService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(userLoginService, "cookieSecure", false);
+        ReflectionTestUtils.setField(userLoginService, "sameSite", "Lax");
         ReflectionTestUtils.setField(userLoginService, "maxFailCount", 5);
         ReflectionTestUtils.setField(userLoginService, "lockMinutes", 1L);
         ReflectionTestUtils.setField(userLoginService, "accessTokenExpiration", 600000L);
@@ -92,7 +93,14 @@ class UserLoginServiceMockTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.accessToken()).isEqualTo("mock.access.token");
         assertThat(rDTO.tokenType()).isEqualTo("Bearer");
-        verify(refreshTokenService).saveRefreshToken(anyLong(), anyString());
+        verify(refreshTokenService).saveRefreshToken(anyLong(), anyString()); // RefreshToken 저장 여부 검증
+
+        String setCookie = response.getHeader("Set-Cookie");
+
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("RefreshToken=");
+        assertThat(setCookie).contains("HttpOnly");
+        assertThat(setCookie).contains("SameSite=Lax");
     }
 
     @Test
@@ -175,7 +183,13 @@ class UserLoginServiceMockTest {
 
         // then
         verify(refreshTokenService).deleteRefreshToken(1L);
-        assertThat(response.getCookie("RefreshToken")).isNotNull();
-        assertThat(response.getCookie("RefreshToken").getMaxAge()).isZero();
+
+        String setCookie = response.getHeader("Set-Cookie");
+
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("RefreshToken=");
+        assertThat(setCookie).contains("HttpOnly");
+        assertThat(setCookie).contains("SameSite=Lax");
+        assertThat(setCookie).contains("Max-Age=0");
     }
 }

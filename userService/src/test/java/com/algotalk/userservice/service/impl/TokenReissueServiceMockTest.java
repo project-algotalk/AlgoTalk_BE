@@ -43,9 +43,10 @@ class TokenReissueServiceMockTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(tokenReissueService, "refreshCookieName", "RefreshToken");
+        ReflectionTestUtils.setField(tokenReissueService, "cookieSecure", false);
+        ReflectionTestUtils.setField(tokenReissueService, "sameSite", "Lax");
         ReflectionTestUtils.setField(tokenReissueService, "accessTokenExpiration", 600000L);
         ReflectionTestUtils.setField(tokenReissueService, "refreshTokenExpiration", 604800000L);
-        ReflectionTestUtils.setField(tokenReissueService, "cookieSecure", false);
     }
 
     @Test
@@ -84,9 +85,12 @@ class TokenReissueServiceMockTest {
 
         verify(refreshTokenService).rotateRefreshToken(1L, "new.refresh.token");
 
-        Cookie cookie = response.getCookie("RefreshToken");
-        assertThat(cookie).isNotNull();
-        assertThat(cookie.getValue()).isEqualTo("new.refresh.token");
+        String setCookie = response.getHeader("Set-Cookie");
+
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("RefreshToken=new.refresh.token");
+        assertThat(setCookie).contains("HttpOnly");
+        assertThat(setCookie).contains("SameSite=Lax");
     }
 
     @Test
