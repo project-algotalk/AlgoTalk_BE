@@ -148,7 +148,7 @@ class TokenReissueServiceMockTest {
     }
 
     @Test
-    @DisplayName("RefreshToken deocde 실패")
+    @DisplayName("RefreshToken decode 실패")
     public void reissue_fail_decodeError() throws Exception {
         // given
         String refreshToken = "malformed.token";
