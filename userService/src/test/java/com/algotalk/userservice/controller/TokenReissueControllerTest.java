@@ -68,7 +68,7 @@ class TokenReissueControllerTest {
     }
 
     @Test
-    @DisplayName("토큰 불일치")
+    @DisplayName("유효하지 않은 토큰")
     void reissue_fail_invalid() throws Exception {
         // given
         given(tokenReissueService.reissueToken(any(), any()))
@@ -90,5 +90,16 @@ class TokenReissueControllerTest {
         mockMvc.perform(post("/user/v1/token/reissue"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(TOKEN_EXPIRED.getCode()));
+    }
+
+    @Test
+    @DisplayName("저장된 토큰과 불일치")
+    void reissue_fail_mismatch() throws Exception {
+        given(tokenReissueService.reissueToken(any(), any()))
+                .willThrow(new BusinessException(TOKEN_MISMATCH));
+
+        mockMvc.perform(post("/user/v1/token/reissue"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(TOKEN_MISMATCH.getCode()));
     }
 }

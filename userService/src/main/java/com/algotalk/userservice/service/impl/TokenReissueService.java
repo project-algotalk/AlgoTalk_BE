@@ -3,7 +3,6 @@ package com.algotalk.userservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.response.TokenReissueResponseDTO;
-import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
@@ -19,7 +18,6 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
-import static com.algotalk.userservice.exception.UserErrorCode.REFRESH_TOKEN_NOT_FOUND;
 
 @Slf4j
 @Service
@@ -45,21 +43,6 @@ public class TokenReissueService implements ITokenReissueService {
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration;
 
-
-    private boolean isTokenExpiredException(Throwable throwable) {
-        Throwable current = throwable;
-        while (current != null) {
-            String simpleName = current.getClass().getSimpleName();
-            if ("ExpiredJwtException".equals(simpleName)
-                    || "TokenExpiredException".equals(simpleName)
-                    || "JwtValidationException".equals(simpleName)) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
-    }
-
     @Override
     public TokenReissueResponseDTO reissueToken(HttpServletRequest request,
                                                 HttpServletResponse response) throws Exception {
@@ -78,22 +61,21 @@ public class TokenReissueService implements ITokenReissueService {
             userId = jwtTokenService.getUserIdFromToken(refreshToken);
             log.info("추출된 userId: {}", userId);
         } catch (Exception e) {
-            if (isTokenExpiredException(e)) {
-                log.warn("만료된 Refresh Token입니다.", e);
-                throw new BusinessException(TOKEN_EXPIRED);
-            }
-            log.warn("유효하지 않은 Refresh Token입니다.", e);
+            // decode 실패 시 예외 처리 (유효하지 않은 토큰)
+            log.warn("유효하지 않은 Refresh Token입니다. class={}", e.getClass().getSimpleName());
             throw new BusinessException(TOKEN_INVALID);
         }
 
         // 3. Redis에서 userId로 저장된 Refresh Token 조회 및 비교 검증(유효성 검증)
         String stored = refreshTokenService.getRefreshToken(userId);
 
+        // Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않는 경우(null) 예외 처리
         if(stored == null) {
             log.warn("Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않습니다: userId={}", userId);
             throw new BusinessException(TOKEN_EXPIRED);
         }
 
+        // Redis에 저장된 Refresh Token과 제공된 Refresh Token이 일치하지 않는 경우 예외 처리
         if(!stored.equals(refreshToken)) {
             log.warn("제공된 Refresh Token이 Redis에 저장된 토큰과 일치하지 않습니다: userId={}", userId);
             throw new BusinessException(TOKEN_MISMATCH);
@@ -116,9 +98,10 @@ public class TokenReissueService implements ITokenReissueService {
         // 6. Redis에 새로운 Refresh Token 저장
         refreshTokenService.rotateRefreshToken(userId, newRefreshToken);
 
-        // 7. 새로운 Access Token과 Refresh Token을 Cookie에 담아서 Response에 추가
+        // 7. 새로운 Refresh Token을 Cookie에 담아서 Response에 추가
         setRefreshTokenCookie(newRefreshToken, response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
 
+        // 8. Access Token을 Response DTO로 반환
         TokenReissueResponseDTO rDTO = TokenReissueResponseDTO.builder()
                 .accessToken(newAccessToken)
                 .tokenType("Bearer")
@@ -140,7 +123,7 @@ public class TokenReissueService implements ITokenReissueService {
         // 2. 해당 쿠키가 존재하면 쿠키의 값을 반환(Refresh Token)
         Cookie[] cookies = request.getCookies();
         for (Cookie cookie : cookies) {
-            if(cookie.getName().equals(refreshCookieName)) {
+            if(refreshCookieName.equals(cookie.getName())) {
                log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
                return  cookie.getValue();
             }
