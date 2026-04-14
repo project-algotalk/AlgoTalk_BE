@@ -1,6 +1,5 @@
 package com.algotalk.userservice.controller;
 
-
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.service.IJwtTokenService;
@@ -45,11 +44,35 @@ class AuthFlowControllerTest {
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
+    private String getSetCookieHeader(MvcResult result, String cookieName) {
+        String setCookieHeader = result.getResponse().getHeaders("Set-Cookie").stream()
+                .filter(header -> header.startsWith(cookieName + "="))
+                .findFirst()
+                .orElseThrow(
+                        () -> new AssertionError("Set-Cookie 헤더에서 쿠키를 찾을 수 없습니다.")
+                );
+
+        return setCookieHeader;
+    }
+
+    private String getSetCookieValue(MvcResult result, String cookieName) {
+        String setCookieHeader = getSetCookieHeader(result, cookieName);
+
+        String prefix = cookieName + "=";
+        int startIndex = prefix.length();
+        int endIndex = setCookieHeader.indexOf(";");
+
+        if(endIndex < 0) {
+            endIndex = setCookieHeader.length();
+        }
+
+        return setCookieHeader.substring(startIndex, endIndex);
+    }
+
     @Test
     @Transactional
     @DisplayName("인증 전체 흐름 테스트 - 회원가입, 로그인, 재발급, 로그아웃")
     void auth_flow_full() throws Exception {
-
         // given
         String loginId = "test" + System.currentTimeMillis();
         String password = "test1234!";
@@ -89,8 +112,7 @@ class AuthFlowControllerTest {
         String accessToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
                 .path("data").path("accessToken").asText();
 
-        String refreshToken = loginResult.getResponse()
-                .getCookie(refreshCookieName).getValue();
+        String refreshToken = getSetCookieValue(loginResult, refreshCookieName);
 
         // 재발급
         MvcResult reissueResult = mockMvc.perform(post("/user/v1/token/reissue")
@@ -102,17 +124,19 @@ class AuthFlowControllerTest {
         String newAccessToken = objectMapper.readTree(reissueResult.getResponse().getContentAsString())
                 .path("data").path("accessToken").asText();
 
-        String newRefreshToken = reissueResult.getResponse()
-                .getCookie(refreshCookieName).getValue();
+        String newRefreshToken = getSetCookieValue(reissueResult, refreshCookieName);
 
         // 핵심 검증 (RTR)
         assertThat(newRefreshToken).isNotEqualTo(refreshToken);
 
         // 로그아웃
-        mockMvc.perform(post("/user/v1/logout")
+        MvcResult logoutResult = mockMvc.perform(post("/user/v1/logout")
                         .header("Authorization", "Bearer " + newAccessToken))
                 .andExpect(status().isOk())
-                .andExpect(cookie().maxAge(refreshCookieName, 0));
+                .andReturn();
+
+        String logoutSetCookieHeader = getSetCookieHeader(logoutResult, refreshCookieName);
+        assertThat(logoutSetCookieHeader).contains("Max-Age=0");
 
         // cleanup
         stringRedisTemplate.delete("email:verified:" + email);
