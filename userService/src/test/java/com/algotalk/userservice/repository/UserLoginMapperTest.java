@@ -1,9 +1,6 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
-import com.algotalk.userservice.dto.response.ExistsResponseDTO;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
-import static java.time.LocalDate.of;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-@Slf4j
 @SpringBootTest
 @ActiveProfiles("local")
 class UserLoginMapperTest {
@@ -32,33 +26,36 @@ class UserLoginMapperTest {
     @DisplayName("존재하는 loginId 조회 - 인증 정보 반환")
     void getUserAuthInfo_exists() throws Exception {
         // given
+        String loginId = "login01";
+        String name = "테스트";
+        String nickname = "테스트1";
+        String email = loginId + "@algotalk.com";
+        String password = "$2a$10$hashedpassword";
+        String role = "ROLE_USER";
+
         UserInfoCommand cmd = UserInfoCommand.builder()
-                .nickname("테스트1")
-                .name("테스트")
-                .email("login01@algotalk.com")
-                .loginId("login01")
-                .password("$2a$10$hashedpassword")
-                .role("ROLE_USER")
+                .nickname(nickname)
+                .name(name)
+                .email(email)
+                .loginId(loginId)
+                .password(password)
+                .role(role)
                 .build();
         userRegMapper.insertUser(cmd);
         userRegMapper.insertUserCredential(cmd);
         userRegMapper.insertUserRoles(cmd);
 
         UserInfoCommand pCommand = UserInfoCommand.builder()
-                .loginId("login01")
+                .loginId(loginId)
                 .build();
 
         // when
         UserInfoCommand result = userLoginMapper.getUserAuthInfo(pCommand);
 
-        log.info("userId: {}", result.getUserId());
-        log.info("nickname: {}", result.getNickname());
-        log.info("role: {}", result.getRole());
-        log.info("deletedYn: {}", result.getDeletedYn());
-
         // then
         assertThat(result).isNotNull();
         assertThat(result.getUserId()).isNotNull();
+        assertThat(result.getLoginId()).isNotNull();
         assertThat(result.getPassword()).isNotNull();
         assertThat(result.getRole()).isEqualTo("ROLE_USER");
         assertThat(result.getDeletedYn()).isEqualTo("N");
@@ -74,7 +71,6 @@ class UserLoginMapperTest {
 
         // when
         UserInfoCommand result = userLoginMapper.getUserAuthInfo(pCommand);
-        log.info("조회 결과: {}", result);
 
         // then
         assertThat(result).isNull();
@@ -85,21 +81,26 @@ class UserLoginMapperTest {
     @DisplayName("userId로 조회 - 인증 정보 반환")
     void getUserAuthInfo_userIdExists() throws Exception {
         // given
-        // given
+        String loginId = "login03";
+        String name = "테스트";
+        String nickname = "테스트3";
+        String email = loginId + "@algotalk.com";
+        String password = "$2a$10$hashedpassword";
+        String role = "ROLE_USER";
+
         UserInfoCommand cmd = UserInfoCommand.builder()
-                .nickname("테스트3")
-                .name("테스트")
-                .email("login03@algotalk.com")
-                .loginId("login03")
-                .password("$2a$10$hashedpassword")
-                .role("ROLE_USER")
+                .nickname(nickname)
+                .name(name)
+                .email(email)
+                .loginId(loginId)
+                .password(password)
+                .role(role)
                 .build();
         userRegMapper.insertUser(cmd);
         userRegMapper.insertUserCredential(cmd);
         userRegMapper.insertUserRoles(cmd);
 
         Long userId = cmd.getUserId();
-        log.info("userId: {}", userId);
 
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 .userId(userId)
@@ -108,12 +109,10 @@ class UserLoginMapperTest {
         // when
         UserInfoCommand result = userLoginMapper.getUserAuthInfo(pCommand);
 
-        log.info("userId: {}", result.getLoginId());
-        log.info("loginId: {}", result.getLoginId());
-
         // then
         assertThat(result).isNotNull();
         assertThat(result.getUserId()).isNotNull();
+        assertThat(result.getLoginId()).isNotNull();
         assertThat(result.getPassword()).isNotNull();
         assertThat(result.getRole()).isEqualTo("ROLE_USER");
         assertThat(result.getDeletedYn()).isEqualTo("N");
