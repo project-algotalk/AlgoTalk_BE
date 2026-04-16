@@ -19,7 +19,7 @@ public class JwtConfig {
     @Bean
     public ReactiveJwtDecoder reactiveJwtDecoder() {
         byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-        SecretKey secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
-        return NimbusReactiveJwtDecoder.withSecretKey(secretKey).build();
+        SecretKey signingKey = new SecretKeySpec(keyBytes, "HmacSHA256");
+        return NimbusReactiveJwtDecoder.withSecretKey(signingKey).build();
     }
 }
