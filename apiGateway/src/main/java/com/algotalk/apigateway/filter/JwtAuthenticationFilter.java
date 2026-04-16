@@ -90,8 +90,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     // 5. Header에 인증정보 추가
                     ServerHttpRequest mutateRequest = exchange.getRequest().mutate()
                             .headers(headers -> {
-                                    headers.add("X-User-Id", userId);
-                                    headers.add("X-User-Role", role);
+                                headers.remove("X-User-Id");
+                                headers.remove("X-User-Role");
+                                headers.set("X-User-Id", userId);
+                                headers.set("X-User-Role", role);
                             })
                             .build();
 
