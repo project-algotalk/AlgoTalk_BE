@@ -64,7 +64,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // permitAll 경로는 토큰 검증 없이 바로 다음 필터로 넘김
         if(isPermitAll(path)) {
             log.info("인증 제외 경로 :{}", path);
-            return chain.filter(exchange);
+
+            // 스푸핑 방지 위해 인증 제외 경로라도 X-User-Id, X-User-Role 헤더 제거
+            ServerHttpRequest request = exchange.getRequest().mutate()
+                    .headers(headers -> {
+                        headers.remove("X-User-Id");
+                        headers.remove("X-User-Role");
+                    })
+                    .build();
+
+            return chain.filter(exchange.mutate().request(request).build());
         }
 
         // 그 외 경로는 JWT 검증
