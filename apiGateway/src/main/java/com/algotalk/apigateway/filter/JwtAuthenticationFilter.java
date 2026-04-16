@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -63,7 +62,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
         // permitAll 경로는 토큰 검증 없이 바로 다음 필터로 넘김
         if(isPermitAll(path)) {
-            log.info("인증 제외 경로 :{}", path);
+            log.debug("인증 제외 경로 :{}", path);
 
             // 스푸핑 방지 위해 인증 제외 경로라도 X-User-Id, X-User-Role 헤더 제거
             ServerHttpRequest request = exchange.getRequest().mutate()
@@ -113,7 +112,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         role = "";
                     }
 
-                    log.info("JWT 검증 성공 - userId: {}, role: {}", userId, role);
+                    log.debug("JWT 검증 성공 - userId: {}, role: {}", userId, role);
 
                     // 5. Header에 인증정보 추가
                     ServerHttpRequest mutateRequest = exchange.getRequest().mutate()
