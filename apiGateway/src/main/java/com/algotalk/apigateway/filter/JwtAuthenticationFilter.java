@@ -81,13 +81,22 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         String authHeader = exchange.getRequest()
                         .getHeaders().getFirst(AUTHORIZATION);
 
-        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("Authorization 헤더가 없거나 Bearer 토큰이 아님");
+        if(authHeader == null) {
+            log.warn("Authorization 헤더가 없음");
             return onError(exchange, TOKEN_NOT_FOUND);
+        }
+
+        if(!authHeader.startsWith("Bearer ")) {
+            log.warn("Authorization 헤더가 Bearer 토큰이 아님");
+            return onError(exchange, TOKEN_INVALID);
         }
 
         // 3. JwtDecoder로 토큰 검증
         String token = authHeader.substring(7); // "Bearer " 제거
+        if(token.isEmpty()) {
+            log.warn("Bearer 토큰이 비어 있음");
+            return onError(exchange, TOKEN_INVALID);
+        }
 
         // 검증 성공 시 SecurityContext에 인증 정보 저장 (필요 시)
         // 4. JwtDecoder로 토큰 검증
