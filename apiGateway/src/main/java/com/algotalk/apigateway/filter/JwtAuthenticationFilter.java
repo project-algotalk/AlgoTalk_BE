@@ -12,6 +12,8 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -99,7 +101,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
                     return chain.filter(exchange.mutate().request(mutateRequest).build());
                 })
-                .onErrorResume(Exception.class, e -> {
+                .onErrorResume(JwtException.class, e -> {
                     log.warn("JWT 검증 실패: {}", e.getMessage());
                     return onError(exchange, TOKEN_INVALID);
                 });
