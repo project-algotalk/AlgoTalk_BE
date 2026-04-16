@@ -78,17 +78,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     String userId = jwt.getSubject();
                     List<String> roles = jwt.getClaimAsStringList("roles");
 
-                    String role = "";
+                    String role;
                     if(roles != null && !roles.isEmpty()) {
                         role = String.join(",", roles);
+                    } else {
+                        role = "";
                     }
 
                     log.info("JWT 검증 성공 - userId: {}, role: {}", userId, role);
 
                     // 5. Header에 인증정보 추가
                     ServerHttpRequest mutateRequest = exchange.getRequest().mutate()
-                            .header("X-User-Id", userId)
-                            .header("X-User-Role", role)
+                            .headers(headers -> {
+                                    headers.add("X-User-Id", userId);
+                                    headers.add("X-User-Role", role);
+                            })
                             .build();
 
                     return chain.filter(exchange.mutate().request(mutateRequest).build());
@@ -101,8 +105,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // 인증 필터가 가정 먼저 실행되어야 해서 낮은 순자로 반환
-        return -100;
+        // 인증 필터가 가장 먼저 실행되어야 해서 낮은 순자로 반환
+        return Ordered.HIGHEST_PRECEDENCE;
     }
 
     // permitAll 확인
