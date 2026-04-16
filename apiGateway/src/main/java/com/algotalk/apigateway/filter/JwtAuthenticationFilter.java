@@ -22,8 +22,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-import static com.algotalk.apigateway.exception.GatewayErrorCode.TOKEN_INVALID;
-import static com.algotalk.apigateway.exception.GatewayErrorCode.TOKEN_NOT_FOUND;
+import static com.algotalk.apigateway.exception.GatewayErrorCode.*;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j
@@ -91,7 +90,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         // 3. JwtDecoder로 토큰 검증
-        String token = authHeader.substring(7); // "Bearer " 제거
+        String token = authHeader.substring(7).trim(); // "Bearer " 제거
         if(token.isEmpty()) {
             log.warn("Bearer 토큰이 비어 있음");
             return onError(exchange, TOKEN_INVALID);
@@ -128,6 +127,16 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 })
                 .onErrorResume(JwtException.class, e -> {
                     log.warn("JWT 검증 실패: {}", e.getMessage());
+                    String msg = e.getMessage();
+                    if(msg != null) {
+                        msg = msg.toLowerCase();
+
+                        if(msg.contains("expired")) {
+                            log.warn("JWT 토큰이 만료됨");
+                            return onError(exchange, TOKEN_EXPIRED);
+                        }
+                    }
+
                     return onError(exchange, TOKEN_INVALID);
                 });
     }
