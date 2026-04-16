@@ -22,7 +22,7 @@ import java.util.List;
 
 import static com.algotalk.apigateway.exception.GatewayErrorCode.TOKEN_INVALID;
 import static com.algotalk.apigateway.exception.GatewayErrorCode.TOKEN_NOT_FOUND;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j
 @Component
