@@ -56,7 +56,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // 1. 인증 필요 없는 경로 바로 다음 필터로 넘김
         // OPTIONS 요청은 인증 없이 허용 (CORS preflight 요청)
         if(exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
-            log.info("OPTIONS 요청은 인증 없이 허용");
+            log.debug("OPTIONS 요청은 인증 없이 허용");
             return chain.filter(exchange); // 인증 안하고 다음 필터로 넘김 (CORS preflight 요청 허용)
         }
 
