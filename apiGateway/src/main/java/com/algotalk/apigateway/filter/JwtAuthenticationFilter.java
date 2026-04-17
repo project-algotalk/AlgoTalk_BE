@@ -128,16 +128,6 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 })
                 .onErrorResume(JwtException.class, e -> {
                     log.warn("JWT 검증 실패: {}", e.getMessage());
-                    String msg = e.getMessage();
-                    if(msg != null) {
-                        msg = msg.toLowerCase();
-
-                        if(msg.contains("expired")) {
-                            log.warn("JWT 토큰이 만료됨");
-                            return onError(exchange, TOKEN_EXPIRED);
-                        }
-                    }
-
                     return onError(exchange, TOKEN_INVALID);
                 });
     }
