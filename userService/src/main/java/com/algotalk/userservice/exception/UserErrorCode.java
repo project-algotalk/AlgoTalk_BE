@@ -38,6 +38,12 @@ public enum UserErrorCode implements ErrorCode {
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_040", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
     LAST_USER_METHOD        ("USER_041", "마지막 로그인 수단은 해제할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    OAUTH2_PROVIDER_NOT_SUPPORTED("USER_042", "지원하지 않는 소셜 로그인입니다.", HttpStatus.BAD_REQUEST),
+    OAUTH2_LOGIN_FAILED          ("USER_043", "소셜 로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
+    OAUTH2_TEMP_TOKEN_NOT_FOUND  ("USER_044", "소셜 로그인 임시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_045", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+
+
 
     // 권한
     UNAUTHORIZED            ("USER_900", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),

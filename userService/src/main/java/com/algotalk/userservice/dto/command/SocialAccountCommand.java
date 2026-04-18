@@ -15,4 +15,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SocialAccountCommand {
+    private String provider;      // 소셜 제공자 (예: "KAKAO", "GOOGLE")
+    private String providerId;    // 소셜 제공자에서 발급한 고유 ID
+    private String email;         // 소셜 계정 이메일 (암호화한 이메일)
+    private String name;          // 소셜 계정 이름
 }
