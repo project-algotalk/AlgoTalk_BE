@@ -1,5 +1,8 @@
 package com.algotalk.userservice.config;
 
+import com.algotalk.userservice.auth.oauth2.CustomOAuth2UserService;
+import com.algotalk.userservice.auth.oauth2.OAuth2FailureHandler;
+import com.algotalk.userservice.auth.oauth2.OAuth2LoginSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +24,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -46,6 +53,8 @@ public class SecurityConfig {
                                 "/user/v1/signup",
                                 "/user/v1/login",
                                 "/user/v1/token/reissue",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
                                 "/actuator/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -54,6 +63,12 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler(oAuth2FailureHandler)
                 )
                 // Gateway에서 Cookie -> Authorization 헤더로 변환해서 넘겨주므로
                 // userService는 Bearer JWT 헤더만 검증하면 됨
