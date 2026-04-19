@@ -2,6 +2,10 @@ package com.algotalk.userservice.auth.oauth2;
 
 import com.algotalk.userservice.auth.oauth2.info.GoogleUserInfo;
 import com.algotalk.userservice.auth.oauth2.info.OAuth2UserInfo;
+import com.algotalk.userservice.dto.command.SocialAccountCommand;
+import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.repository.ISocialAccountMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -17,7 +21,10 @@ import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_PROVIDER_N
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
+
+    private final ISocialAccountMapper socialAccountMapper;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -37,23 +44,44 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 oAuth2UserInfo.getProvider(),
                 oAuth2UserInfo.getProviderId(),
                 oAuth2UserInfo.getEmail(),
-                oAuth2UserInfo.getName());
+                oAuth2UserInfo.getName()
+        );
 
         String nameAttributeKey = userRequest.getClientRegistration()
                 .getProviderDetails()
                 .getUserInfoEndpoint()
                 .getUserNameAttributeName();
 
+        // 4. provider + providerId로 DB 조회 -> 신규 회원이면 userId는 null, isNewUser는 true로 반환
+        UserInfoCommand existingUser = null;
+        boolean isNewUser = true; // 신규(true) or 기존(false)
+
+        try {
+            SocialAccountCommand pCommand = SocialAccountCommand.builder()
+                    .provider(oAuth2UserInfo.getProvider())
+                    .providerId(oAuth2UserInfo.getProviderId())
+                    .build();
+
+            existingUser = socialAccountMapper.findByProviderAndProviderId(pCommand);
+
+            if(existingUser != null) {
+                log.info("기존 회원 userId: {}", existingUser.getUserId());
+                isNewUser = false; // 기존 회원이면 false로 설정
+            }
+
+        } catch (Exception e) {
+            log.error("DB 조회 중 오류 발생: {}", e.getMessage());
+        }
+
         log.info("{}.loadUser()End!", this.getClass().getSimpleName());
 
-        // 4. DB 접근 업이 신규 회원으로 반환 진행
         return new CustomOAuth2User(
                 List.of(new SimpleGrantedAuthority("ROLE_USER")),
                 oAuth2User.getAttributes(),
                 nameAttributeKey,
                 oAuth2UserInfo,
-                null, // userId는 DB 접근 없이 신규 회원으로 반환하므로 null
-                true  // isNewUser는 항상 true로 설정
+                existingUser != null ? existingUser.getUserId() : null, // 기존 회원이면 userId, 신규 회원이면 null
+                isNewUser // 신규 회원 여부
         );
     }
 
