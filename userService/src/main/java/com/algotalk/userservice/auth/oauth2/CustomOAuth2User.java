@@ -15,6 +15,7 @@ public class CustomOAuth2User extends DefaultOAuth2User {
 
     private final OAuth2UserInfo oAuth2UserInfo; // OAuth2UserInfo 인터페이스를 구현한 클래스의 인스턴스를 저장
     private final Long userId; // 사용자 ID를 저장(신규 사용자면 null일 수 있음)
+    private final String nickname; // 사용자 닉네임을 저장
     private final boolean isNewUser; // 신규 사용자인지 여부를 저장
 
     public CustomOAuth2User(Collection<? extends GrantedAuthority> authorities,
@@ -22,10 +23,12 @@ public class CustomOAuth2User extends DefaultOAuth2User {
                             String nameAttributeKey,
                             OAuth2UserInfo oAuth2UserInfo,
                             Long userId,
+                            String nickname,
                             boolean isNewUser) {
         super(authorities, attributes, nameAttributeKey);
         this.oAuth2UserInfo = oAuth2UserInfo;
         this.userId = userId;
+        this.nickname = nickname;
         this.isNewUser = isNewUser;
     }
 
