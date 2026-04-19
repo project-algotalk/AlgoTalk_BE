@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/user/v1/reg/**",
                                 "/user/v1/signup",
+                                "/user/v1/signup/social",
                                 "/user/v1/login",
                                 "/user/v1/token/reissue",
                                 "/oauth2/**",

@@ -31,6 +31,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final IRefreshTokenService refreshTokenService;
     private final RedisTemplate<String, Object> redisTemplate;
 
+    private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
+
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration; // ms
 
@@ -84,8 +86,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         tempData.put("email",      oAuth2User.getOAuth2UserInfo().getEmail());
         tempData.put("name",       oAuth2User.getOAuth2UserInfo().getName());
 
-        redisTemplate.opsForHash().putAll("oauth2:temp:" + tempToken, tempData);
-        redisTemplate.expire("oauth2:temp:" + tempToken, TEMP_TOKEN_TTL, TimeUnit.SECONDS);
+        redisTemplate.opsForHash().putAll(TEMP_TOKEN_PREFIX + tempToken, tempData);
+        redisTemplate.expire(TEMP_TOKEN_PREFIX + tempToken, TEMP_TOKEN_TTL, TimeUnit.SECONDS);
+
+        log.info("임시 토큰 발급 완료: tempToken={}", tempToken);
 
         response.sendRedirect(frontendUrl + SIGNUP_PATH + "?tempToken=" + tempToken);
 

@@ -1,11 +1,13 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
+import com.algotalk.userservice.repository.ISocialAccountMapper;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
@@ -13,12 +15,16 @@ import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_TEMP_TOKEN_NOT_FOUND;
 
 @Slf4j
 @Service
@@ -27,8 +33,11 @@ public class UserRegService implements IUserRegService {
 
     private final IUserRegMapper userRegMapper;
     private final IEmailService emailService;
-
+    private final ISocialAccountMapper socialAccountMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final PasswordEncoder passwordEncoder;
+
+    private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
 
     @Override
     public boolean isLoginIdDuplicated(LoginIdCheckRequestDTO pDTO) throws Exception {
@@ -215,6 +224,115 @@ public class UserRegService implements IUserRegService {
 
         log.info("{}.insertUser End!", this.getClass().getName());
 
+        return rDTO;
+    }
+
+    @Transactional
+    @Override
+    public SignUpResponseDTO insertSocialUser(SocialSignUpRequestDTO pDTO) throws Exception {
+        log.info("{}.insertSocialUser Start!", this.getClass().getName());
+
+        // 1. Redis에서 임시 토큰 조회
+        String redisKey = TEMP_TOKEN_PREFIX + pDTO.tempToken();
+        Map<Object, Object> tempData = redisTemplate.opsForHash().entries(redisKey);
+
+        if(tempData == null || tempData.isEmpty()) {
+            log.error("임시 토큰이 존재하지 않습니다.");
+            throw new BusinessException(OAUTH2_TEMP_TOKEN_NOT_FOUND);
+        }
+
+        String provider = (String) tempData.get("provider");
+        String providerId = (String) tempData.get("providerId");
+        String email = (String) tempData.get("email");
+        String name = (String) tempData.get("name");
+
+        log.info("소셜 회원 정보: provider={}, providerId={}, email={}, name={}", provider, providerId, email, name);
+
+        // 2. USERS 테이블에 INSERT (userId 채번)
+        UserInfoCommand pCommand = UserInfoCommand.builder()
+                .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(email)))
+                .name(CmmUtil.nvl(name))
+                .nickname(CmmUtil.nvl(pDTO.resolvedNickname(name)))
+                .addr1(CmmUtil.nvl(pDTO.addr1()))
+                .addr2(CmmUtil.nvl(pDTO.addr2()))
+                .build();
+
+        userRegMapper.insertUser(pCommand);
+
+        // 3. USER_ROLES 테이블에 INSERT (userId, role)
+        userRegMapper.insertUserRoles(
+                UserInfoCommand.builder()
+                        .userId(pCommand.getUserId())
+                        .role("ROLE_USER") // 기본 역할로 "ROLE_USER" 저장
+                        .build()
+        );
+
+        // 4. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
+        SocialAccountCommand socialCommand = SocialAccountCommand.builder()
+                .userId(pCommand.getUserId())
+                .provider(provider)
+                .providerId(providerId)
+                .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(email)))
+                .build();
+
+        socialAccountMapper.insertSocialAccount(socialCommand);
+
+        // 5. USER_TARGET_JOB
+        // 5.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
+        List<TargetJobRequestDTO> targetJobs = pDTO.targetJobs();
+        List<String> targetJobNames = new ArrayList<>();
+        if(targetJobs != null && !targetJobs.isEmpty()) {
+            for(TargetJobRequestDTO job : targetJobs) {
+                log.info("목표 직무 정보: categoryId={}, categoryName={}, startDate={}, endDate={}",
+                        job.categoryId(), job.categoryName(), job.startDate(), job.endDate());
+
+                targetJobNames.add(job.categoryName());
+
+                userRegMapper.insertUserTargetJob(
+                        UserInfoCommand.builder()
+                                .userId(pCommand.getUserId())
+                                .categoryId(job.categoryId())
+                                .categoryName(job.categoryName())
+                                .startDate(job.startDate())
+                                .endDate(job.endDate())
+                                .build()
+                );
+            }
+        }
+
+        // 6. USER_EMPLOYMENT
+        // 6.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
+        List<EmploymentRequestDTO> employments = pDTO.employments();
+        if(employments != null && !employments.isEmpty()) {
+            for(EmploymentRequestDTO emp : employments) {
+                log.info("재직 이력 정보: categoryId={}, categoryName={}, companyName={}, startDate={}, endDate={}",
+                        emp.categoryId(), emp.categoryName(), emp.companyName(), emp.startDate(), emp.endDate());
+
+                userRegMapper.insertUserEmployment(
+                        UserInfoCommand.builder()
+                                .userId(pCommand.getUserId())
+                                .categoryId(emp.categoryId())
+                                .categoryName(emp.categoryName())
+                                .companyName(emp.companyName())
+                                .startDate(emp.startDate())
+                                .endDate(emp.endDate())
+                                .build()
+                );
+            }
+        }
+
+        // 7. Redis에 저장된 임시 토큰 삭제
+        redisTemplate.delete(redisKey);
+        log.info("임시 토큰 삭제: {}", redisKey);
+
+        SignUpResponseDTO rDTO = SignUpResponseDTO.builder()
+                .userId(pCommand.getUserId())
+                .email(EncryptUtil.decAES128CBC(pCommand.getEmail()))
+                .nickname(pCommand.getNickname())
+                .targetJobs(targetJobNames)
+                .build();
+
+        log.info("{}.insertSocialUser End!", this.getClass().getName());
         return rDTO;
     }
 }
