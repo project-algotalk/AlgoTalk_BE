@@ -3,7 +3,6 @@ package com.algotalk.userservice.auth.oauth2;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
-import com.algotalk.userservice.service.impl.JwtTokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

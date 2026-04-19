@@ -1,6 +1,5 @@
 package com.algotalk.userservice.auth.oauth2.info;
 
-import com.algotalk.userservice.domain.enums.LoginType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
