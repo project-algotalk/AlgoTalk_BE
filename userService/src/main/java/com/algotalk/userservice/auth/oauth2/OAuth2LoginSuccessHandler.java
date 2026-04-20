@@ -16,10 +16,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
 
 @Slf4j
 @Configuration
@@ -48,6 +52,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     private static final String SIGNUP_PATH = "/oauth2/signup";
     private static final String CALLBACK_PATH = "/oauth2/callback";
+    private static final String FAILURE_PATH = "/oauth2/failure";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -90,7 +95,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         log.info("임시 토큰 발급 완료: tempToken={}", tempToken);
 
-        response.sendRedirect(frontendUrl + SIGNUP_PATH + "?tempToken=" + tempToken);
+        String encodedToken = URLEncoder.encode(tempToken, StandardCharsets.UTF_8);
+        response.sendRedirect(frontendUrl + SIGNUP_PATH + "?tempToken=" + encodedToken);
 
         log.info("{}.handleNewUser() End!", this.getClass().getSimpleName());
     }
@@ -131,8 +137,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             response.sendRedirect(frontendUrl + CALLBACK_PATH + "#token=" + accessToken);
 
         } catch (Exception e) {
-            log.error("기존 소셜 회원 JWT 발급 중 오류: {}", e.getMessage());
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "로그인 처리 중 오류가 발생했습니다.");
+            log.error("기존 소셜 회원 JWT 발급 중 오류", e);
+
+            String errorCode = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
+            response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
         }
 
         log.info("{}.handleExistingUser() End!", this.getClass().getSimpleName());

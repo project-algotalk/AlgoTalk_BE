@@ -1,7 +1,6 @@
 package com.algotalk.userservice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
@@ -26,7 +25,7 @@ public record SocialSignUpRequestDTO(
         // 경력 정보
         List<EmploymentRequestDTO> employments
 ) {
-    // 닉네임 미입력 시 null 반환 (name은 Redis에서 가져오므로 Service에서 처리)
+    // 닉네임 미입력 시 name 반환 (name은 Redis에서 가져오므로 Service에서 처리)
     public String resolvedNickname(String name) {
         return (nickname == null || nickname.isBlank()) ? name : nickname;
     }

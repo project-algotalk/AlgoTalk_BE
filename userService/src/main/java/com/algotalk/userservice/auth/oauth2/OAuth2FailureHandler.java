@@ -31,8 +31,8 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         log.info("{}.onAuthenticationFailure() Start!", this.getClass().getSimpleName());
         log.warn("OAuth2 로그인 실패", exception);
 
-        String errorMessage = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
-        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorMessage);
+        String errorCode = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
+        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
 
         log.info("{}.onAuthenticationFailure() End!", this.getClass().getSimpleName());
     }
