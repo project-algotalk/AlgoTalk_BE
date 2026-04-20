@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_TEMP_TOKEN_NOT_FOUND;
 
@@ -341,14 +342,22 @@ public class UserRegService implements IUserRegService {
 
     // 소셜 회원가입 시 이름 초과 문제 해결을 위한 닉네임 처리 로직
     private String normalizedNickname(String nickname) {
-        if (nickname == null || nickname.isBlank()) return null;
+        if(nickname == null || nickname.isBlank()) {
+            nickname = "알고톡";
+        }
 
         String trimmed = nickname.trim();
 
-        if(trimmed.length() > MAX_NICKNAME_LENGTH) {
-            return trimmed.substring(0, MAX_NICKNAME_LENGTH);
+        if(trimmed.length() > (MAX_NICKNAME_LENGTH - 5)) {
+            trimmed = trimmed.substring(0, MAX_NICKNAME_LENGTH - 5);
         }
 
-        return trimmed;
+        // UUID를 활용하여 닉네임 뒤에 5자리 랜덤 문자열 추가 (중복 방지)
+        String uuidPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 5); // 5자리
+
+        return trimmed + uuidPart;
     }
 }

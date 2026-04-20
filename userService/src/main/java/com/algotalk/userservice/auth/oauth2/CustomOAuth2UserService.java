@@ -24,7 +24,6 @@ import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_PROVIDER_N
 @Service
 @RequiredArgsConstructor
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
-
     private final ISocialAccountMapper socialAccountMapper;
 
     @Override
