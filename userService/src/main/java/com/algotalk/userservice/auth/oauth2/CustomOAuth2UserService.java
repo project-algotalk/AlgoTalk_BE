@@ -76,14 +76,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         log.info("{}.loadUser()End!", this.getClass().getSimpleName());
 
         return new CustomOAuth2User(
-                List.of(new SimpleGrantedAuthority("ROLE_USER")),
-                oAuth2User.getAttributes(),
-                nameAttributeKey,
-                oAuth2UserInfo,
-                existingUser != null ? existingUser.getUserId() : null, // 기존 회원이면 userId, 신규 회원이면 null
-                existingUser != null ? existingUser.getNickname() : oAuth2UserInfo.getName(), // 기존 회원이면 DB에서 닉네임, 신규 회원이면 OAuth2UserInfo의 name
-                isNewUser // 신규 회원 여부
-        );
+                    List.of(new SimpleGrantedAuthority("ROLE_USER")),
+                    oAuth2User.getAttributes(),
+                    nameAttributeKey,
+                    oAuth2UserInfo,
+                    existingUser != null ? existingUser.getUserId() : null, // 기존 회원이면 userId, 신규 회원이면 null
+                    existingUser != null ? existingUser.getNickname() : oAuth2UserInfo.getName(), // 기존 회원이면 DB에서 닉네임, 신규 회원이면 OAuth2UserInfo의 name
+                    existingUser != null ? existingUser.getRole() : "ROLE_USER",
+                    isNewUser // 신규 회원 여부
+                );
     }
 
     // 제공자에 따라서 userInfo 객체 생성하는 메서드

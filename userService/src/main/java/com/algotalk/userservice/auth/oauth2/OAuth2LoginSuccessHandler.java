@@ -105,8 +105,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             UserInfoCommand userInfo = UserInfoCommand.builder()
                     .userId(oAuth2User.getUserId())
                     .loginId("") // 로그인 ID는 소셜 로그인에서는 사용하지 않으므로 빈 문자열로 설정
-                    .nickname(oAuth2User.getName()) // 닉네임은 OAuth2User의 name으로 설정
-                    .role("ROLE_USER")
+                    .nickname(oAuth2User.getNickname()) // 기존 회원은 DB에 저장된 닉네임 사용
+                    .role(oAuth2User.getRole()) // 기존 회원은 DB에 저장된 권한 사용
                     .build();
 
             String accessToken = jwtTokenService.generateAccessToken(userInfo);
