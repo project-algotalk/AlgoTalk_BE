@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_PROVIDER_NOT_SUPPORTED;
 
 @Slf4j
@@ -71,6 +72,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         } catch (Exception e) {
             log.error("DB 조회 중 오류 발생: {}", e.getMessage());
+            throw new OAuth2AuthenticationException(new OAuth2Error(
+                    OAUTH2_LOGIN_FAILED.getCode(),
+                    OAUTH2_LOGIN_FAILED.getMessage(),
+                    null
+            ));
         }
 
         log.info("{}.loadUser()End!", this.getClass().getSimpleName());
