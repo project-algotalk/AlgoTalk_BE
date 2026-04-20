@@ -6,21 +6,18 @@ import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUserRegService;
-import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.parameters.P;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static java.time.LocalDate.of;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class UserRegServiceTest {
 
     @Autowired
@@ -40,6 +37,9 @@ class UserRegServiceTest {
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Test
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
@@ -363,5 +363,87 @@ class UserRegServiceTest {
         stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
+    @Test
+    @Transactional
+    @DisplayName("소셜 회원가입 성공 - 기본 정보만")
+    void insertSocialUser_baseOnly() throws Exception {
+        // given
+        String tempToken = "test-temp-token-" + UUID.randomUUID();
+        String redisKey = "oauth2:temp:" + tempToken;
+
+        Map<String, String> tempData = new HashMap<>();
+        tempData.put("provider",   "GOOGLE");
+        tempData.put("providerId", "test-provider-id-001");
+        tempData.put("email",      "social01@gmail.com");
+        tempData.put("name",       "홍길동");
+        redisTemplate.opsForHash().putAll(redisKey, tempData);
+
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken(tempToken)
+                .build();
+
+        // when
+        SignUpResponseDTO rDTO = userRegService.insertSocialUser(pDTO);
+        log.info("소셜 회원가입 결과: {}", rDTO);
+
+        // then
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.userId()).isNotNull();
+        assertThat(rDTO.nickname()).isNotNull();
+        assertThat(rDTO.email()).isEqualTo("social01@gmail.com");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("소셜 회원가입 성공 - 목표직무 포함")
+    void insertSocialUser_withTargetJob() throws Exception {
+        // given
+        String tempToken = "test-temp-token-" + UUID.randomUUID();
+        String redisKey = "oauth2:temp:" + tempToken;
+
+        Map<String, String> tempData = new HashMap<>();
+        tempData.put("provider",   "GOOGLE");
+        tempData.put("providerId", "test-provider-id-002");
+        tempData.put("email",      "social02@gmail.com");
+        tempData.put("name",       "김철수");
+        redisTemplate.opsForHash().putAll(redisKey, tempData);
+
+        List<TargetJobRequestDTO> targetJobs = new ArrayList<>();
+        targetJobs.add(
+                TargetJobRequestDTO.builder()
+                        .categoryId(101L)
+                        .categoryName("백엔드 개발자")
+                        .startDate(of(2026, 3, 1))
+                        .build()
+        );
+
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken(tempToken)
+                .targetJobs(targetJobs)
+                .build();
+
+        // when
+        SignUpResponseDTO rDTO = userRegService.insertSocialUser(pDTO);
+        log.info("소셜 회원가입 결과: {}", rDTO);
+
+        // then
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.userId()).isNotNull();
+        assertThat(rDTO.targetJobs()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("소셜 회원가입 실패 - 임시 토큰 없음")
+    void insertSocialUser_tempTokenNotFound() {
+        // given
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken("not-exist-token")
+                .build();
+
+        // when, then
+        assertThrows(BusinessException.class, () -> {
+            userRegService.insertSocialUser(pDTO);
+        });
+    }
 
 }
