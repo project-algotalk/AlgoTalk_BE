@@ -38,6 +38,7 @@ public class UserRegService implements IUserRegService {
     private final PasswordEncoder passwordEncoder;
 
     private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
+    private static final int MAX_NICKNAME_LENGTH = 10;
 
     @Override
     public boolean isLoginIdDuplicated(LoginIdCheckRequestDTO pDTO) throws Exception {
@@ -252,7 +253,9 @@ public class UserRegService implements IUserRegService {
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(email)))
                 .name(CmmUtil.nvl(name))
-                .nickname(CmmUtil.nvl(pDTO.resolvedNickname(name)))
+                .nickname(CmmUtil.nvl(
+                        normalizedNickname(pDTO.resolvedNickname(name))
+                ))
                 .addr1(CmmUtil.nvl(pDTO.addr1()))
                 .addr2(CmmUtil.nvl(pDTO.addr2()))
                 .build();
@@ -334,5 +337,18 @@ public class UserRegService implements IUserRegService {
 
         log.info("{}.insertSocialUser End!", this.getClass().getName());
         return rDTO;
+    }
+
+    // 소셜 회원가입 시 이름 초과 문제 해결을 위한 닉네임 처리 로직
+    private String normalizedNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) return null;
+
+        String trimmed = nickname.trim();
+
+        if(trimmed.length() > MAX_NICKNAME_LENGTH) {
+            return trimmed.substring(0, MAX_NICKNAME_LENGTH);
+        }
+
+        return trimmed;
     }
 }
