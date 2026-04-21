@@ -42,7 +42,7 @@ public enum UserErrorCode implements ErrorCode {
     OAUTH2_LOGIN_FAILED          ("USER_043", "소셜 로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
     OAUTH2_TEMP_TOKEN_NOT_FOUND  ("USER_044", "소셜 로그인 임시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
     OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_045", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
-    SOCIAL_SIGN_UP_FAIL            ("USER_050", "소셜 회원가입에 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    SOCIAL_SIGN_UP_FAIL            ("USER_050", "소셜 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
 
 
