@@ -38,8 +38,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> PERMIT_ALL = List.of(
             "/api/user/v1/reg/**",
             "/api/user/v1/signup",
+            "/api/user/v1/signup/social",
             "/api/user/v1/login",
             "/api/user/v1/token/reissue",
+            "/api/oauth2/**",
+            "/api/login/oauth2/**",
             "/actuator/health",
             "/actuator/info",
             "/swagger-ui/**",
