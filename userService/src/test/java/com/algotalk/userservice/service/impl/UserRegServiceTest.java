@@ -430,6 +430,9 @@ class UserRegServiceTest {
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.userId()).isNotNull();
         assertThat(rDTO.targetJobs()).hasSize(1);
+
+        // cleanup
+        redisTemplate.delete(redisKey);
     }
 
     @Test
