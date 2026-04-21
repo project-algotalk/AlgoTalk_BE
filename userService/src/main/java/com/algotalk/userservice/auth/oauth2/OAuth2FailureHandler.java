@@ -38,7 +38,10 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
             errorCode = oAuth2AE.getError().getErrorCode();
         } else {
             errorCode = OAUTH2_LOGIN_FAILED.getCode();
-        }        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
+        }
+        // URL에 에러 코드 전달 (인코딩)
+        String encodedErrorCode = URLEncoder.encode(errorCode, StandardCharsets.UTF_8);
+        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + encodedErrorCode);
 
         log.info("{}.onAuthenticationFailure() End!", this.getClass().getSimpleName());
     }
