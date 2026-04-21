@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 
@@ -31,8 +32,13 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         log.info("{}.onAuthenticationFailure() Start!", this.getClass().getSimpleName());
         log.warn("OAuth2 로그인 실패", exception);
 
-        String errorCode = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
-        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
+        // OAuth2AuthenticationException이면 구체적인 에러 코드 추출해서 전달 할 수 있도록 함
+        String errorCode;
+        if (exception instanceof OAuth2AuthenticationException oAuth2AE) {
+            errorCode = oAuth2AE.getError().getErrorCode();
+        } else {
+            errorCode = OAUTH2_LOGIN_FAILED.getCode();
+        }        response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
 
         log.info("{}.onAuthenticationFailure() End!", this.getClass().getSimpleName());
     }

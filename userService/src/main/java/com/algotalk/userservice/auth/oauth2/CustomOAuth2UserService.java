@@ -70,7 +70,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             }
 
         } catch (Exception e) {
-            log.error("DB 조회 중 오류 발생: {}", e.getMessage());
+            log.error("DB 조회 중 오류 발생", e);
             throw new OAuth2AuthenticationException(new OAuth2Error(
                     OAUTH2_LOGIN_FAILED.getCode(),
                     OAUTH2_LOGIN_FAILED.getMessage(),

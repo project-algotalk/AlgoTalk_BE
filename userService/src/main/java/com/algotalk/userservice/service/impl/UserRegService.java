@@ -244,6 +244,12 @@ public class UserRegService implements IUserRegService {
             throw new BusinessException(OAUTH2_TEMP_TOKEN_NOT_FOUND);
         }
 
+        // 7. Redis에 저장된 임시 토큰 삭제
+        // 동시 요청이 오게되면 먼저 처리되는 요청이 토큰을 삭제하기 때문에
+        // 이후 요청은 토큰이 없어서 실패시키기 위함 -> 동시 요청 방지
+        redisTemplate.delete(redisKey);
+        log.info("임시 토큰 삭제: {}", redisKey);
+
         String provider = (String) tempData.get("provider");
         String providerId = (String) tempData.get("providerId");
         String email = (String) tempData.get("email");
@@ -330,10 +336,6 @@ public class UserRegService implements IUserRegService {
         } catch (Exception e) {
             log.error("소셜 회원가입 처리 중 오류 발생", e);
             throw new BusinessException(SOCIAL_SIGN_UP_FAIL);
-        } finally {
-            // 7. Redis에 저장된 임시 토큰 삭제
-            redisTemplate.delete(redisKey);
-            log.info("임시 토큰 삭제: {}", redisKey);
         }
 
         SignUpResponseDTO rDTO = SignUpResponseDTO.builder()
