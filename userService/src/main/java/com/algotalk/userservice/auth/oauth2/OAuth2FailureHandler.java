@@ -5,9 +5,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
 
 @Slf4j
-@Configuration
+@Component
 public class OAuth2FailureHandler implements AuthenticationFailureHandler {
 
     @Value("${app.frontend.url}")
