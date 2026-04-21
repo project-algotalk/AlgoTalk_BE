@@ -1,10 +1,7 @@
 package com.algotalk.userservice.service;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.EmailCheckRequestDTO;
-import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
-import com.algotalk.userservice.dto.request.NicknameCheckRequestDTO;
-import com.algotalk.userservice.dto.request.SignUpRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 
 public interface IUserRegService {
@@ -72,4 +69,12 @@ public interface IUserRegService {
      * @throws Exception
      */
     SignUpResponseDTO insertUser(SignUpRequestDTO pDTO) throws Exception;
+
+    /**
+     * 소셜 회원 가입 처리
+     * @param pDTO
+     * @return
+     * @throws Exception
+     */
+    SignUpResponseDTO insertSocialUser(SocialSignUpRequestDTO pDTO) throws Exception;
 }

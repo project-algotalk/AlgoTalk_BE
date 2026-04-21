@@ -125,4 +125,15 @@ public class UserRegController {
         log.info("UserRegController.register End!");
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }
+
+    // 소셜 회원가입
+    @PostMapping("/signup/social")
+    public ResponseEntity<ApiResponse<SignUpResponseDTO>> registerSocial(@Valid @RequestBody SocialSignUpRequestDTO pDTO) throws Exception {
+        log.info("{}.registerSocial Start!", this.getClass().getSimpleName());
+
+        SignUpResponseDTO rDTO = userRegService.insertSocialUser(pDTO);
+
+        log.info("{}.registerSocial End!", this.getClass().getSimpleName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO));
+    }
 }
