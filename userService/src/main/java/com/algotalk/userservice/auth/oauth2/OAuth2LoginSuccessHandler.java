@@ -68,7 +68,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 oAuth2User.getOAuth2UserInfo().getProvider(),
                 oAuth2User.getOAuth2UserInfo().getProviderId(),
                 oAuth2User.getOAuth2UserInfo().getEmail(),
-                oAuth2User.getName());
+                oAuth2User.getDisplayName());
 
         log.info("신규 회원 확인: {}", oAuth2User.isNewUser());
 
@@ -91,7 +91,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         tempData.put("provider",   oAuth2User.getOAuth2UserInfo().getProvider());
         tempData.put("providerId", oAuth2User.getOAuth2UserInfo().getProviderId());
         tempData.put("email",      oAuth2User.getOAuth2UserInfo().getEmail());
-        tempData.put("name",       oAuth2User.getOAuth2UserInfo().getName());
+        tempData.put("name",       oAuth2User.getOAuth2UserInfo().getDisplayName());
 
         redisTemplate.opsForHash().putAll(TEMP_TOKEN_PREFIX + tempToken, tempData);
         redisTemplate.expire(TEMP_TOKEN_PREFIX + tempToken, TEMP_TOKEN_TTL, TimeUnit.SECONDS);

@@ -36,11 +36,15 @@ public class CustomOAuth2User extends DefaultOAuth2User {
     @Override
     public Map<String, Object> getAttributes() {
         return oAuth2UserInfo.getAttributes();
-    }
 
+    }
     @Override
     public String getName() {
-        return oAuth2UserInfo.getName();
+        return super.getName(); // sub 또는 id 등 OAuth2 공급자에서 고유하게 식별하는 키 값을 반환
+    }
+
+    public String getDisplayName() {
+        return oAuth2UserInfo.getDisplayName(); // OAuth2 공급자에서 제공하는 사용자 이름을 반환
     }
 
     @Override

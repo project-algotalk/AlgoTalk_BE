@@ -44,7 +44,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 oAuth2UserInfo.getProvider(),
                 oAuth2UserInfo.getProviderId(),
                 oAuth2UserInfo.getEmail(),
-                oAuth2UserInfo.getName()
+                oAuth2UserInfo.getDisplayName()
         );
 
         String nameAttributeKey = userRequest.getClientRegistration()
@@ -90,7 +90,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             nameAttributeKey,
             oAuth2UserInfo,
             existingUser != null ? existingUser.getUserId() : null, // 기존 회원이면 userId, 신규 회원이면 null
-            existingUser != null ? existingUser.getNickname() : oAuth2UserInfo.getName(), // 기존 회원이면 DB에서 닉네임, 신규 회원이면 OAuth2UserInfo의 name
+            existingUser != null ? existingUser.getNickname() : oAuth2UserInfo.getDisplayName(), // 기존 회원이면 DB에서 닉네임, 신규 회원이면 OAuth2UserInfo의 name
             resolvedRole,
             isNewUser // 신규 회원 여부
         );
