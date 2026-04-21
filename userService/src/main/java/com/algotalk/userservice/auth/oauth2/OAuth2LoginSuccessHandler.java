@@ -39,6 +39,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration; // ms
 
+    @Value("${cookie.refresh.name}")
+    private String refreshTokenName;
+
     private static final long TEMP_TOKEN_TTL = 5 * 60L; // 5분
 
     @Value("${cookie.secure}")
@@ -122,7 +125,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             refreshTokenService.saveRefreshToken(oAuth2User.getUserId(), refreshToken);
 
             // RT Cookie 설정
-            ResponseCookie rtCookie = ResponseCookie.from("refreshToken", refreshToken)
+            ResponseCookie rtCookie = ResponseCookie.from(refreshTokenName, refreshToken)
                     .httpOnly(true)
                     .secure(cookieSecure) // yml 설정값 사용
                     .path("/")
