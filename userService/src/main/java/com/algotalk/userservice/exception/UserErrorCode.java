@@ -22,7 +22,7 @@ public enum UserErrorCode implements ErrorCode {
     TOKEN_MISMATCH          ("AUTH_004", "토큰이 일치하지 않습니다.", HttpStatus.UNAUTHORIZED), // DB에 저장된 Refresh Token과 비교해서 일치하지 않을 때
 
     // 회원가입
-    DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 로그인 아이디입니다.", HttpStatus.CONFLICT),
+    DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 아이디입니다.", HttpStatus.CONFLICT),
     DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
     DUPLICATE_NICKNAME      ("USER_022", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT),
     PASSWORD_MISMATCH       ("USER_023", "비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
