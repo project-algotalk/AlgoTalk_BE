@@ -1,6 +1,7 @@
 package com.algotalk.userservice.auth.oauth2;
 
 import com.algotalk.userservice.auth.oauth2.info.GoogleUserInfo;
+import com.algotalk.userservice.auth.oauth2.info.KakaoUserInfo;
 import com.algotalk.userservice.auth.oauth2.info.OAuth2UserInfo;
 import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
@@ -100,6 +101,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private OAuth2UserInfo getOAuth2UserInfo(String registrationId, OAuth2User oAuth2User) {
         if (registrationId.equalsIgnoreCase("google")) {
             return new GoogleUserInfo(oAuth2User.getAttributes());
+        }
+
+        if (registrationId.equalsIgnoreCase("kakao")) {
+            return new KakaoUserInfo(oAuth2User.getAttributes());
         }
 
         log.warn("지원하지 않는 OAuth2 provider: {}", registrationId);

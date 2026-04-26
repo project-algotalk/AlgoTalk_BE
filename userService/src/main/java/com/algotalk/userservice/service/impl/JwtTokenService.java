@@ -2,6 +2,7 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.service.IJwtTokenService;
+import com.algotalk.userservice.util.CmmUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,8 +42,8 @@ public class JwtTokenService implements IJwtTokenService {
                 .issuedAt(now) // 발급 시간
                 .expiresAt(expiry) // 만료 시간
                 .subject(String.valueOf(pCommand.getUserId())) // 사용자 ID를 subject로 설정
-                .claim("loginId", pCommand.getLoginId()) // 추가 클레임
-                .claim("nickname", pCommand.getNickname()) // 추가 클레임
+                .claim("loginId", CmmUtil.nvl(pCommand.getLoginId())) // 추가 클레임
+                .claim("nickname", CmmUtil.nvl(pCommand.getNickname())) // 추가 클레임
                 .claim("roles", List.of(pCommand.getRole())) // 토큰 권한 정보
                 .build();
 
