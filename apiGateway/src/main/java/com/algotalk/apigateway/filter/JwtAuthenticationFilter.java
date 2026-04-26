@@ -67,9 +67,10 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if(isPermitAll(path)) {
             log.debug("인증 제외 경로 :{}", path);
 
-            // 스푸핑 방지 위해 인증 제외 경로라도 X-User-Id, X-User-Role 헤더 제거
+            // 스푸핑 방지 및 만료된 토큰 간섭 방지 위해 인증 제외 경로인 경우 관련 헤더 제거
             ServerHttpRequest request = exchange.getRequest().mutate()
                     .headers(headers -> {
+                        headers.remove(AUTHORIZATION);
                         headers.remove("X-User-Id");
                         headers.remove("X-User-Role");
                     })
