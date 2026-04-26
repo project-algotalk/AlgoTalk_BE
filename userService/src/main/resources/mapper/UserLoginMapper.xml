@@ -12,19 +12,17 @@
     <select id="getUserAuthInfo"
             parameterType="UserInfoCommand"
             resultType="UserInfoCommand">
-        SELECT
-            U.user_id AS userId,
+        SELECT U.user_id AS userId,
             U.nickname AS nickname,
             U.email AS email,
             U.deleted_yn AS deletedYn,
             UC.login_id AS loginId,
             UC.password AS password,
             UR.role AS role
-        FROM USER_CREDENTIAL UC
-        JOIN USERS U ON UC.user_id = U.user_id
+        FROM USERS U
+        LEFT JOIN USER_CREDENTIAL UC ON U.user_id = UC.user_id
         JOIN USER_ROLES UR ON U.user_id = UR.user_id
-        WHERE 1=1
-        AND U.DELETED_YN = 'N'
+        WHERE U.DELETED_YN = 'N'
         <choose>
             <when test="loginId != null and loginId != ''">
                 AND UC.login_id = #{loginId}

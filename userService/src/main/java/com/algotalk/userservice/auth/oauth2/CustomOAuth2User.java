@@ -40,7 +40,7 @@ public class CustomOAuth2User extends DefaultOAuth2User {
     }
     @Override
     public String getName() {
-        return super.getName(); // sub 또는 id 등 OAuth2 공급자에서 고유하게 식별하는 키 값을 반환
+        return oAuth2UserInfo.getProviderId(); // sub 또는 id 등 OAuth2 공급자에서 고유하게 식별하는 키 값을 반환
     }
 
     public String getDisplayName() {
