@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.concurrent.TimeUnit;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
-import static com.algotalk.userservice.exception.UserErrorCode.EMAIL_SEND_FAIL;
 
 @Slf4j
 @Service
