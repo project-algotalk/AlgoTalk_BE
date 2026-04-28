@@ -1,7 +1,5 @@
 package com.algotalk.userservice.dto.response;
 
-import com.algotalk.userservice.domain.entity.UserEntity;
-import com.algotalk.userservice.domain.entity.UserRolesEntity;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.EncryptUtil;
