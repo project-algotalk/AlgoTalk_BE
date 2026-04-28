@@ -163,7 +163,12 @@ public class FindAccountService implements IFindAccountService {
                 .password(passwordEncoder.encode(CmmUtil.nvl(pDTO.newPassword())))
                 .build();
 
-        userFindMapper.updatePassword(updateCommand);
+        int updateCount = userFindMapper.updatePassword(updateCommand);
+
+        if (updateCount != 1) {
+            log.error("비밀번호 재설정이 실패했습니다. userId={}", userId);
+            throw new BusinessException(PASSWORD_RESET_FAIL);
+        }
 
         // 5. Redis 정리 (find:password 키 삭제)
         stringRedisTemplate.delete(FIND_PASSWORD_KEY + pDTO.email());

@@ -12,5 +12,5 @@ public interface IUserFindMapper {
     UserInfoCommand findUserByLoginIdAndNameAndEmail(UserInfoCommand pCommand) throws Exception;
 
     // 비밀번호 변경
-    void updatePassword(UserInfoCommand pCommand) throws Exception;
+    int updatePassword(UserInfoCommand pCommand) throws Exception;
 }

@@ -24,6 +24,7 @@ public enum UserErrorCode implements ErrorCode {
 
     // 아이디/비밀번호 변경,
     FIND_PASSWORD_SESSION_EXPIRED ("USER_031", "비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다.", HttpStatus.GONE),
+    PASSWORD_RESET_FAIL            ("USER_032", "비밀번호 재설정 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_040", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
