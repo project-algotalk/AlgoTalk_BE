@@ -32,7 +32,9 @@
     <update id="updatePassword"
             parameterType="UserInfoCommand">
         UPDATE USER_CREDENTIAL
-        SET PASSWORD = #{password}
+        SET PASSWORD = #{password},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
         WHERE USER_ID = #{userId}
     </update>
 
