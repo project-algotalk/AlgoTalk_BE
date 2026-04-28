@@ -110,16 +110,10 @@ public class FindAccountService implements IFindAccountService {
 
         String redisKey = FIND_PASSWORD_KEY + pDTO.email();
 
-
-        try {
-            // 2. 이메일 인증번호 발송
-            emailService.sendEmailVerificationCode(EmailSendRequestDTO.builder()
-                    .email(pDTO.email())
-                    .build());
-        } catch (Exception e) {
-            log.error("이메일 발송 중 오류가 발생했습니다. email={}", pDTO.email(), e);
-            throw new BusinessException(EMAIL_SEND_FAIL);
-        }
+        // 2. 이메일 인증번호 발송
+        emailService.sendEmailVerificationCode(EmailSendRequestDTO.builder()
+                .email(pDTO.email())
+                .build());
 
         // 3. Redis에 userId 임시 저장 (TTL 10분)
         stringRedisTemplate.opsForValue().set(
@@ -171,7 +165,6 @@ public class FindAccountService implements IFindAccountService {
 
         // 5. Redis 정리 (find:password 키 삭제)
         stringRedisTemplate.delete(FIND_PASSWORD_KEY + pDTO.email());
-        stringRedisTemplate.delete(VERIFIED_KEY + pDTO.email());
 
         log.info("{}.resetPassword End!", this.getClass().getName());
     }
