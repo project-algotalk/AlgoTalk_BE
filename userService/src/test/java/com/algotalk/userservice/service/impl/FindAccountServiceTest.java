@@ -240,5 +240,6 @@ class FindAccountServiceTest {
 
         // cleanup
         stringRedisTemplate.delete("email:verified:find06@algotalk.com");
+        stringRedisTemplate.delete("find:password:find06@algotalk.com");
     }
 }
