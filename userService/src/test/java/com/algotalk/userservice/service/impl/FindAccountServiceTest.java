@@ -46,30 +46,6 @@ class FindAccountServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("아이디 찾기 이메일 발송 성공")
-    void sendFindLoginIdEmail_success() throws Exception {
-        // given
-        UserInfoCommand user = UserInfoCommand.builder()
-                .nickname("테스트닉네임")
-                .name("홍길동")
-                .email(EncryptUtil.encAES128CBC("find01@algotalk.com"))
-                .loginId("findtest01")
-                .password("$2a$10$hashedpassword")
-                .build();
-        userRegMapper.insertUser(user);
-        userRegMapper.insertUserCredential(user);
-
-        FindLoginIdRequestDTO pDTO = FindLoginIdRequestDTO.builder()
-                .name("홍길동")
-                .email("find01@algotalk.com")
-                .build();
-
-        // when, then (이메일 실제 발송 없이 예외 없으면 성공)
-        // 실제 이메일 발송 테스트 생략
-    }
-
-    @Test
-    @Transactional
     @DisplayName("아이디 찾기 이메일 발송 실패 - 사용자 없음")
     void sendFindLoginIdEmail_userNotFound() {
         // given
