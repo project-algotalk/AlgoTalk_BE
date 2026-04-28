@@ -34,6 +34,7 @@ public class FindAccountService implements IFindAccountService {
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String FIND_PASSWORD_KEY = "find:password:";
+    private static final String VERIFIED_KEY = "email:verified:";
 
     @Override
     public void sendFindLoginIdEmail(FindLoginIdRequestDTO pDTO) throws Exception {
@@ -170,6 +171,7 @@ public class FindAccountService implements IFindAccountService {
 
         // 5. Redis 정리 (find:password 키 삭제)
         stringRedisTemplate.delete(FIND_PASSWORD_KEY + pDTO.email());
+        stringRedisTemplate.delete(VERIFIED_KEY + pDTO.email());
 
         log.info("{}.resetPassword End!", this.getClass().getName());
     }
