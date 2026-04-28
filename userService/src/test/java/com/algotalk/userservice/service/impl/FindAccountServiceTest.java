@@ -11,7 +11,6 @@ import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IFindAccountService;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

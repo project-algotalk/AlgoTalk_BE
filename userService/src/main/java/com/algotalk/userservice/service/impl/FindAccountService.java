@@ -7,7 +7,6 @@ import com.algotalk.userservice.dto.request.FindLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.FindPasswordRequestDTO;
 import com.algotalk.userservice.dto.request.ResetPasswordRequestDTO;
 import com.algotalk.userservice.dto.response.UserInfoResponseDTO;
-import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserFindMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IFindAccountService;
