@@ -7,6 +7,7 @@ import com.algotalk.userservice.dto.request.FindLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.FindPasswordRequestDTO;
 import com.algotalk.userservice.dto.request.ResetPasswordRequestDTO;
 import com.algotalk.userservice.dto.response.UserInfoResponseDTO;
+import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserFindMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IFindAccountService;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.concurrent.TimeUnit;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
+import static com.algotalk.userservice.exception.UserErrorCode.EMAIL_SEND_FAIL;
 
 @Slf4j
 @Service
@@ -107,17 +109,25 @@ public class FindAccountService implements IFindAccountService {
             throw new BusinessException(USER_NOT_FOUND);
         }
 
-        // 2. Redis에 userId 임시 저장 (TTL 10분)
+        String redisKey = FIND_PASSWORD_KEY + pDTO.email();
+
+
+        try {
+            // 2. 이메일 인증번호 발송
+            emailService.sendEmailVerificationCode(EmailSendRequestDTO.builder()
+                    .email(pDTO.email())
+                    .build());
+        } catch (Exception e) {
+            log.error("이메일 발송 중 오류가 발생했습니다. email={}", pDTO.email(), e);
+            throw new BusinessException(EMAIL_SEND_FAIL);
+        }
+
+        // 3. Redis에 userId 임시 저장 (TTL 10분)
         stringRedisTemplate.opsForValue().set(
-                FIND_PASSWORD_KEY + pDTO.email(),
+                redisKey,
                 String.valueOf(rDTO.getUserId()),
                 10, TimeUnit.MINUTES
         );
-
-        // 2. 이메일 인증번호 발송
-        emailService.sendEmailVerificationCode(EmailSendRequestDTO.builder()
-                .email(pDTO.email())
-                .build());
 
         log.info("{}.sendFindPasswordEmail End!", this.getClass().getName());
     }
