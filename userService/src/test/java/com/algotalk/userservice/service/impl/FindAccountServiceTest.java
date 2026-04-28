@@ -6,16 +6,19 @@ import com.algotalk.userservice.dto.request.FindLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.FindPasswordRequestDTO;
 import com.algotalk.userservice.dto.request.ResetPasswordRequestDTO;
 import com.algotalk.userservice.dto.response.UserInfoResponseDTO;
+import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IFindAccountService;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +36,13 @@ class FindAccountServiceTest {
 
     @Autowired
     IUserRegMapper userRegMapper;
+    @Autowired
+    IUserLoginMapper userLoginMapper;
 
     @Autowired
     StringRedisTemplate stringRedisTemplate;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test
     @Transactional
@@ -208,15 +215,31 @@ class FindAccountServiceTest {
     @DisplayName("비밀번호 재설정 성공")
     void resetPassword_success() throws Exception {
         // given
-        UserInfoCommand user = UserInfoCommand.builder()
+        UserInfoCommand cmd = UserInfoCommand.builder()
                 .nickname("테스트닉네임")
                 .name("홍길동")
                 .email(EncryptUtil.encAES128CBC("find06@algotalk.com"))
                 .loginId("findtest06")
                 .password("$2a$10$hashedpassword")
+                .deletedYn("N")
                 .build();
-        userRegMapper.insertUser(user);
-        userRegMapper.insertUserCredential(user);
+        // USERS INSERT (userId 채번)
+        userRegMapper.insertUser(cmd);
+        assertThat(cmd.getUserId()).isNotNull();
+
+        // USER_CREDENTIAL INSERT
+        int credResult = userRegMapper.insertUserCredential(cmd);
+        assertThat(credResult).isEqualTo(1);
+
+        // USER_ROLES INSERT
+        int roleResult = userRegMapper.insertUserRoles(
+                UserInfoCommand.builder()
+                        .userId(cmd.getUserId())
+                        .role("ROLE_USER") // 기본 역할로 "ROLE_USER" 저장
+                        .build()
+        );
+
+        assertThat(roleResult).isEqualTo(1);
 
         // 이메일 인증 완료 플래그 설정
         stringRedisTemplate.opsForValue().set("email:verified:find06@algotalk.com", "Y");
@@ -224,7 +247,7 @@ class FindAccountServiceTest {
         // Redis에 userId 저장 (sendFindPasswordEmail에서 저장되는 값 시뮬레이션)
         stringRedisTemplate.opsForValue().set(
                 "find:password:find06@algotalk.com",
-                String.valueOf(user.getUserId())
+                String.valueOf(cmd.getUserId())
         );
 
         ResetPasswordRequestDTO pDTO = ResetPasswordRequestDTO.builder()
@@ -235,6 +258,10 @@ class FindAccountServiceTest {
 
         // when, then
         findAccountService.resetPassword(pDTO);
+
+        UserInfoCommand rCommand = userLoginMapper.getUserAuthInfo(cmd);
+
+        assertThat(passwordEncoder.matches(pDTO.newPassword(), rCommand.getPassword())).isTrue();
 
         // cleanup
         stringRedisTemplate.delete("email:verified:find06@algotalk.com");
