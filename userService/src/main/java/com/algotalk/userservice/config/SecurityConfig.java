@@ -53,6 +53,7 @@ public class SecurityConfig {
                                 "/user/v1/signup",
                                 "/user/v1/signup/social",
                                 "/user/v1/login",
+                                "/user/v1/find/**",
                                 "/user/v1/token/reissue",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
