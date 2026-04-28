@@ -143,8 +143,8 @@ public class FindAccountService implements IFindAccountService {
         String userId = stringRedisTemplate.opsForValue().get(FIND_PASSWORD_KEY + pDTO.email());
 
         if (userId == null) {
-            log.info("비밀번호 재설정 요청이 만료되었거나 존재하지 않습니다. email={}", pDTO.email());
-            throw new BusinessException(USER_NOT_FOUND);
+            log.info("비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다. email={}", pDTO.email());
+            throw new BusinessException(FIND_PASSWORD_SESSION_EXPIRED);
         }
 
         // 4. 비밀번호 변경
