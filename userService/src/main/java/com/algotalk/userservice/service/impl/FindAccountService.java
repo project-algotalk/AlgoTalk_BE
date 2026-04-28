@@ -135,7 +135,7 @@ public class FindAccountService implements IFindAccountService {
 
         // 2. 비밀번호 일치 여부 확인
         if (!pDTO.isPasswordConfirmed()) {
-            log.info("새 비밀번호와 확인 비밀번호가 일치하지 않습니다. newPassword={}, confirmPassword={}", pDTO.newPassword(), pDTO.newPasswordConfirm());
+            log.warn("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
             throw new BusinessException(PASSWORD_MISMATCH);
         }
 
