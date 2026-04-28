@@ -7,7 +7,7 @@
     <select id="findLoginIdByNameAndEmail"
             parameterType="UserInfoCommand"
             resultType="UserInfoCommand">
-        SELECT UC.login_id
+        SELECT UC.login_id as loginId
         FROM USERS U
         JOIN USER_CREDENTIAL UC ON U.USER_ID = UC.USER_ID
         WHERE U.DELETED_YN = 'N'
@@ -19,7 +19,7 @@
     <select id="findUserByLoginIdAndNameAndEmail"
             parameterType="UserInfoCommand"
             resultType="UserInfoCommand">
-        SELECT U.USER_ID
+        SELECT U.USER_ID as userId
         FROM USERS U
                  JOIN USER_CREDENTIAL UC ON U.USER_ID = UC.USER_ID
         WHERE U.DELETED_YN = 'N'
