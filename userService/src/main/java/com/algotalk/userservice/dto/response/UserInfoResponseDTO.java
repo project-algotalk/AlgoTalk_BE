@@ -36,7 +36,10 @@ public record UserInfoResponseDTO(
 ) {
     public static UserInfoResponseDTO from(UserInfoCommand pCommand) throws Exception {
 
-        List<String> roles = Collections.singletonList(pCommand.getRole());
+        String role = pCommand.getRole();
+
+        List<String> roles = (role != null || !role.isBlank()) ?
+                Collections.singletonList(role) : Collections.emptyList();
 
         return UserInfoResponseDTO.builder()
                 .userId(pCommand.getUserId())
