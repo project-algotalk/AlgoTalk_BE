@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IUpdateUserMapper">
+
+    <!--  비밀번호 변경  -->
+    <update id="updatePassword"
+            parameterType="UserInfoCommand">
+        UPDATE USER_CREDENTIAL
+        SET PASSWORD = #{password},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <select id="getUserInfoByUserId"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            user_id AS userId,
+            login_id AS loginId,
+            password AS password
+        FROM USER_CREDENTIAL
+        WHERE 1 = 1
+          AND user_id = #{userId}
+    </select>
+
+</mapper>
