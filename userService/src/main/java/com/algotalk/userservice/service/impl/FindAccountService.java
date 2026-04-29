@@ -34,7 +34,6 @@ public class FindAccountService implements IFindAccountService {
     private final StringRedisTemplate stringRedisTemplate;
 
     private static final String FIND_PASSWORD_KEY = "find:password:";
-    private static final String VERIFIED_KEY = "email:verified:";
 
     @Override
     public void sendFindLoginIdEmail(FindLoginIdRequestDTO pDTO) throws Exception {
