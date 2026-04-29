@@ -1,12 +1,12 @@
 package com.algotalk.userservice.dto.response;
 
-import com.algotalk.userservice.domain.entity.UserEntity;
-import com.algotalk.userservice.domain.entity.UserRolesEntity;
+import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,6 +23,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UserInfoResponseDTO(
         Long userId,
+        String loginId,
         String email,
         String nickname,
         String name,
@@ -33,22 +34,23 @@ public record UserInfoResponseDTO(
         String addr1,
         String addr2
 ) {
-    public static UserInfoResponseDTO from(UserEntity entity) throws Exception {
+    public static UserInfoResponseDTO from(UserInfoCommand pCommand) throws Exception {
 
-        List<String> roles = entity.getRoles()
-                .stream()
-                .map(UserRolesEntity::getRole)
-                .toList();
+        String role = pCommand.getRole();
+
+        List<String> roles = (role != null || !role.isBlank()) ?
+                Collections.singletonList(role) : Collections.emptyList();
 
         return UserInfoResponseDTO.builder()
-                .userId(entity.getUserId())
-                .nickname(entity.getNickname())
-                .name(entity.getName())
+                .userId(pCommand.getUserId())
+                .loginId(pCommand.getLoginId())
+                .nickname(pCommand.getNickname())
+                .name(pCommand.getName())
                 .roles(roles)
-                .email(EncryptUtil.decAES128CBC(CmmUtil.nvl(entity.getEmail())))
-                .profileImgUrl(entity.getProfileImgUrl())
-                .addr1(entity.getAddr1())
-                .addr2(entity.getAddr2())
+                .email(EncryptUtil.decAES128CBC(CmmUtil.nvl(pCommand.getEmail())))
+                .profileImgUrl(pCommand.getProfileImgUrl())
+                .addr1(pCommand.getAddr1())
+                .addr2(pCommand.getAddr2())
                 .build();
     }
 }

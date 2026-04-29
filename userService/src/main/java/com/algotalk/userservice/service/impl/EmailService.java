@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
+import static com.algotalk.userservice.exception.UserErrorCode.EMAIL_SEND_FAIL;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,16 +43,24 @@ public class EmailService implements IEmailService {
         log.info("EmailSendRequestDTO: {}", pDTO);
         String email = pDTO.email();
 
-        // 1. 6자리 인증번호 생성
-        String code = generateVerificationCode();
+        try {
+            // 기존 인증 상태 제거
+            stringRedisTemplate.delete(VERIFIED_KEY + email);
 
-        // 2. 이메일 발송
-        sendMail(email, code);
+            // 1. 6자리 인증번호 생성
+            String code = generateVerificationCode();
 
-        // 3. Redis에 인증번호 저장 (TTL 3분)
-        String authCodeKey = AUTH_CODE_KEY + email;
-        stringRedisTemplate.opsForValue().set(authCodeKey, code, authCodeTtlMinutes, TimeUnit.MINUTES);
-        log.info("Redis에 인증번호 저장: key={}, value={}, ttl={}분", authCodeKey, code, authCodeTtlMinutes);
+            // 2. 이메일 발송
+            sendMail(email, code);
+
+            // 3. Redis에 인증번호 저장 (TTL 3분)
+            String authCodeKey = AUTH_CODE_KEY + email;
+            stringRedisTemplate.opsForValue().set(authCodeKey, code, authCodeTtlMinutes, TimeUnit.MINUTES);
+
+        } catch (Exception e) {
+            log.error("이메일 발송 중 오류가 발생했습니다. email={}", pDTO.email(), e);
+            throw new BusinessException(EMAIL_SEND_FAIL);
+        }
 
         log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
     }

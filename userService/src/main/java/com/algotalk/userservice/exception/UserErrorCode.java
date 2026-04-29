@@ -15,12 +15,6 @@ public enum UserErrorCode implements ErrorCode {
     ACCOUNT_DELETED         ("USER_003", "탈퇴한 계정입니다.", HttpStatus.UNAUTHORIZED),
     USER_NOT_FOUND          ("USER_004", "존재하지 않는 사용자입니다.", HttpStatus.UNAUTHORIZED),
 
-    // 토큰
-    TOKEN_EXPIRED           ("AUTH_001", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
-    TOKEN_INVALID           ("AUTH_002", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED), // 토큰 형식 자체가 문제가 있을 때(위변조, 구조 오류 등)
-    REFRESH_TOKEN_NOT_FOUND ("AUTH_003", "토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
-    TOKEN_MISMATCH          ("AUTH_004", "토큰이 일치하지 않습니다.", HttpStatus.UNAUTHORIZED), // DB에 저장된 Refresh Token과 비교해서 일치하지 않을 때
-
     // 회원가입
     DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 아이디입니다.", HttpStatus.CONFLICT),
     DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
@@ -28,12 +22,9 @@ public enum UserErrorCode implements ErrorCode {
     PASSWORD_MISMATCH       ("USER_023", "비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
     SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
-    // 이메일
-    EMAIL_CODE_EXPIRED      ("EMAIL_001", "인증번호가 만료되었습니다.", HttpStatus.GONE),
-    EMAIL_CODE_MISMATCH     ("EMAIL_002", "인증번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
-    EMAIL_NOT_VERIFIED      ("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
-    EMAIL_SEND_FAIL         ("EMAIL_004", "이메일 인증 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
-    EMAIL_VERIFIED_FAIL     ("EMAIL_005", "이메일 인증 확인 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    // 아이디/비밀번호 변경,
+    FIND_PASSWORD_SESSION_EXPIRED ("USER_031", "비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다.", HttpStatus.GONE),
+    PASSWORD_RESET_FAIL            ("USER_032", "비밀번호 재설정 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_040", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
@@ -44,15 +35,27 @@ public enum UserErrorCode implements ErrorCode {
     OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_045", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
     SOCIAL_SIGN_UP_FAIL            ("USER_050", "소셜 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
-
-
     // 권한
     UNAUTHORIZED            ("USER_900", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),
     FORBIDDEN               ("USER_901", "접근 권한이 없습니다.", HttpStatus.FORBIDDEN),
 
     // 서버
-    INTERNAL_ERROR          ("USER_999", "서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+    INTERNAL_ERROR          ("USER_999", "서버 내부 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    // 토큰
+    TOKEN_EXPIRED           ("AUTH_001", "토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_INVALID           ("AUTH_002", "유효하지 않은 토큰입니다.", HttpStatus.UNAUTHORIZED), // 토큰 형식 자체가 문제가 있을 때(위변조, 구조 오류 등)
+    REFRESH_TOKEN_NOT_FOUND ("AUTH_003", "토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    TOKEN_MISMATCH          ("AUTH_004", "토큰이 일치하지 않습니다.", HttpStatus.UNAUTHORIZED), // DB에 저장된 Refresh Token과 비교해서 일치하지 않을 때
+
+    // 이메일
+    EMAIL_CODE_EXPIRED      ("EMAIL_001", "인증번호가 만료되었습니다.", HttpStatus.GONE),
+    EMAIL_VERIFIED_FAIL     ("EMAIL_005", "이메일 인증 확인 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    EMAIL_CODE_MISMATCH     ("EMAIL_002", "인증번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    EMAIL_NOT_VERIFIED      ("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
+    EMAIL_SEND_FAIL         ("EMAIL_004", "이메일 인증 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+    ;
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;
