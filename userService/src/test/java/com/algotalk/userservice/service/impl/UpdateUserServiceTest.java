@@ -3,10 +3,8 @@ package com.algotalk.userservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
-import com.algotalk.userservice.repository.IUpdateUserMapper;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUpdateUserService;
-import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -63,7 +61,6 @@ class UpdateUserServiceTest {
         assertThat(roleResult).isEqualTo(1);
 
         UpdatePasswordRequestDTO pDTO = UpdatePasswordRequestDTO.builder()
-                .userId(cmd.getUserId())
                 .currentPassword("password")
                 .newPassword("newPassword")
                 .newPasswordConfirm("newPassword")
@@ -103,7 +100,6 @@ class UpdateUserServiceTest {
         assertThat(roleResult).isEqualTo(1);
 
         UpdatePasswordRequestDTO pDTO = UpdatePasswordRequestDTO.builder()
-                .userId(cmd.getUserId())
                 .currentPassword("notCurrentPassword")
                 .newPassword("newPassword")
                 .newPasswordConfirm("newPassword")
@@ -142,7 +138,6 @@ class UpdateUserServiceTest {
         assertThat(roleResult).isEqualTo(1);
 
         UpdatePasswordRequestDTO pDTO = UpdatePasswordRequestDTO.builder()
-                .userId(cmd.getUserId())
                 .currentPassword("password")
                 .newPassword("newPassword")
                 .newPasswordConfirm("failConfirm")
@@ -181,7 +176,6 @@ class UpdateUserServiceTest {
         assertThat(roleResult).isEqualTo(1);
 
         UpdatePasswordRequestDTO pDTO = UpdatePasswordRequestDTO.builder()
-                .userId(cmd.getUserId())
                 .currentPassword("samePassword")
                 .newPassword("samePassword")
                 .newPasswordConfirm("samePassword")

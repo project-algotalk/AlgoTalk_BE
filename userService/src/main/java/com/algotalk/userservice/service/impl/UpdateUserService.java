@@ -63,7 +63,7 @@ public class UpdateUserService implements IUpdateUserService {
         // 5. 비밀번호 변경
         int updateCount = userChangeMapper.updatePassword(
                 UserInfoCommand.builder()
-                    .userId(pDTO.userId())
+                    .userId(userId)
                     .password(passwordEncoder.encode(pDTO.newPassword()))
                     .build()
         );
