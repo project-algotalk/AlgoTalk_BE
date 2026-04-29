@@ -3,8 +3,8 @@ package com.algotalk.userservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
-import com.algotalk.userservice.repository.IUpdateUserMapper;
-import com.algotalk.userservice.service.IUpdateUserService;
+import com.algotalk.userservice.repository.IUserUpdateMapper;
+import com.algotalk.userservice.service.IUserUpdateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,9 +16,9 @@ import static com.algotalk.userservice.exception.UserErrorCode.*;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UpdateUserService implements IUpdateUserService {
+public class UserUpdateService implements IUserUpdateService {
 
-    private final IUpdateUserMapper userChangeMapper;
+    private final IUserUpdateMapper userChangeMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -69,8 +69,8 @@ public class UpdateUserService implements IUpdateUserService {
         );
 
         if (updateCount != 1) {
-            log.error("비밀번호 재설정이 실패했습니다.");
-            throw new BusinessException(PASSWORD_RESET_FAIL);
+            log.error("비밀번호 변경이 실패했습니다.");
+            throw new BusinessException(PASSWORD_UPDATE_FAIL);
         }
 
         res = 1; // 성공적으로 변경된 경우 1 반환

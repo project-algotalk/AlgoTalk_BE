@@ -2,7 +2,7 @@ package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
-import com.algotalk.userservice.service.IUpdateUserService;
+import com.algotalk.userservice.service.IUserUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserUpdateController {
 
-    private final IUpdateUserService updateUserService;
+    private final IUserUpdateService userUpdateService;
 
     @PostMapping("/update-password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
@@ -31,7 +31,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        updateUserService.updatePassword(userId, pDTO);
+        userUpdateService.updatePassword(userId, pDTO);
 
         log.info("{}.updatePassword End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());

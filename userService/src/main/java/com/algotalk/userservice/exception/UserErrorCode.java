@@ -29,6 +29,8 @@ public enum UserErrorCode implements ErrorCode {
     // 로그인 정보 수정
     CUR_PASSWORD_MISMATCH   ("USER_033", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
     NOW_PASSWORD_SAME ("USER_034", "현재 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_UPDATE_FAIL            ("USER_032", "비밀번호 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_040", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),

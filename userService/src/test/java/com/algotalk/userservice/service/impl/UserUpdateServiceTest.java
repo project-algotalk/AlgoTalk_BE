@@ -4,7 +4,7 @@ import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
-import com.algotalk.userservice.service.IUpdateUserService;
+import com.algotalk.userservice.service.IUserUpdateService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,10 +23,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("local")
-class UpdateUserServiceTest {
+class UserUpdateServiceTest {
 
     @Autowired
-    private IUpdateUserService updateUserService;
+    private IUserUpdateService userUpdateService;
 
     @Autowired
     private IUserRegMapper userRegMapper;
@@ -67,7 +67,7 @@ class UpdateUserServiceTest {
                 .build();
 
         // when
-        int res = updateUserService.updatePassword(cmd.getUserId(), pDTO);
+        int res = userUpdateService.updatePassword(cmd.getUserId(), pDTO);
 
         // then
         assertThat(res).isEqualTo(1);
@@ -107,7 +107,7 @@ class UpdateUserServiceTest {
 
         // when, then
         BusinessException ex = assertThrows(BusinessException.class, () ->
-                updateUserService.updatePassword(cmd.getUserId(), pDTO));
+                userUpdateService.updatePassword(cmd.getUserId(), pDTO));
         assertThat(ex.getErrorCode()).isEqualTo(CUR_PASSWORD_MISMATCH);
     }
 
@@ -145,7 +145,7 @@ class UpdateUserServiceTest {
 
         // when, then
         BusinessException ex = assertThrows(BusinessException.class, () ->
-                updateUserService.updatePassword(cmd.getUserId(), pDTO));
+                userUpdateService.updatePassword(cmd.getUserId(), pDTO));
         assertThat(ex.getErrorCode()).isEqualTo(PASSWORD_MISMATCH);
     }
 
@@ -183,7 +183,7 @@ class UpdateUserServiceTest {
 
         // when, then
         BusinessException ex = assertThrows(BusinessException.class, () ->
-                updateUserService.updatePassword(cmd.getUserId(), pDTO));
+                userUpdateService.updatePassword(cmd.getUserId(), pDTO));
         assertThat(ex.getErrorCode()).isEqualTo(NOW_PASSWORD_SAME);
     }
 }
