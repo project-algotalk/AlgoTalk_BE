@@ -1,7 +1,6 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper

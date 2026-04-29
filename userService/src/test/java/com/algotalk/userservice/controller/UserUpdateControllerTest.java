@@ -18,8 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-
 import static com.algotalk.userservice.exception.UserErrorCode.CUR_PASSWORD_MISMATCH;
 import static com.algotalk.userservice.exception.UserErrorCode.PASSWORD_MISMATCH;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -177,7 +175,7 @@ class UserUpdateControllerTest {
                                 .content(objectMapper.writeValueAsString(pDTO)),
                         cmd.getUserId()
                 ))
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(PASSWORD_MISMATCH.getCode())) // 커스텀 에러 코드 확인!
                 .andExpect(jsonPath("$.message").exists())     // 에러 메시지가 존재하는지 확인
                 .andDo(print());
@@ -216,8 +214,8 @@ class UserUpdateControllerTest {
                                         .content(objectMapper.writeValueAsString(pDTO)),
                                 cmd.getUserId()
                         ))
-                .andExpect(status().is4xxClientError())
-                .andExpect(jsonPath("$.code").value(PASSWORD_MISMATCH.getCode())) // 커스텀 에러 코드 확인!
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value(CUR_PASSWORD_MISMATCH.getCode())) // 커스텀 에러 코드 확인!
                 .andExpect(jsonPath("$.message").exists())     // 에러 메시지가 존재하는지 확인
                 .andDo(print());
     }

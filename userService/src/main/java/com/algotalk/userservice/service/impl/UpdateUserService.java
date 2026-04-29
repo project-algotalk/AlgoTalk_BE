@@ -26,7 +26,7 @@ public class UpdateUserService implements IUpdateUserService {
     public int updatePassword(Long userId, UpdatePasswordRequestDTO pDTO) throws Exception {
         log.info("{}.updatePassword Start!", this.getClass().getName());
 
-        log.info("{}", pDTO);
+        log.info("userId: {}", userId);
         int res = 0;
 
         // 1. 변경할 비밀번호가 일치하는지 검증
