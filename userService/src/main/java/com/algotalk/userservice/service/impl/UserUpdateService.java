@@ -18,7 +18,7 @@ import static com.algotalk.userservice.exception.UserErrorCode.*;
 @RequiredArgsConstructor
 public class UserUpdateService implements IUserUpdateService {
 
-    private final IUserUpdateMapper userChangeMapper;
+    private final IUserUpdateMapper userUpdateMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -41,7 +41,7 @@ public class UserUpdateService implements IUserUpdateService {
                 .build();
 
         // 2. 현재 비밀번호 조회
-        UserInfoCommand rCommand = userChangeMapper.getUserInfoByUserId(pCommand);
+        UserInfoCommand rCommand = userUpdateMapper.getUserInfoByUserId(pCommand);
         if(rCommand == null) {
             log.warn("사용자 정보가 존재하지 않습니다.");
             throw new BusinessException(USER_NOT_FOUND);
@@ -61,7 +61,7 @@ public class UserUpdateService implements IUserUpdateService {
         }
 
         // 5. 비밀번호 변경
-        int updateCount = userChangeMapper.updatePassword(
+        int updateCount = userUpdateMapper.updatePassword(
                 UserInfoCommand.builder()
                     .userId(userId)
                     .password(passwordEncoder.encode(pDTO.newPassword()))
