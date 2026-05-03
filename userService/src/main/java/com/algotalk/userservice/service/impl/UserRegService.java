@@ -120,9 +120,14 @@ public class UserRegService implements IUserRegService {
         String email = CmmUtil.nvl(pDTO.email());
         log.info("email: {}", email);
 
+        // 2. 이메일 암호화
+        EmailCheckRequestDTO encDTO = EmailCheckRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(email))
+                .build();
+
         log.info("{}.validateEmailUnique End!", this.getClass().getName());
 
-        if(isEmailDuplicated(pDTO)) {
+        if(isEmailDuplicated(encDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
         }
     }
@@ -144,7 +149,16 @@ public class UserRegService implements IUserRegService {
         if (!emailService.isEmailVerified(pDTO.email())) {
             throw new BusinessException(UserErrorCode.EMAIL_NOT_VERIFIED);
         }
-        // 1.3. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
+
+        // 1.3. 이메일 중복 최종 확인
+        // 회원가입 API를 직접 호출하는 경우를 대비해 insert 직전 서버 측에서 한 번 더 검증
+        if (isEmailDuplicated(EmailCheckRequestDTO.builder()
+                .email(CmmUtil.nvl(pDTO.email()))
+                .build())) {
+            throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 1.4. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 // USERS
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
@@ -157,7 +171,7 @@ public class UserRegService implements IUserRegService {
                 .password(passwordEncoder.encode(CmmUtil.nvl(pDTO.password())))
                 .build();
 
-        // 1.4. USER 테이블에 INSERT (userId 채번)
+        // 1.5. USER 테이블에 INSERT (userId 채번)
         userRegMapper.insertUser(pCommand);
 
         // 2. USER_CREDENTIAL

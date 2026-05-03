@@ -6,6 +6,7 @@ import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUserRegService;
+import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.*;
 
 import static java.time.LocalDate.of;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
@@ -49,12 +51,8 @@ class UserRegServiceTest {
                 .loginId("not_exist_id")
                 .build();
 
-        // when
-       userRegService.validateLoginIdUnique(pDTO);
-//        log.info("loginId 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateLoginIdUnique(pDTO));
     }
 
     @Test
@@ -65,7 +63,7 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("플로우테스트")
                 .name("테스트")
-                .email("reg01@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg01@algotalk.com"))
                 .loginId("reg01")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
@@ -93,7 +91,7 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("reg02@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg02@algotalk.com"))
                 .loginId("reg02")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
@@ -120,12 +118,8 @@ class UserRegServiceTest {
                 .email("not_exist@algotalk.com")
                 .build();
 
-        // when
-        userRegService.validateEmailUnique(pDTO);
-//        log.info("email 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateEmailUnique(pDTO));
     }
 
     @Test
@@ -136,7 +130,7 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("reg03@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg03@algotalk.com"))
                 .loginId("reg03")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
@@ -164,7 +158,7 @@ class UserRegServiceTest {
                 .loginId("reg04")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("reg04@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg04@algotalk.com"))
                 .name("홍길동")
                 .nickname("둘리")
                 .build();
@@ -194,7 +188,7 @@ class UserRegServiceTest {
                 .loginId("reg05")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("reg05@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg05@algotalk.com"))
                 .name("홍길동")
                 .build();
 
@@ -232,7 +226,7 @@ class UserRegServiceTest {
                 .loginId("reg06")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("reg06@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg06@algotalk.com"))
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -289,7 +283,7 @@ class UserRegServiceTest {
                 .loginId("reg07")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("reg07@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg07@algotalk.com"))
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -342,7 +336,7 @@ class UserRegServiceTest {
                 .loginId("reg08")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("reg08@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg08@algotalk.com"))
                 .name("홍길동")
                 .employments(employments)
                 .build();
