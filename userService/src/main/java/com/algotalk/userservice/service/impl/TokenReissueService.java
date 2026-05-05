@@ -31,6 +31,9 @@ public class TokenReissueService implements ITokenReissueService {
     @Value("${jwt.access.token.expiration}")
     private Long accessTokenExpiration;
 
+    @Value("${cookie.access.name}")
+    private String accessCookieName;
+
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
@@ -101,9 +104,11 @@ public class TokenReissueService implements ITokenReissueService {
         // 7. 새로운 Refresh Token을 Cookie에 담아서 Response에 추가
         setRefreshTokenCookie(newRefreshToken, response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
 
-        // 8. Access Token을 Response DTO로 반환
+        // 8. 새로운 Access Token을 헤더에 담아서 Response에 추가
+        setAccessTokenHeader(newAccessToken, response);
+
+        // 9. 토큰 메타 정보만 Response DTO로 반환
         TokenReissueResponseDTO rDTO = TokenReissueResponseDTO.builder()
-                .accessToken(newAccessToken)
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpiration / 1000) // ms -> 초 변환
                 .build();
@@ -131,6 +136,12 @@ public class TokenReissueService implements ITokenReissueService {
 
         log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
         return null;
+    }
+
+    private void setAccessTokenHeader(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenHeader Start!", this.getClass().getName());
+        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        log.info("{}.setAccessTokenHeader End!", this.getClass().getName());
     }
 
     // 토큰 삭제 및 저장 함수

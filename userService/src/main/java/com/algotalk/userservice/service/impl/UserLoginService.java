@@ -45,6 +45,9 @@ public class UserLoginService implements IUserLoginService {
     @Value("${jwt.access.token.expiration}")
     private long accessTokenExpiration;
 
+    @Value("${cookie.access.name}")
+    private String accessCookieName;
+
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
@@ -103,8 +106,10 @@ public class UserLoginService implements IUserLoginService {
         // 9. Refresh Token 쿠키 설정
         setRefreshTokenCookie(refreshToken, response);
 
+        // 10. Access Token 헤더 설정
+        setAccessTokenHeader(accessToken, response);
+
         LoginResponseDTO rDTO = LoginResponseDTO.builder()
-                .accessToken(accessToken)
                 .tokenType("Bearer")
                 .expiresIn(accessTokenExpiration / 1000) // ms -> 초 변환
                 .build();
@@ -150,6 +155,12 @@ public class UserLoginService implements IUserLoginService {
             stringRedisTemplate.opsForValue().set(lockKey, "Y", lockMinutes, TimeUnit.MINUTES);
             log.warn("계정 잠금 처리: key={}, lockMinutes={}분", lockKey, lockMinutes);
         }
+    }
+
+    private void setAccessTokenHeader(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenHeader Start!", this.getClass().getName());
+        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        log.info("{}.setAccessTokenHeader End!", this.getClass().getName());
     }
 
     private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
