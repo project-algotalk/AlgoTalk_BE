@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.HandlerStrategies;
 import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,26 +38,45 @@ import java.util.List;
 @Order(-102)
 public class AutoRefreshOn401Filter implements WebFilter {
 
-    @Value("${jwt.token.access.name:jwtAccessToken}")
+    @Value("${jwt.token.access.name}")
     private String accessCookieName;
 
-    @Value("${jwt.token.refresh.name:jwtRefreshToken}")
+    @Value("${jwt.token.refresh.name}")
     private String refreshCookieName;
 
-    @Value("${api.server.user.refresh-endpoint:/api/user/v1/token/reissue}")
+    @Value("${api.server.user.refresh-endpoint:/user/v1/token/reissue}")
     private String refreshPath;
 
-    @Value("${api.server.user.protocol:http}://${api.server.user.host:localhost}:${api.server.user.port:10000}${api.server.user.refresh-endpoint:/api/user/v1/token/reissue}")
+    @Value("${api.server.user.protocol:http}://${api.server.user.host:localhost}:${api.server.user.port:10000}${api.server.user.refresh-endpoint:/user/v1/token/reissue}")
     private String refreshUrl;
 
     private final WebClient webClient;
 
     private static final String ATTR_RETRIED = "X-RT-RETRIED";
 
+    private static final Set<String> SKIP_PATHS = Set.of(
+            "/api/user/v1/login",
+            "/api/user/v1/reg/**",
+            "/api/user/v1/signup",
+            "/api/user/v1/signup/social",
+            "/api/user/v1/find/**",
+            "/api/oauth2/**",
+            "/api/login/oauth2/**",
+            "/api/user/v1/token/reissue"
+    );
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
     private record RefreshOutcome(String at, List<String> setCookies) {}
 
     private boolean isSelfRefreshCall(String path) {
-        return CmmUtil.nvl(path).startsWith(CmmUtil.nvl(refreshPath, "/api/user/v1/token/reissue"));
+        return CmmUtil.nvl(path).startsWith(CmmUtil.nvl(refreshPath, "/user/v1/token/reissue"));
+    }
+
+
+    private boolean shouldSkip(String path, HttpMethod method) {
+        if (method == HttpMethod.OPTIONS) return true;
+        return SKIP_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     private String extractAuthOrAtCookie(ServerWebExchange exchange) {
@@ -213,6 +234,11 @@ public class AutoRefreshOn401Filter implements WebFilter {
     @Override
     public @NonNull Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
+        HttpMethod method = exchange.getRequest().getMethod();
+
+        if (shouldSkip(path, method)) {
+            return chain.filter(exchange);
+        }
 
         if (!isSelfRefreshCall(path) && needPreRefresh(exchange)) {
             return callRefresh(exchange).flatMap(outcome -> {
