@@ -79,7 +79,6 @@ class TokenReissueServiceMockTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.accessToken()).isEqualTo("new.access.token");
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(600L);
 

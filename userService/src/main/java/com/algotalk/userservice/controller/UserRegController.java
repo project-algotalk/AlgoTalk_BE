@@ -53,7 +53,7 @@ public class UserRegController {
 
     // 아이디 중복 확인
     @PostMapping("reg/check/loginId")
-    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@Valid @RequestBody LoginIdCheckRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkLoginId(@Valid @RequestBody CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkLoginId Start!");
 
         log.info("SignUpRequestDTO : {}", pDTO);
@@ -67,7 +67,7 @@ public class UserRegController {
 
     // 이메일 중복 확인
     @PostMapping("reg/check/email")
-    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@Valid @RequestBody EmailCheckRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkEmail(@Valid @RequestBody CheckEmailRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkEmail Start!");
 
         // 이메일 중복 확인 로직 처리
@@ -79,7 +79,7 @@ public class UserRegController {
 
     // 닉네임 중복 확인
     @PostMapping("reg/check/nickname")
-    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@Valid @RequestBody NicknameCheckRequestDTO pDTO) throws Exception {
+    public ResponseEntity<ApiResponse<Boolean>> checkNickname(@Valid @RequestBody CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("UserRegController.checkNickname Start!");
 
         // 닉네임 중복 확인 로직 처리

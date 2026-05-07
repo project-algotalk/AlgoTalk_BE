@@ -2,7 +2,11 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
+import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IUserUpdateService;
 import lombok.RequiredArgsConstructor;
@@ -76,6 +80,87 @@ public class UserUpdateService implements IUserUpdateService {
         res = 1; // 성공적으로 변경된 경우 1 반환
 
         log.info("{}.updatePassword End!", this.getClass().getName());
+        return res;
+    }
+
+    @Transactional
+    @Override
+    public int updateNickname(Long userId, UpdateNicknameRequestDTO pDTO) throws Exception {
+        log.info("{}.updateNickname Start!", this.getClass().getName());
+
+        log.info("userId: {}", userId);
+        int res = 0;
+
+        // 1. 닉네임 중복 검증
+        ExistsResponseDTO rDTO = userUpdateMapper.getNicknameExists(pDTO);
+        String existsYn = rDTO.existsYn();
+
+        if(existsYn.equals("Y")) {
+            log.warn("이미 사용 중인 닉네임입니다.");
+            throw new BusinessException(DUPLICATE_NICKNAME);
+        }
+
+        // 2. 닉네임 변경
+        res = userUpdateMapper.updateNickname(
+                UserInfoCommand.builder()
+                        .userId(userId)
+                        .nickname(pDTO.nickname())
+                        .build());
+
+        if(res != 1) {
+            log.error("닉네임 변경이 실패했습니다.");
+            throw new BusinessException(NICKNAME_UPDATE_FAIL);
+        }
+
+        log.info("{}.updateNickname End!", this.getClass().getName());
+        return res;
+    }
+
+    @Transactional
+    @Override
+    public int updateName(Long userId, UpdateNameRequestDTO pDTO) throws Exception {
+        log.info("{}.updateName Start!", this.getClass().getName());
+
+        log.info("userId: {}", userId);
+        int res = 0;
+
+        // 1. 이름 변경
+        res = userUpdateMapper.updateName(
+                UserInfoCommand.builder()
+                        .userId(userId)
+                        .name(pDTO.name())
+                        .build());
+
+        if(res != 1) {
+            log.error("이름 변경이 실패했습니다.");
+            throw new BusinessException(NAME_UPDATE_FAIL);
+        }
+
+        log.info("{}.updateName End!", this.getClass().getName());
+        return res;
+    }
+
+    @Transactional
+    @Override
+    public int updateAddr(Long userId, UpdateAddrRequestDTO pDTO) throws Exception {
+        log.info("{}.updateAddr Start!", this.getClass().getName());
+
+        log.info("userId: {}", userId);
+
+        // 1. 주소 변경
+        int res = userUpdateMapper.updateAddr(
+                UserInfoCommand.builder()
+                        .userId(userId)
+                        .addr1(pDTO.addr1())
+                        .addr2(pDTO.addr2())
+                        .build());
+
+        if(res != 1) {
+            log.error("주소 변경이 실패했습니다.");
+            throw new BusinessException(ADDR_UPDATE_FAIL);
+        }
+
+        log.info("{}.updateAddr End!", this.getClass().getName());
         return res;
     }
 }

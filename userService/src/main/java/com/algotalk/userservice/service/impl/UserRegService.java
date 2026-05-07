@@ -43,7 +43,7 @@ public class UserRegService implements IUserRegService {
     private static final int MAX_NICKNAME_LENGTH = 10;
 
     @Override
-    public boolean isLoginIdDuplicated(LoginIdCheckRequestDTO pDTO) throws Exception {
+    public boolean isLoginIdDuplicated(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.isLoginIdDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -58,7 +58,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isNicknameDuplicated(NicknameCheckRequestDTO pDTO) throws Exception {
+    public boolean isNicknameDuplicated(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.isNicknameDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -70,7 +70,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isEmailDuplicated(EmailCheckRequestDTO pDTO) throws Exception {
+    public boolean isEmailDuplicated(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -83,7 +83,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateLoginIdUnique(LoginIdCheckRequestDTO pDTO) throws Exception {
+    public void validateLoginIdUnique(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.validateLoginIdUnique Start!", this.getClass().getName());
 
         // 1. 값 잘 넘어왔는지 확인(로그인 아이디)
@@ -98,7 +98,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateNicknameUnique(NicknameCheckRequestDTO pDTO) throws Exception {
+    public void validateNicknameUnique(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.validateNicknameUnique Start!", this.getClass().getName());
         // 1. 값 잘 넘어왔는지 확인(닉네임)
         String nickName = CmmUtil.nvl(pDTO.nickname());
@@ -113,7 +113,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateEmailUnique(EmailCheckRequestDTO pDTO) throws Exception {
+    public void validateEmailUnique(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.validateEmailUnique Start!", this.getClass().getName());
 
         // 1. 값 잘 넘어왔는지 확인(이메일)
@@ -121,7 +121,7 @@ public class UserRegService implements IUserRegService {
         log.info("email: {}", email);
 
         // 2. 이메일 암호화
-        EmailCheckRequestDTO encDTO = EmailCheckRequestDTO.builder()
+        CheckEmailRequestDTO encDTO = CheckEmailRequestDTO.builder()
                 .email(EncryptUtil.encAES128CBC(email))
                 .build();
 
@@ -152,7 +152,7 @@ public class UserRegService implements IUserRegService {
 
         // 1.3. 이메일 중복 최종 확인
         // 회원가입 API를 직접 호출하는 경우를 대비해 insert 직전 서버 측에서 한 번 더 검증
-        if (isEmailDuplicated(EmailCheckRequestDTO.builder()
+        if (isEmailDuplicated(CheckEmailRequestDTO.builder()
                 .email(CmmUtil.nvl(pDTO.email()))
                 .build())) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);

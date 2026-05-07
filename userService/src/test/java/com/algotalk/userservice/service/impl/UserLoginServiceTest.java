@@ -18,6 +18,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -73,14 +75,10 @@ public class UserLoginServiceTest {
         // when
         LoginResponseDTO rDTO = userLoginService.login(pDTO, response);
 
-        log.info("accessToken: {}", rDTO.accessToken());
-        log.info("tokenType: {}", rDTO.tokenType());
-        log.info("expiresIn: {}", rDTO.expiresIn());
-
         // then
         assertThat(rDTO).isNotNull();
-        assertThat(rDTO.accessToken()).isNotNull();
         assertThat(rDTO.tokenType()).isEqualTo("Bearer");
+        assertThat(response.getHeader("Authorization").replace("Bearer ", "")).isNotNull();
         assertThat(rDTO.expiresIn()).isPositive();
 
         String setCookie = response.getHeader("Set-Cookie");
@@ -91,7 +89,7 @@ public class UserLoginServiceTest {
         assertThat(setCookie).contains("SameSite");
 
         // cleanup: AT에서 실제 userId 추출 후 Redis 정리
-        Long userId = jwtTokenService.getUserIdFromToken(rDTO.accessToken());
+        Long userId = jwtTokenService.getUserIdFromToken(response.getHeader("Authorization").replace("Bearer ", ""));
         log.info("cleanup - userId: {}", userId);
         stringRedisTemplate.delete(REFRESH_TOKEN_KEY_PREFIX + userId);
         stringRedisTemplate.delete("email:verified:" + email);
@@ -225,7 +223,7 @@ public class UserLoginServiceTest {
         LoginResponseDTO loginResult = userLoginService.login(pDTO, loginResponse);
 
         // AT에서 실제 userId 추출
-        Long userId = jwtTokenService.getUserIdFromToken(loginResult.accessToken());
+        Long userId = jwtTokenService.getUserIdFromToken(Objects.requireNonNull(loginResponse.getHeader("Authorization")).replace("Bearer ", ""));
         log.info("로그아웃 대상 userId: {}", userId);
 
         // when

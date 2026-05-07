@@ -47,7 +47,7 @@ class UserRegServiceTest {
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("not_exist_id")
                 .build();
 
@@ -73,7 +73,7 @@ class UserRegServiceTest {
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("reg01") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
@@ -100,7 +100,7 @@ class UserRegServiceTest {
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        NicknameCheckRequestDTO pDTO = NicknameCheckRequestDTO.builder()
+        CheckNicknameRequestDTO pDTO = CheckNicknameRequestDTO.builder()
                 .nickname("중복 닉네임") // 실제 DB에 존재하는 nickname
                 .build();
 
@@ -114,7 +114,7 @@ class UserRegServiceTest {
     @DisplayName("email 중복 확인 - 존재하지 않으면 false 반환")
     void isEmailDuplicated_notExists() throws Exception {
         // given
-        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
                 .email("not_exist@algotalk.com")
                 .build();
 
@@ -139,7 +139,7 @@ class UserRegServiceTest {
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
                 .email("reg03@algotalk.com") // 실제 DB에 존재하는 email
                 .build();
 

@@ -8,7 +8,6 @@ import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
-import com.algotalk.userservice.service.impl.UserLoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -91,7 +90,6 @@ class UserLoginServiceMockTest {
 
         // then
         assertThat(rDTO).isNotNull();
-        assertThat(rDTO.accessToken()).isEqualTo("mock.access.token");
         assertThat(rDTO.tokenType()).isEqualTo("Bearer");
         verify(refreshTokenService).saveRefreshToken(anyLong(), anyString()); // RefreshToken 저장 여부 검증
 
