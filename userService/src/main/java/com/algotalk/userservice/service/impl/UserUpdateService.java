@@ -2,14 +2,13 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
+import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import com.algotalk.userservice.util.CmmUtil;
+import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +24,7 @@ public class UserUpdateService implements IUserUpdateService {
 
     private final IUserUpdateMapper userUpdateMapper;
     private final PasswordEncoder passwordEncoder;
+    private final IEmailService emailService;
 
     @Transactional
     @Override
@@ -162,6 +162,51 @@ public class UserUpdateService implements IUserUpdateService {
         }
 
         log.info("{}.updateAddr End!", this.getClass().getName());
+        return res;
+    }
+
+    @Override
+    public void isEmailDuplicated(UpdateEmailRequestDTO pDTO) throws Exception {
+        log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
+
+        // 1. 이메일 암호화
+        UpdateEmailRequestDTO encDTO = UpdateEmailRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(pDTO.email().strip()))
+                .build();
+
+        // 2. DB 조회
+        ExistsResponseDTO rDTO = userUpdateMapper.getEmailExists(encDTO);
+        String existsYn = rDTO.existsYn();
+
+        if(existsYn.equals("Y")) {
+            log.warn("이미 사용 중인 이메일입니다.");
+            throw new BusinessException(DUPLICATE_EMAIL);
+        }
+
+        log.info("{}.isEmailDuplicated End!", this.getClass().getName());
+    }
+
+    @Transactional
+    @Override
+    public int updateEmail(Long userId, UpdateEmailRequestDTO pDTO) throws Exception {
+        log.info("{}.updateEmail Start!", this.getClass().getName());
+
+        log.info("userId: {}", userId);
+
+        // 1. 이메일 변경
+        int res = userUpdateMapper.updateEmail(
+                UserInfoCommand.builder()
+                        .userId(userId)
+                        .email(EncryptUtil.encAES128CBC(pDTO.email().strip()))
+                        .build()
+        );
+
+        if(res != 1) {
+            log.error("이메일 변경이 실패했습니다.");
+            throw new BusinessException(EMAIL_UPDATE_FAIL);
+        }
+
+        log.info("{}.updateEmail End!", this.getClass().getName());
         return res;
     }
 }

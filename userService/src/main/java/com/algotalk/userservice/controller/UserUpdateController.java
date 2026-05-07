@@ -1,10 +1,8 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
-import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
+import com.algotalk.userservice.dto.request.*;
+import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserUpdateController {
 
     private final IUserUpdateService userUpdateService;
+    private final IEmailService emailService;
 
     @PostMapping("/update-password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
@@ -82,6 +81,50 @@ public class UserUpdateController {
         userUpdateService.updateAddr(userId, pDTO);
 
         log.info("{}.updateAddr End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    // 이메일 인증번호 발송
+    @PostMapping("/email-code")
+    public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@Valid @RequestBody EmailSendRequestDTO pDTO) throws Exception {
+        log.info("UserRegController.sendEmailVerificationCode Start!");
+        log.info("email: {}", pDTO.email());
+
+        // 이메일 중복 확인 로직 처리
+        userUpdateService.isEmailDuplicated(UpdateEmailRequestDTO.builder()
+                .email(pDTO.email())
+                .build());
+
+        // 이메일 인증번호 발송 로직 처리
+        emailService.sendEmailVerificationCode(pDTO);
+
+        log.info("UserRegController.sendEmailVerificationCode End!");
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    // 이메일 인증번호 확인
+    @PostMapping("/verify-code")
+    public ResponseEntity<ApiResponse<Void>> verifyEmailCode(@Valid @RequestBody EmailVerifyRequestDTO pDTO) throws Exception {
+        log.info("{}.verifyEmailCode Start!", this.getClass().getName());
+
+        // 이메일 인증번호 확인 로직 처리
+        emailService.verifyEmailCode(pDTO);
+
+        log.info("{}.verifyEmailCode End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/update-email")
+    public ResponseEntity<ApiResponse<Void>> updateEmail(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateEmailRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.verifyEmailCode Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        userUpdateService.updateEmail(userId, pDTO);
+
+        log.info("{}.verifyEmailCode End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }

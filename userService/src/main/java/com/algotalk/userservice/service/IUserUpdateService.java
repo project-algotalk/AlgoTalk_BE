@@ -1,9 +1,6 @@
 package com.algotalk.userservice.service;
 
-import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 
 
 public interface IUserUpdateService {
@@ -20,4 +17,10 @@ public interface IUserUpdateService {
 
     // 주소 변경
     int updateAddr(Long userId, UpdateAddrRequestDTO pDTO) throws Exception;
+
+    // 이메일 중복 확인
+    void isEmailDuplicated(UpdateEmailRequestDTO pDTO) throws Exception;
+
+    // 이메일 변경
+    int updateEmail(Long userId, UpdateEmailRequestDTO pDTO) throws Exception;
 }

@@ -1,6 +1,7 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.UpdateEmailRequestDTO;
 import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import org.apache.ibatis.annotations.Mapper;
@@ -25,7 +26,7 @@ public interface IUserUpdateMapper {
     int updateName(UserInfoCommand rCommand) throws Exception;
 
     // 이메일 중복 확인
-    ExistsResponseDTO getEmailExists(UserInfoCommand rCommand) throws Exception;
+    ExistsResponseDTO getEmailExists(UpdateEmailRequestDTO rDTO) throws Exception;
 
     // 이메일 변경
     int updateEmail(UserInfoCommand rCommand) throws Exception;
