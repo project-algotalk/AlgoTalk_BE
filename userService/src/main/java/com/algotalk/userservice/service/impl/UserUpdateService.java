@@ -9,6 +9,7 @@ import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IUserUpdateService;
+import com.algotalk.userservice.util.CmmUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -104,7 +105,7 @@ public class UserUpdateService implements IUserUpdateService {
         res = userUpdateMapper.updateNickname(
                 UserInfoCommand.builder()
                         .userId(userId)
-                        .nickname(pDTO.nickname())
+                        .nickname(pDTO.nickname().strip())
                         .build());
 
         if(res != 1) {
@@ -128,7 +129,7 @@ public class UserUpdateService implements IUserUpdateService {
         res = userUpdateMapper.updateName(
                 UserInfoCommand.builder()
                         .userId(userId)
-                        .name(pDTO.name())
+                        .name(CmmUtil.nvl(pDTO.name()))
                         .build());
 
         if(res != 1) {
@@ -151,8 +152,8 @@ public class UserUpdateService implements IUserUpdateService {
         int res = userUpdateMapper.updateAddr(
                 UserInfoCommand.builder()
                         .userId(userId)
-                        .addr1(pDTO.addr1())
-                        .addr2(pDTO.addr2())
+                        .addr1(CmmUtil.nvl(pDTO.addr1()))
+                        .addr2(CmmUtil.nvl(pDTO.addr2()))
                         .build());
 
         if(res != 1) {

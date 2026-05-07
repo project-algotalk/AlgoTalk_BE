@@ -1,8 +1,12 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
+import com.algotalk.userservice.util.EncryptUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -18,8 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.algotalk.userservice.exception.UserErrorCode.CUR_PASSWORD_MISMATCH;
-import static com.algotalk.userservice.exception.UserErrorCode.PASSWORD_MISMATCH;
+import static com.algotalk.userservice.exception.UserErrorCode.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -217,6 +220,314 @@ class UserUpdateControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(CUR_PASSWORD_MISMATCH.getCode())) // 커스텀 에러 코드 확인!
                 .andExpect(jsonPath("$.message").exists())     // 에러 메시지가 존재하는지 확인
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 성공")
+    void updateNickname_success() throws Exception {
+        // given
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname01@algotalk.com"))
+                .loginId("nickname01")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNicknameRequestDTO pDTO = UpdateNicknameRequestDTO.builder()
+                        .nickname("닉네임변경")
+                                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-nickname")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - Size 미만 입력")
+    void updateNickname_fail_underMinSize() throws Exception {
+        // given - @Size(min=2, max=20)
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname02@algotalk.com"))
+                .loginId("nickname02")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNicknameRequestDTO pDTO = UpdateNicknameRequestDTO.builder()
+                .nickname("닉")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-nickname")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - Size 초과 입력")
+    void updateNickname_fail_overMaxSize() throws Exception {
+        // given - @Size(min=2, max=20)
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname03@algotalk.com"))
+                .loginId("nickname03")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNicknameRequestDTO pDTO = UpdateNicknameRequestDTO.builder()
+                .nickname("닉네임이10글자를넘어갑니다")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-nickname")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - Size 초과 입력")
+    void updateNickname_fail_specialChar() throws Exception {
+        // given - @Pattern(regexp="^[a-zA-Z0-9가-힣]*$")
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
+                .loginId("nickname04")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNicknameRequestDTO pDTO = UpdateNicknameRequestDTO.builder()
+                .nickname("닉네임!!")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-nickname")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - 중복된 닉네임 입력")
+    void updateNickname_fail_duplicate() throws Exception {
+        // given - @Pattern(regexp="^[a-zA-Z0-9가-힣]*$")
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname05@algotalk.com"))
+                .loginId("nickname05")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNicknameRequestDTO pDTO = UpdateNicknameRequestDTO.builder()
+                .nickname("테스트유저")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-nickname")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(DUPLICATE_NICKNAME.getCode())) // 커스텀 에러 코드 확인!
+                .andExpect(jsonPath("$.message").exists())     // 에러 메시지가 존재하는지 확인
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("이름 변경 성공")
+    void updateName_success() throws Exception {
+        // given
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("name01@algotalk.com"))
+                .loginId("name01")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNameRequestDTO pDTO = UpdateNameRequestDTO.builder()
+                .name("이름변경")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-name")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - null 입력")
+    void updateName_fail_validation() throws Exception {
+        // given - @NotBlank
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
+                .loginId("nickname04")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNameRequestDTO pDTO = UpdateNameRequestDTO.builder()
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-name")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("닉네임 변경 실패 - 공백 입력")
+    void updateName_fail_validation2() throws Exception {
+        // given - @NotBlank
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
+                .loginId("nickname04")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateNameRequestDTO pDTO = UpdateNameRequestDTO.builder()
+                .name("   ")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-name")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("주소 변경 성공")
+    void updateAddr_success() throws Exception {
+        // given
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("addr01@algotalk.com"))
+                .loginId("addr01")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        UpdateAddrRequestDTO pDTO = UpdateAddrRequestDTO.builder()
+                .addr1("새로운 주소1")
+                .addr2("새로운 주소2")
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/update-addr")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isOk())
                 .andDo(print());
     }
 }

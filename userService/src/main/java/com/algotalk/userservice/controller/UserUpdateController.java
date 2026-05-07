@@ -1,6 +1,9 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
+import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
+import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
 import com.algotalk.userservice.service.IUserUpdateService;
 import jakarta.validation.Valid;
@@ -34,6 +37,51 @@ public class UserUpdateController {
         userUpdateService.updatePassword(userId, pDTO);
 
         log.info("{}.updatePassword End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/update-nickname")
+    public ResponseEntity<ApiResponse<Void>> updateNickname(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateNicknameRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.updateNickname Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        userUpdateService.updateNickname(userId, pDTO);
+
+        log.info("{}.updateNickname End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/update-name")
+    public ResponseEntity<ApiResponse<Void>> updateName(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateNameRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.updateName Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        userUpdateService.updateName(userId, pDTO);
+
+        log.info("{}.updateName End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/update-addr")
+    public ResponseEntity<ApiResponse<Void>> updateAddr(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateAddrRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.updateAddr Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        userUpdateService.updateAddr(userId, pDTO);
+
+        log.info("{}.updateAddr End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }

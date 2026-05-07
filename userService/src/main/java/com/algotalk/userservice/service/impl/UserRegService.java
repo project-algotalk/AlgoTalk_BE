@@ -162,7 +162,7 @@ public class UserRegService implements IUserRegService {
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 // USERS
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
-                .nickname(CmmUtil.nvl(pDTO.resolvedNickname()))
+                .nickname(CmmUtil.nvl(pDTO.resolvedNickname().strip()))
                 .name(CmmUtil.nvl(pDTO.name()))
                 .addr1(CmmUtil.nvl(pDTO.addr1()))
                 .addr2(CmmUtil.nvl(pDTO.addr2()))
