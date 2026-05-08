@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
+import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 
 @Slf4j
 @Component
@@ -35,6 +37,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
+
+    @Value("${jwt.access.token.expiration}")
+    private Long accessTokenExpiration; // ms
+
+    @Value("${cookie.access.name}")
+    private String accessTokenName;
 
     @Value("${jwt.refresh.token.expiration}")
     private Long refreshTokenExpiration; // ms
@@ -124,20 +132,15 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             // RT Redis 저장
             refreshTokenService.saveRefreshToken(oAuth2User.getUserId(), refreshToken);
 
-            // RT Cookie 설정
-            ResponseCookie rtCookie = ResponseCookie.from(refreshTokenName, refreshToken)
-                    .httpOnly(true)
-                    .secure(cookieSecure) // yml 설정값 사용
-                    .path("/")
-                    .sameSite(sameSite) // yml 설정값 사용
-                    .maxAge(refreshTokenExpiration / 1000)
-                    .build();
-            response.addHeader("Set-Cookie", rtCookie.toString());
+            setAccessTokenCookie(accessToken, response); // 리다이렉트하기 때문에 헤더로 전달 불가능
+            setRefreshTokenCookie(refreshToken, response);
 
             log.info("JWT 발급 완료: userId={}", oAuth2User.getUserId());
 
-            // AT는 fragment로 전달 (URL query 노출 방지)
-            response.sendRedirect(frontendUrl + CALLBACK_PATH + "#token=" + accessToken);
+            response.sendRedirect(frontendUrl + CALLBACK_PATH);
+
+//            // AT는 fragment로 전달 (URL query 노출 방지)
+//            response.sendRedirect(frontendUrl + CALLBACK_PATH + "#token=" + accessToken);
 
         } catch (Exception e) {
             log.error("기존 소셜 회원 JWT 발급 중 오류", e);
@@ -147,5 +150,31 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         log.info("{}.handleExistingUser() End!", this.getClass().getSimpleName());
+    }
+
+    private void setAccessTokenHeader(String accessToken, HttpServletResponse response) {
+        response.setHeader(AUTHORIZATION, "Bearer " + accessToken);
+    }
+
+    private void setAccessTokenCookie(String accessToken, HttpServletResponse response) {
+        ResponseCookie atCookie = ResponseCookie.from(accessTokenName, accessToken)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(accessTokenExpiration / 1000)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, atCookie.toString());
+    }
+
+    private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
+        ResponseCookie rtCookie = ResponseCookie.from(refreshTokenName, refreshToken)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(refreshTokenExpiration / 1000)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, rtCookie.toString());
     }
 }
