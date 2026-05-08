@@ -73,13 +73,10 @@ public class UserLoginServiceTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
-        LoginResponseDTO rDTO = userLoginService.login(pDTO, response);
+        userLoginService.login(pDTO, response);
 
         // then
-        assertThat(rDTO).isNotNull();
-        assertThat(rDTO.tokenType()).isEqualTo("Bearer");
         assertThat(response.getHeader("Authorization").replace("Bearer ", "")).isNotNull();
-        assertThat(rDTO.expiresIn()).isPositive();
 
         String setCookie = response.getHeader("Set-Cookie");
 
@@ -220,7 +217,7 @@ public class UserLoginServiceTest {
                 .build();
 
         MockHttpServletResponse loginResponse = new MockHttpServletResponse();
-        LoginResponseDTO loginResult = userLoginService.login(pDTO, loginResponse);
+        userLoginService.login(pDTO, loginResponse);
 
         // AT에서 실제 userId 추출
         Long userId = jwtTokenService.getUserIdFromToken(Objects.requireNonNull(loginResponse.getHeader("Authorization")).replace("Bearer ", ""));

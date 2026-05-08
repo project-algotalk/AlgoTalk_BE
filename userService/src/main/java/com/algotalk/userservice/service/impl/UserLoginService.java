@@ -61,7 +61,7 @@ public class UserLoginService implements IUserLoginService {
     private long refreshTokenExpiration;
 
     @Override
-    public LoginResponseDTO login(LoginRequestDTO pDTO, HttpServletResponse response) throws Exception {
+    public void login(LoginRequestDTO pDTO, HttpServletResponse response) throws Exception {
         log.info("{}.login Start!", this.getClass().getName());
 
         String loginId = CmmUtil.nvl(pDTO.loginId());
@@ -109,14 +109,7 @@ public class UserLoginService implements IUserLoginService {
         // 10. Access Token 헤더 설정
         setAccessTokenHeader(accessToken, response);
 
-        LoginResponseDTO rDTO = LoginResponseDTO.builder()
-                .tokenType("Bearer")
-                .expiresIn(accessTokenExpiration / 1000) // ms -> 초 변환
-                .build();
-
-
         log.info("{}.login End!", this.getClass().getName());
-        return rDTO;
     }
 
     @Override

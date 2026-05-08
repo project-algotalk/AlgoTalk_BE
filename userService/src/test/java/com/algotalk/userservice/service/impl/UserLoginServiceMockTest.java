@@ -86,11 +86,9 @@ class UserLoginServiceMockTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
-        LoginResponseDTO rDTO = userLoginService.login(pDTO, response);
+        userLoginService.login(pDTO, response);
 
         // then
-        assertThat(rDTO).isNotNull();
-        assertThat(rDTO.tokenType()).isEqualTo("Bearer");
         verify(refreshTokenService).saveRefreshToken(anyLong(), anyString()); // RefreshToken 저장 여부 검증
 
         String setCookie = response.getHeader("Set-Cookie");
