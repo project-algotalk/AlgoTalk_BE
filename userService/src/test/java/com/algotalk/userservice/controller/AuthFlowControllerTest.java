@@ -44,6 +44,8 @@ class AuthFlowControllerTest {
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
+    @Value("${cookie.access.name}")
+    private String accessCookieName;
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
@@ -109,10 +111,9 @@ class AuthFlowControllerTest {
                                         .build()
                         )))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Authorization", startsWith("Bearer ")))
                 .andReturn();
 
-        String accessToken = Objects.requireNonNull(loginResult.getResponse().getHeader("Authorization")).replace("Bearer ", "");
+        String accessToken = getSetCookieValue(loginResult, accessCookieName);
 
         String refreshToken = getSetCookieValue(loginResult, refreshCookieName);
 
@@ -123,8 +124,7 @@ class AuthFlowControllerTest {
                 .andExpect(header().string("Authorization", startsWith("Bearer ")))
                 .andReturn();
 
-        String newAccessToken = Objects.requireNonNull(reissueResult.getResponse().getHeader("Authorization"))
-                .replace("Bearer ", "");
+        String newAccessToken = Objects.requireNonNull(reissueResult.getResponse().getHeader("Authorization")).replace("Bearer ", "");
 
         String newRefreshToken = getSetCookieValue(reissueResult, refreshCookieName);
 

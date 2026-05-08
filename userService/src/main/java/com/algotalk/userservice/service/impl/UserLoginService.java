@@ -107,7 +107,8 @@ public class UserLoginService implements IUserLoginService {
         setRefreshTokenCookie(refreshToken, response);
 
         // 10. Access Token 헤더 설정
-        setAccessTokenHeader(accessToken, response);
+//        setAccessTokenHeader(accessToken, response);
+        setAccessTokenCookie(accessToken, response);
 
         log.info("{}.login End!", this.getClass().getName());
     }
@@ -120,6 +121,7 @@ public class UserLoginService implements IUserLoginService {
         refreshTokenService.deleteRefreshToken(userId);
 
         // 2. Refresh Token 쿠키 삭제
+        expireAccessTokenCookie(response);
         expireRefreshTokenCookie(response);
 
         log.info("{}.logout End!", this.getClass().getName());
@@ -154,6 +156,38 @@ public class UserLoginService implements IUserLoginService {
         log.info("{}.setAccessTokenHeader Start!", this.getClass().getName());
         response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         log.info("{}.setAccessTokenHeader End!", this.getClass().getName());
+    }
+
+    private void setAccessTokenCookie(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenCookie Start!", this.getClass().getName());
+
+        ResponseCookie cookie = ResponseCookie.from(accessCookieName, accessToken)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(accessTokenExpiration / 1000)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        log.info("{}.setAccessTokenCookie End!", this.getClass().getName());
+    }
+
+    private void expireAccessTokenCookie(HttpServletResponse response) {
+        log.info("{}.expireAccessTokenCookie Start!", this.getClass().getName());
+
+        ResponseCookie cookie = ResponseCookie.from(accessCookieName, "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        log.info("{}.expireAccessTokenCookie End!", this.getClass().getName());
     }
 
     private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {

@@ -50,6 +50,7 @@ class UserLoginServiceMockTest {
     @BeforeEach
     void setUp() {
         // 내부 상태 설정(내부의 private 필드에 직접 값 주입)
+        ReflectionTestUtils.setField(userLoginService, "accessCookieName", "AccessToken");
         ReflectionTestUtils.setField(userLoginService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(userLoginService, "cookieSecure", false);
         ReflectionTestUtils.setField(userLoginService, "sameSite", "Lax");
@@ -91,12 +92,13 @@ class UserLoginServiceMockTest {
         // then
         verify(refreshTokenService).saveRefreshToken(anyLong(), anyString()); // RefreshToken 저장 여부 검증
 
-        String setCookie = response.getHeader("Set-Cookie");
+        String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
 
-        assertThat(setCookie).isNotNull();
-        assertThat(setCookie).contains("RefreshToken=");
-        assertThat(setCookie).contains("HttpOnly");
-        assertThat(setCookie).contains("SameSite=Lax");
+        assertThat(allSetCookie).isNotBlank();
+        assertThat(allSetCookie).contains("AccessToken=");
+        assertThat(allSetCookie).contains("RefreshToken=");
+        assertThat(allSetCookie).contains("HttpOnly");
+        assertThat(allSetCookie).contains("SameSite=Lax");
     }
 
     @Test
@@ -180,12 +182,13 @@ class UserLoginServiceMockTest {
         // then
         verify(refreshTokenService).deleteRefreshToken(1L);
 
-        String setCookie = response.getHeader("Set-Cookie");
+        String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
 
-        assertThat(setCookie).isNotNull();
-        assertThat(setCookie).contains("RefreshToken=");
-        assertThat(setCookie).contains("HttpOnly");
-        assertThat(setCookie).contains("SameSite=Lax");
-        assertThat(setCookie).contains("Max-Age=0");
+        assertThat(allSetCookie).isNotBlank();
+        assertThat(allSetCookie).contains("AccessToken=");
+        assertThat(allSetCookie).contains("RefreshToken=");
+        assertThat(allSetCookie).contains("HttpOnly");
+        assertThat(allSetCookie).contains("SameSite=Lax");
+        assertThat(allSetCookie).contains("Max-Age=0");
     }
 }

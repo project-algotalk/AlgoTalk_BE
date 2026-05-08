@@ -45,7 +45,7 @@ public class UserLoginControllerTest {
 
     @Test
     @Transactional
-    @DisplayName("로그인 성공 - 200 + AT Header + RT Cookie")
+    @DisplayName("로그인 성공 - 200 + AT/RT Cookie")
     void login_success() throws Exception {
         // given
         String loginId = "test" + System.currentTimeMillis();
@@ -75,8 +75,7 @@ public class UserLoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Authorization", org.hamcrest.Matchers.startsWith("Bearer ")) )
-                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("RefreshToken=")))
+                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("AccessToken=")))                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("RefreshToken=")))
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("SameSite")))
                 .andReturn();
@@ -84,8 +83,7 @@ public class UserLoginControllerTest {
         log.info("응답 Body: {}", result.getResponse().getContentAsString());
 
         // cleanup
-        String accessToken = Objects.requireNonNull(result.getResponse().getHeader("Authorization"))
-                .replace("Bearer ", "");
+        String accessToken = Objects.requireNonNull(result.getResponse().getCookie("AccessToken")).getValue();
 
         long userId = jwtTokenService.getUserIdFromToken(accessToken);
 
@@ -251,10 +249,7 @@ public class UserLoginControllerTest {
                 .andReturn();
 
         // AT 추출
-        String responseBody = loginResult.getResponse().getContentAsString();
-        String accessToken = Objects.requireNonNull(loginResult.getResponse().getHeader("Authorization"))
-                .replace("Bearer ", "");
-        log.info("로그아웃 테스트용 AT: {}", accessToken);
+        String accessToken = Objects.requireNonNull(loginResult.getResponse().getCookie("AccessToken")).getValue();
 
         // when: 로그아웃 (AT를 Authorization 헤더에 포함)
         mockMvc.perform(post("/user/v1/logout")
