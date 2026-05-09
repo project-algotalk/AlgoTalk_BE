@@ -53,10 +53,13 @@ public class UserUpdateService implements IUserUpdateService {
         }
 
         // 3. 현재 비밀번호가 입력한 현재 비밀번호와 일치하는지
-        boolean currentPasswordMatches = passwordEncoder.matches(pDTO.currentPassword(), rCommand.getPassword());
-        if(!currentPasswordMatches) {
-            log.warn("현재 비밀번호가 일치하지 않습니다.");
-            throw new BusinessException(CUR_PASSWORD_MISMATCH);
+        String passwordSetYn = CmmUtil.nvl(rCommand.getPasswordSetYn(), "Y");
+        if ("Y".equals(passwordSetYn)) {
+            boolean currentPasswordMatches = passwordEncoder.matches(pDTO.currentPassword(), rCommand.getPassword());
+            if (!currentPasswordMatches) {
+                log.warn("현재 비밀번호가 일치하지 않습니다.");
+                throw new BusinessException(CUR_PASSWORD_MISMATCH);
+            }
         }
 
         // 4. 현재 비밀번호와 동일한 비밀번호로 변경하지 못하도록 검증
@@ -79,6 +82,51 @@ public class UserUpdateService implements IUserUpdateService {
         }
 
         res = 1; // 성공적으로 변경된 경우 1 반환
+
+        log.info("{}.updatePassword End!", this.getClass().getName());
+        return res;
+    }
+
+    @Transactional
+    @Override
+    public int setPassword(Long userId, SetPasswordRequestDTO pDTO) throws Exception {
+        log.info("{}.setPassword Start!", this.getClass().getName());
+
+        int res = 0;
+
+        UserInfoCommand rDTO = userUpdateMapper.getUserInfoByUserId(UserInfoCommand.builder().userId(userId).build());
+
+        // 1. 사용자 정보 존재하는지 확인
+        if (rDTO == null) {
+            log.warn("사용자 정보가 존재하지 않습니다.");
+            throw new BusinessException(USER_NOT_FOUND);
+        }
+
+        // 2. 이미 비밀번호가 설정된 사용자는 현재 비밀번호를 확인해야 되기 때문에 setPassword 사용 불가
+        // PASSWORD_SET_YN = 'Y'인 경우에만 체크
+        if (!"N".equals(CmmUtil.nvl(rDTO.getPasswordSetYn(), "Y"))) {
+            log.warn("이미 비밀번호가 설정된 사용자입니다. userID: {}", userId);
+            throw new BusinessException(PASSWORD_ALREADY_SET);
+        }
+
+        // 3. 변경할 비밀번호가 일치하는지 검증
+        if (!pDTO.isPasswordConfirmed()) {
+            log.warn("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+            throw new BusinessException(PASSWORD_MISMATCH);
+        }
+
+        // 4. 비밀번호 변경
+        res = userUpdateMapper.updatePassword(
+                            UserInfoCommand.builder()
+                                    .userId(userId)
+                                    .password(passwordEncoder.encode(pDTO.newPassword()))
+                                    .build()
+                            );
+
+        if (res != 1) {
+            log.error("비밀번호 변경이 실패했습니다.");
+            throw new BusinessException(PASSWORD_UPDATE_FAIL);
+        }
 
         log.info("{}.updatePassword End!", this.getClass().getName());
         return res;

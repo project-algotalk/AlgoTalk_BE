@@ -169,6 +169,7 @@ public class UserRegService implements IUserRegService {
                 // USER_CREDENTIAL
                 .loginId(CmmUtil.nvl(pDTO.loginId()))
                 .password(passwordEncoder.encode(CmmUtil.nvl(pDTO.password())))
+                .passwordSetYn("Y")
                 .build();
 
         // 1.5. USER 테이블에 INSERT (userId 채번)
@@ -283,11 +284,17 @@ public class UserRegService implements IUserRegService {
                     ))
                     .addr1(CmmUtil.nvl(pDTO.addr1()))
                     .addr2(CmmUtil.nvl(pDTO.addr2()))
+                    .loginId(generateLoginId(provider))
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .passwordSetYn("N")
                     .build();
 
             userRegMapper.insertUser(pCommand);
 
-            // 3. USER_ROLES 테이블에 INSERT (userId, role)
+            // 3. USER_CREDENTIAL 테이블에 INSERT (소셜 가입자는 비밀번호 미설정 상태)
+            userRegMapper.insertUserCredential(pCommand);
+
+            // 4. USER_ROLES 테이블에 INSERT (userId, role)
             userRegMapper.insertUserRoles(
                     UserInfoCommand.builder()
                             .userId(pCommand.getUserId())
@@ -295,7 +302,7 @@ public class UserRegService implements IUserRegService {
                             .build()
             );
 
-            // 4. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
+            // 5. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
             SocialAccountCommand socialCommand = SocialAccountCommand.builder()
                     .userId(pCommand.getUserId())
                     .provider(provider)
@@ -305,8 +312,8 @@ public class UserRegService implements IUserRegService {
 
             socialAccountMapper.insertSocialAccount(socialCommand);
 
-            // 5. USER_TARGET_JOB
-            // 5.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
+            // 6. USER_TARGET_JOB
+            // 6.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
             List<TargetJobRequestDTO> targetJobs = pDTO.targetJobs();
             if (targetJobs != null && !targetJobs.isEmpty()) {
                 for (TargetJobRequestDTO job : targetJobs) {
@@ -327,8 +334,8 @@ public class UserRegService implements IUserRegService {
                 }
             }
 
-            // 6. USER_EMPLOYMENT
-            // 6.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
+            // 7. USER_EMPLOYMENT
+            // 7.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
             List<EmploymentRequestDTO> employments = pDTO.employments();
             if (employments != null && !employments.isEmpty()) {
                 for (EmploymentRequestDTO emp : employments) {
@@ -382,5 +389,18 @@ public class UserRegService implements IUserRegService {
                 .substring(0, 5); // 5자리
 
         return trimmed + uuidPart;
+    }
+
+    private String generateLoginId(String provider) {
+        String normalizedProvider = CmmUtil.nvl(provider).toLowerCase();
+        String prefix = normalizedProvider + "_";
+        int uuidLength = Math.max(1, 20 - prefix.length());
+
+        String uuidPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, uuidLength);
+
+        return prefix + uuidPart;
     }
 }

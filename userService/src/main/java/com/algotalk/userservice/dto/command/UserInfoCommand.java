@@ -29,6 +29,7 @@ public class UserInfoCommand {
     // USER_CREDENTIAL
     private String loginId;
     private String password;    // 암호화한 비밀번호
+    private String passwordSetYn;
 
     // USER_CREDENTIAL
     private String role; // List<String> roles -> String role (단일 역할)로 변경, "ROLE_USER", "ROLE_ADMIN" 등으로 저장

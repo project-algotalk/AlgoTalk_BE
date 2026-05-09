@@ -8,6 +8,7 @@
             parameterType="UserInfoCommand">
         UPDATE USER_CREDENTIAL
         SET PASSWORD = #{password},
+            PASSWORD_SET_YN = 'Y',
             UPDATED_AT = NOW(),
             UPDATED_BY = #{userId}
         WHERE USER_ID = #{userId}
@@ -19,7 +20,8 @@
         SELECT
             UC.user_id AS userId,
             UC.login_id AS loginId,
-            UC.password AS password
+            UC.password AS password,
+            UC.password_set_yn AS passwordSetYn
         FROM USER_CREDENTIAL UC
                  INNER JOIN USERS U
                             ON U.USER_ID = UC.USER_ID

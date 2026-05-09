@@ -55,9 +55,9 @@
     <insert id="insertUserCredential"
             parameterType="UserInfoCommand">
         INSERT INTO USER_CREDENTIAL (
-                                        USER_ID, LOGIN_ID, PASSWORD,
+                                        USER_ID, LOGIN_ID, PASSWORD, PASSWORD_SET_YN,
                                         CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
-        VALUES (#{userId}, #{loginId}, #{password},
+        VALUES (#{userId}, #{loginId}, #{password}, #{passwordSetYn},
                 NOW(), #{userId}, NOW(), #{userId})
     </insert>
 

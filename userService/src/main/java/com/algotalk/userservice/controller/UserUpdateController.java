@@ -39,6 +39,20 @@ public class UserUpdateController {
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
+    @PostMapping("/set-password")
+    public ResponseEntity<ApiResponse<Void>> setPassword(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody SetPasswordRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.setPassword Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        userUpdateService.setPassword(userId, pDTO);
+
+        log.info("{}.setPassword End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
     @PostMapping("/update-nickname")
     public ResponseEntity<ApiResponse<Void>> updateNickname(
             @AuthenticationPrincipal Jwt jwt,

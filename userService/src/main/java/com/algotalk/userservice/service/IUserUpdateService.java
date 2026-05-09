@@ -7,6 +7,8 @@ public interface IUserUpdateService {
     // 로그인 정보 변경
     // 비밀번호 변경
     int updatePassword(Long userId, UpdatePasswordRequestDTO pDTO) throws Exception;
+    // 소셜 가입자의 비밀번호 등록
+    int setPassword(Long userId, SetPasswordRequestDTO pDTO) throws Exception;
 
     // 회원 정보 변경
     // 닉네임 변경
