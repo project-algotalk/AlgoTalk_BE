@@ -9,6 +9,9 @@ public interface IUserUpdateService {
     MyPageResponseDTO getMyPage(Long userId) throws Exception;
 
     // 로그인 정보 변경
+    // 아이디 변경
+    int updateLoginId(Long userId, UpdateLoginIdRequestDTO pDTO) throws Exception;
+
     // 비밀번호 변경
     int updatePassword(Long userId, UpdatePasswordRequestDTO pDTO) throws Exception;
     // 소셜 가입자의 비밀번호 등록

@@ -94,6 +94,38 @@ public class UserUpdateService implements IUserUpdateService {
 
     @Transactional
     @Override
+    public int updateLoginId(Long userId, UpdateLoginIdRequestDTO pDTO) throws Exception {
+        log.info("{}.updateLoginId Start!", this.getClass().getName());
+
+        // 1. 아이디 중복 확인
+        ExistsResponseDTO rDTO = userUpdateMapper.getLoginIdExists(
+                UpdateLoginIdRequestDTO.builder()
+                        .loginId(pDTO.loginId())
+                        .build()
+        );
+
+        if ("Y".equals(rDTO.existsYn())) {
+            throw new BusinessException(DUPLICATE_LOGIN_ID);
+        }
+
+        // 2. 아이디 변경
+        int res = userUpdateMapper.updateLoginId(
+                UserInfoCommand.builder()
+                        .userId(userId)
+                        .loginId(CmmUtil.nvl(pDTO.loginId()))
+                        .build()
+        );
+
+        if (res != 1) {
+            throw new BusinessException(LOGIN_ID_UPDATE_FAIL);
+        }
+
+        log.info("{}.updateLoginId End!", this.getClass().getName());
+        return res;
+    }
+
+    @Transactional
+    @Override
     public int updatePassword(Long userId, UpdatePasswordRequestDTO pDTO) throws Exception {
         log.info("{}.updatePassword Start!", this.getClass().getName());
 

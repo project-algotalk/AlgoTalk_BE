@@ -36,6 +36,17 @@ public class UserUpdateController {
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }
 
+    @PostMapping("/update-loginId")
+    public ResponseEntity<ApiResponse<Void>> updateLoginId(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateLoginIdRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.updateLoginId Start!", this.getClass().getName());
+        userUpdateService.updateLoginId(Long.valueOf(jwt.getSubject()), pDTO);
+        log.info("{}.updateLoginId End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
     @PostMapping("/update-password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(
             @AuthenticationPrincipal Jwt jwt,

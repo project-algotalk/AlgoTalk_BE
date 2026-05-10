@@ -24,10 +24,11 @@ public enum UserErrorCode implements ErrorCode {
 
     // 회원 정보 변경
     // 아이디/비밀번호 변경,
+    LOGIN_ID_UPDATE_FAIL            ("USER_043", "아이디 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
     FIND_PASSWORD_SESSION_EXPIRED   ("USER_031", "비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다.", HttpStatus.GONE),
     PASSWORD_RESET_FAIL             ("USER_032", "비밀번호 재설정 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
     // 로그인 정보 수정
-    CUR_PASSWORD_MISMATCH           ("USER_033", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    CUR_PASSWORD_MISMATCH           ("USER_033", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
     NOW_PASSWORD_SAME               ("USER_034", "현재 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
     PASSWORD_ALREADY_SET            ("USER_035", "이미 비밀번호가 설정된 계정입니다.", HttpStatus.BAD_REQUEST),
     PASSWORD_UPDATE_FAIL            ("USER_036", "비밀번호 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
