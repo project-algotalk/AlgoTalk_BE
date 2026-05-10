@@ -38,6 +38,7 @@ class UserLoginMapperTest {
                 .email(email)
                 .loginId(loginId)
                 .password(password)
+                .passwordSetYn("Y")
                 .role(role)
                 .build();
         userRegMapper.insertUser(cmd);
@@ -93,6 +94,7 @@ class UserLoginMapperTest {
                 .email(email)
                 .loginId(loginId)
                 .password(password)
+                .passwordSetYn("Y")
                 .role(role)
                 .build();
         userRegMapper.insertUser(cmd);

@@ -65,6 +65,7 @@ class UserRegMapperTest {
                 .email("reg02@algotalk.com")
                 .loginId("reg02")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -96,6 +97,7 @@ class UserRegMapperTest {
                 .email("reg03@algotalk.com")
                 .loginId("reg03")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 

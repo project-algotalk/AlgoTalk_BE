@@ -65,6 +65,7 @@ class UserUpdateControllerTest {
                 .email("ctrl01@algotalk.com")
                 .loginId("ctrl01")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -121,6 +122,7 @@ class UserUpdateControllerTest {
                 .email("ctrl03@algotalk.com")
                 .loginId("ctrl03")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -157,6 +159,7 @@ class UserUpdateControllerTest {
                 .email("ctrl03@algotalk.com")
                 .loginId("ctrl03")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -196,6 +199,7 @@ class UserUpdateControllerTest {
                 .email("ctrl03@algotalk.com")
                 .loginId("ctrl03")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -234,6 +238,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname01@algotalk.com"))
                 .loginId("nickname01")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -268,6 +273,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname02@algotalk.com"))
                 .loginId("nickname02")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -302,6 +308,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname03@algotalk.com"))
                 .loginId("nickname03")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -336,6 +343,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
                 .loginId("nickname04")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -370,6 +378,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname05@algotalk.com"))
                 .loginId("nickname05")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -406,6 +415,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("name01@algotalk.com"))
                 .loginId("name01")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -440,6 +450,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
                 .loginId("nickname04")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -473,6 +484,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("nickname04@algotalk.com"))
                 .loginId("nickname04")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -507,6 +519,7 @@ class UserUpdateControllerTest {
                 .email(EncryptUtil.encAES128CBC("addr01@algotalk.com"))
                 .loginId("addr01")
                 .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 

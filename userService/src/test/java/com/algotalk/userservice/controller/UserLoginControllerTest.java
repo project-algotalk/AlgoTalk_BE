@@ -75,8 +75,10 @@ public class UserLoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("AccessToken=")))                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("RefreshToken=")))
-                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
+                .andExpect(cookie().exists("AccessToken"))
+                .andExpect(cookie().exists("RefreshToken"))
+                .andExpect(cookie().httpOnly("AccessToken", true))
+                .andExpect(cookie().httpOnly("RefreshToken", true))
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("SameSite")))
                 .andReturn();
 

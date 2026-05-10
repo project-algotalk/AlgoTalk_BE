@@ -68,6 +68,7 @@ class UserLoginServiceMockTest {
                 .userId(1L)
                 .loginId("testuser")
                 .password("encodedPassword")
+                .passwordSetYn("Y")
                 .nickname("테스터")
                 .deletedYn("N")
                 .role("ROLE_USER")

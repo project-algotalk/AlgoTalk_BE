@@ -78,6 +78,7 @@ class UserRegControllerTest {
                 .loginId("existId")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
+                .passwordSetYn("Y")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
@@ -141,6 +142,7 @@ class UserRegControllerTest {
                 .email("test@algotalk.com")
                 .loginId("test")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 

@@ -48,6 +48,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd01@algotalk.com"))
                 .loginId("upd01")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -87,6 +88,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd02@algotalk.com"))
                 .loginId("upd02")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -125,6 +127,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd03@algotalk.com"))
                 .loginId("upd03")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -163,6 +166,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd04@algotalk.com"))
                 .loginId("upd04")
                 .password(passwordEncoder.encode("samePassword"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -201,6 +205,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd05@algotalk.com"))
                 .loginId("upd05")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -238,6 +243,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd06@algotalk.com"))
                 .loginId("upd06")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -274,6 +280,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd07@algotalk.com"))
                 .loginId("upd07")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -311,6 +318,7 @@ class UserUpdateServiceTest {
                 .email(EncryptUtil.encAES128CBC("upd07@algotalk.com"))
                 .loginId("upd07")
                 .password(passwordEncoder.encode("password"))
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 

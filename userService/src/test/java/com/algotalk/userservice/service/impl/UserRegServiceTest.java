@@ -66,6 +66,7 @@ class UserRegServiceTest {
                 .email(EncryptUtil.encAES128CBC("reg01@algotalk.com"))
                 .loginId("reg01")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -94,6 +95,7 @@ class UserRegServiceTest {
                 .email(EncryptUtil.encAES128CBC("reg02@algotalk.com"))
                 .loginId("reg02")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -133,6 +135,7 @@ class UserRegServiceTest {
                 .email(EncryptUtil.encAES128CBC("reg03@algotalk.com"))
                 .loginId("reg03")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
