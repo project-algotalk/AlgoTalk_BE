@@ -2,6 +2,7 @@ package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.*;
+import com.algotalk.userservice.dto.response.MyPageResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import jakarta.validation.Valid;
@@ -10,10 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -23,6 +21,20 @@ public class UserUpdateController {
 
     private final IUserUpdateService userUpdateService;
     private final IEmailService emailService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMyPage(
+            @AuthenticationPrincipal Jwt jwt
+    ) throws Exception {
+        log.info("{}.getMypage Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+
+        MyPageResponseDTO rDTO = userUpdateService.getMyPage(userId);
+
+        log.info("{}.getMypage End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO));
+    }
 
     @PostMapping("/update-password")
     public ResponseEntity<ApiResponse<Void>> updatePassword(

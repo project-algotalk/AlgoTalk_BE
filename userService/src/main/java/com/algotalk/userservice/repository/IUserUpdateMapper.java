@@ -1,13 +1,21 @@
 package com.algotalk.userservice.repository;
 
+import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.UpdateEmailRequestDTO;
 import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import org.apache.ibatis.annotations.Mapper;
 
+import java.util.List;
+
 @Mapper
 public interface IUserUpdateMapper {
+    UserInfoCommand getMyPageSummaryByUserId(Long userId) throws Exception;
+    List<SocialAccountCommand> getMyPageSocialAccountsByUserId(Long userId) throws Exception;
+    List<UserInfoCommand> getMyPageTargetJobsByUserId(Long userId) throws Exception;
+    List<UserInfoCommand> getMyPageEmploymentsByUserId(Long userId) throws Exception;
+
     // 현재 비밀번호 조회
     UserInfoCommand getUserInfoByUserId(UserInfoCommand rCommand) throws Exception;
 

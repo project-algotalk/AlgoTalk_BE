@@ -1,9 +1,11 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
+import com.algotalk.userservice.dto.response.MyPageResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
@@ -15,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 
 @Slf4j
@@ -25,6 +29,68 @@ public class UserUpdateService implements IUserUpdateService {
     private final IUserUpdateMapper userUpdateMapper;
     private final PasswordEncoder passwordEncoder;
     private final IEmailService emailService;
+
+    @Override
+    public MyPageResponseDTO getMyPage(Long userId) throws Exception {
+        log.info("{}.getMyPage Start!", this.getClass().getName());
+
+        // 1. 기본 정보 조회
+        UserInfoCommand user = userUpdateMapper.getMyPageSummaryByUserId(userId);
+        if (user == null) {
+            log.warn("사용자 정보가 존재하지 않습니다.");
+            throw new BusinessException(USER_NOT_FOUND);
+        }
+
+        // 2. 소셜 연동 계정 목록 조회
+        List<String> providers = userUpdateMapper.getMyPageSocialAccountsByUserId(userId).stream()
+                .map(SocialAccountCommand::getProvider)
+                .filter(provider -> provider != null && !provider.isBlank())
+                .distinct()
+                .toList();
+
+        // 3. 목표 직무 목록 조회
+        List<MyPageResponseDTO.TargetJobInfo> targetJobs =
+                userUpdateMapper.getMyPageTargetJobsByUserId(userId).stream()
+                    .map(job -> MyPageResponseDTO.TargetJobInfo.builder()
+                            .categoryId(job.getCategoryId())
+                            .categoryName(job.getCategoryName())
+                            .startDate(job.getStartDate())
+                            .endDate(job.getEndDate())
+                            .build())
+                    .toList();
+
+        // 4. 재직 이력 목록 조회
+        List<MyPageResponseDTO.EmploymentInfo> employments =
+                userUpdateMapper.getMyPageEmploymentsByUserId(userId).stream()
+                    .map(emp -> MyPageResponseDTO.EmploymentInfo.builder()
+                            .companyName(emp.getCompanyName())
+                            .categoryId(emp.getEmploymentCategoryId())
+                            .categoryName(emp.getEmploymentCategoryName())
+                            .startDate(emp.getStartDate())
+                            .endDate(emp.getEndDate())
+                            .build())
+                    .toList();
+
+        // 5. 응답 DTO 조합
+        MyPageResponseDTO rDTO = MyPageResponseDTO.builder()
+                .userId(user.getUserId())
+                .nickname(user.getNickname())
+                .name(user.getName())
+                .email(EncryptUtil.decAES128CBC(CmmUtil.nvl(user.getEmail())))
+                .addr1(user.getAddr1())
+                .addr2(user.getAddr2())
+                .createdAt(user.getCreatedAt())
+                .loginId(user.getLoginId())
+                .passwordSetYn(CmmUtil.nvl(user.getPasswordSetYn(), "Y"))
+                .socialProviders(providers)
+                .targetJobs(targetJobs)
+                .employments(employments)
+                .build();
+
+        log.info("{}.getMyPage End!", this.getClass().getName());
+
+        return rDTO;
+    }
 
     @Transactional
     @Override

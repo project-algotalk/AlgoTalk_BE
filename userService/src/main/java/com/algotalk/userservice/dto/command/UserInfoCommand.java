@@ -4,6 +4,7 @@ import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Service 계층에서 Controller로부터 전달받은 회원정보를 담는 DTO
@@ -25,6 +26,7 @@ public class UserInfoCommand {
     private String addr1;
     private String addr2;
     private String deletedYn;    // "Y"는 탈퇴, "N"은 회원
+    private LocalDateTime createdAt; // 가입일
 
     // USER_CREDENTIAL
     private String loginId;
@@ -38,6 +40,8 @@ public class UserInfoCommand {
     private Long categoryId;
     private String categoryName;
     private String companyName;
+    private Long employmentCategoryId;
+    private String employmentCategoryName;
     private LocalDate startDate;
     private LocalDate endDate;
 
