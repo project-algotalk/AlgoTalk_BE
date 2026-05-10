@@ -35,6 +35,8 @@ public enum UserErrorCode implements ErrorCode {
     EMAIL_UPDATE_FAIL               ("USER_038", "이메일 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
     NAME_UPDATE_FAIL                ("USER_039", "이름 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
     ADDR_UPDATE_FAIL                ("USER_040", "주소 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    WITHDRAW_FAIL                   ("USER_041", "회원 탈퇴 처리에 실패했습니다.", HttpStatus.BAD_REQUEST),
+    WITHDRAW_PASSWORD_REQUIRED      ("USER_042", "비밀번호 가입 회원은 현재 비밀번호 입력이 필요합니다.", HttpStatus.BAD_REQUEST),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
@@ -43,6 +45,7 @@ public enum UserErrorCode implements ErrorCode {
     OAUTH2_LOGIN_FAILED          ("USER_053", "소셜 로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
     OAUTH2_TEMP_TOKEN_NOT_FOUND  ("USER_054", "소셜 로그인 임시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
     OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_055", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    SOCIAL_NOT_LINKED            ("USER_056", "연동되지 않은 소셜 계정입니다.", HttpStatus.BAD_REQUEST),
     SOCIAL_SIGN_UP_FAIL            ("USER_060", "소셜 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
     // 권한

@@ -47,6 +47,7 @@ public class UserInfoCommand {
      * 회원 가입시 중복 체크 용으로 사용(Y/N)
      */
     private String existsYn;
+    private String provider;
 
     public static UserInfoCommand from(SignUpRequestDTO pDTO) {
         return UserInfoCommand.builder()

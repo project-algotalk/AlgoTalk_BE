@@ -21,16 +21,4 @@ public interface ISocialAccountMapper {
      * @throws Exception
      */
     void insertSocialAccount(SocialAccountCommand pCommand) throws Exception;
-
-    // 소셜 연결 해제 - 물리 삭제
-    int deleteSocialAccount(SocialAccountCommand pCommand) throws Exception;
-
-    // 연결된 소셜 수 조회
-    int countByUserId(Long userId) throws Exception;
-
-    // userId + provider로 소셜 계정 존재 여부 조회
-    SocialAccountCommand findByUserIdAndProvider(SocialAccountCommand pCommand) throws Exception;
-
-    // 탈퇴 시 전체 소셜 계정 물리 삭제
-    int deleteAllByUserId(Long userId) throws Exception;
 }
