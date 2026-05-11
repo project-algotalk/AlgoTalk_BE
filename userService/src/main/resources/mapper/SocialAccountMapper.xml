@@ -71,6 +71,22 @@
           AND PROVIDER_CD = #{provider}
     </select>
 
+    <!-- userId와 provider로 소셜 계정 존재 여부 확인 -->
+    <select id="existsByUserIdAndProvider" parameterType="SocialAccountCommand" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+          AND PROVIDER_CD = #{provider}
+    </select>
+
+    <!-- provider와 providerId로 소셜 계정 존재 여부 확인 -->
+    <select id="existsByProviderAndProviderId" parameterType="SocialAccountCommand" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM SOCIAL_ACCOUNT
+        WHERE PROVIDER_CD = #{provider}
+          AND PROVIDER_UID = #{providerId}
+    </select>
+
     <!-- 탈퇴 시 전체 소셜 계정 물리 삭제 -->
     <delete id="deleteAllByUserId"
             parameterType="Long">

@@ -21,4 +21,10 @@ public interface ISocialAccountMapper {
      * @throws Exception
      */
     void insertSocialAccount(SocialAccountCommand pCommand) throws Exception;
+
+    // userId와 provider로 소셜 계정 존재 여부 확인
+    boolean existsByUserIdAndProvider(SocialAccountCommand pCommand) throws Exception;
+
+    // provider와 providerId로 소셜 계정 존재 여부 확인
+    boolean existsByProviderAndProviderId(SocialAccountCommand pCommand) throws Exception;
 }

@@ -1,8 +1,11 @@
 package com.algotalk.userservice.auth.oauth2;
 
+import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.SocialLinkRequestDTO;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
+import com.algotalk.userservice.service.ISocialLinkService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
@@ -35,8 +40,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final IJwtTokenService jwtTokenService;
     private final IRefreshTokenService refreshTokenService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ISocialLinkService socialLinkService;
 
     private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
+    private static final String LINK_TOKEN_PREFIX = "oauth2:link:";
+    private static final String NONCE_PREFIX = "oauth2:nonce:";
+    private static final String STATE_LINK_SEPARATOR = "::LINK::";
 
     @Value("${jwt.access.token.expiration}")
     private Long accessTokenExpiration; // ms
@@ -78,9 +87,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 oAuth2User.getOAuth2UserInfo().getEmail(),
                 oAuth2User.getDisplayName());
 
-        log.info("신규 회원 확인: {}", oAuth2User.isNewUser());
+        String linkToken = extractLinkToken(request);
+        log.info("신규 회원 확인: {}, linkToken 존재 여부: {}", oAuth2User.isNewUser(), linkToken != null);
 
-        if (oAuth2User.isNewUser()) {
+        if (linkToken != null) {
+            handleLinkAccount(response, oAuth2User, linkToken);
+        } else if (oAuth2User.isNewUser()) {
             handleNewUser(response, oAuth2User);
         } else {
             handleExistingUser(response, oAuth2User);
@@ -139,9 +151,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             response.sendRedirect(frontendUrl + CALLBACK_PATH);
 
-//            // AT는 fragment로 전달 (URL query 노출 방지)
-//            response.sendRedirect(frontendUrl + CALLBACK_PATH + "#token=" + accessToken);
-
         } catch (Exception e) {
             log.error("기존 소셜 회원 JWT 발급 중 오류", e);
 
@@ -176,5 +185,70 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                 .maxAge(refreshTokenExpiration / 1000)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, rtCookie.toString());
+    }
+
+    private String extractLinkToken(HttpServletRequest request) {
+        String state = request.getParameter("state");
+        if (state == null) {
+            return null;
+        }
+
+        int idx = state.lastIndexOf(STATE_LINK_SEPARATOR);
+        if (idx < 0) {
+            return null;
+        }
+
+        String nonce = state.substring(idx + STATE_LINK_SEPARATOR.length());
+        if (nonce.isBlank()) {
+            return null;
+        }
+
+        String linkToken = (String) redisTemplate.opsForValue().get(NONCE_PREFIX + nonce);
+        if (linkToken == null) {
+            return null;
+        }
+
+        redisTemplate.delete(NONCE_PREFIX + nonce);
+        return linkToken;
+    }
+
+    private void handleLinkAccount(HttpServletResponse response, CustomOAuth2User oAuth2User, String linkToken) throws IOException {
+        try {
+            String key = LINK_TOKEN_PREFIX + linkToken;
+            Map<Object, Object> tokenData = redisTemplate.opsForHash().entries(key);
+            if (tokenData.isEmpty()) {
+                String error = URLEncoder.encode("LINK_TOKEN_EXPIRED", StandardCharsets.UTF_8);
+                response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+                return;
+            }
+
+            redisTemplate.delete(key);
+
+            Long userId = Long.valueOf(tokenData.get("userId").toString());
+            String expectedProvider = tokenData.get("provider").toString();
+            String actualProvider = oAuth2User.getOAuth2UserInfo().getProvider().toUpperCase();
+            String providerId = oAuth2User.getOAuth2UserInfo().getProviderId();
+
+            if (!expectedProvider.equals(actualProvider)) {
+                String error = URLEncoder.encode("PROVIDER_MISMATCH", StandardCharsets.UTF_8);
+                response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+                return;
+            }
+
+            socialLinkService.linkSocialAccount(SocialLinkRequestDTO.builder()
+                    .userId(userId)
+                    .provider(actualProvider)
+                    .providerId(providerId)
+                    .build());
+            response.sendRedirect(frontendUrl + "/oauth2/link/success");
+        } catch (BusinessException be) {
+            // 중복 연결 등의 비즈니스 예외는 에러코드 그대로 전달
+            String error = URLEncoder.encode(be.getErrorCode().getCode(), StandardCharsets.UTF_8);
+            response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+        } catch (Exception e) {
+            log.error("소셜 계정 연결 중 오류", e);
+            String errorCode = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
+            response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
+        }
     }
 }

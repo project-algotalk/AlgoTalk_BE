@@ -4,6 +4,7 @@ import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
+import com.algotalk.userservice.service.ISocialLinkService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class UserUpdateController {
 
     private final IUserUpdateService userUpdateService;
     private final IEmailService emailService;
+    private final ISocialLinkService socialLinkService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMyPage(
@@ -163,6 +165,23 @@ public class UserUpdateController {
 
         log.info("{}.verifyEmailCode End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/social/link/{provider}")
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> issueLinkToken(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String provider
+    ) throws Exception {
+        log.info("{}.issueLinkToken Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        String linkToken = socialLinkService.issueLinkToken(SocialLinkRequestDTO.builder()
+                .userId(userId)
+                .provider(provider)
+                .build());
+
+        log.info("{}.issueLinkToken End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("linkToken", linkToken)));
     }
 }
 
