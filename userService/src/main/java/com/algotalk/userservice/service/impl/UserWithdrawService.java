@@ -28,7 +28,7 @@ public class UserWithdrawService implements IUserWithdrawService {
 
     @Transactional
     @Override
-    public int unlinkSocial(Long userId, String provider) throws Exception {
+    public void unlinkSocial(Long userId, String provider) throws Exception {
         log.info("{}.unlinkSocial Start!", this.getClass().getName());
 
         // 1. provider 유효한지 확인
@@ -69,12 +69,11 @@ public class UserWithdrawService implements IUserWithdrawService {
         }
 
         log.info("{}.unlinkSocial End!", this.getClass().getName());
-        return 1;
     }
 
     @Transactional
     @Override
-    public int withdraw(Long userId, WithdrawRequestDTO pDTO) throws Exception {
+    public void withdraw(Long userId, WithdrawRequestDTO pDTO) throws Exception {
         log.info("{}.withdraw Start!", this.getClass().getName());
 
         // 1. 사용자 정보 조회
@@ -116,7 +115,6 @@ public class UserWithdrawService implements IUserWithdrawService {
         refreshTokenService.deleteRefreshToken(userId);
 
         log.info("{}.withdraw End!", this.getClass().getName());
-        return 1;
     }
 
     // 소셜 타입 반환

@@ -126,7 +126,7 @@ public class UserUpdateController {
     // 이메일 인증번호 발송
     @PostMapping("/email-code")
     public ResponseEntity<ApiResponse<Void>> sendEmailVerificationCode(@Valid @RequestBody EmailSendRequestDTO pDTO) throws Exception {
-        log.info("UserRegController.sendEmailVerificationCode Start!");
+        log.info("{}.sendEmailVerificationCode Start!", this.getClass().getName());
         log.info("email: {}", pDTO.email());
 
         // 이메일 중복 확인 로직 처리
@@ -137,7 +137,7 @@ public class UserUpdateController {
         // 이메일 인증번호 발송 로직 처리
         emailService.sendEmailVerificationCode(pDTO);
 
-        log.info("UserRegController.sendEmailVerificationCode End!");
+        log.info("{}.sendEmailVerificationCode End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
     }
 
@@ -158,12 +158,12 @@ public class UserUpdateController {
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateEmailRequestDTO pDTO
     ) throws Exception {
-        log.info("{}.verifyEmailCode Start!", this.getClass().getName());
+        log.info("{}.updateEmail Start!", this.getClass().getName());
 
         Long userId = Long.valueOf(jwt.getSubject());
         userUpdateService.updateEmail(userId, pDTO);
 
-        log.info("{}.verifyEmailCode End!", this.getClass().getName());
+        log.info("{}.updateEmail End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
     }
 

@@ -26,8 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_LOGIN_FAILED;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
