@@ -106,7 +106,7 @@ public class UserWithdrawService implements IUserWithdrawService {
 
         // 4.연결된 소셜 계정 전부 삭제
         res = userWithdrawMapper.deleteAllSocialAccountsByUserId(UserInfoCommand.builder().userId(userId).build());
-        if (res != 1) {
+        if (res < 0) {
             log.error("회원 탈퇴 처리 실패 userId: {}", userId);
             throw new BusinessException(WITHDRAW_FAIL);
         }
