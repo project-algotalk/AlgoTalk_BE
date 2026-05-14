@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -125,6 +126,16 @@ public class AutoRefreshOn401Filter implements WebFilter {
         return null;
     }
 
+    private String extractAtFromAuthHeader(String authorization) {
+        String auth = CmmUtil.nvl(authorization.strip());
+        if (auth.isBlank()) return null;
+        if (auth.regionMatches(true, 0, "Bearer ", 0, 4)) {
+            String token = auth.substring(7).strip();
+            return token.isBlank() ? null : token;
+        }
+        return auth;
+    }
+
     private Mono<RefreshOutcome> callRefresh(ServerWebExchange exchange) {
         String cookieHeader = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.COOKIE));
         String ua = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT));
@@ -148,6 +159,9 @@ public class AutoRefreshOn401Filter implements WebFilter {
                     if (!res.getStatusCode().is2xxSuccessful()) return Mono.empty();
                     List<String> setCookies = res.getHeaders().get(HttpHeaders.SET_COOKIE);
                     String at = extractAt(setCookies);
+                    if (at == null || at.isBlank()) {
+                        at = extractAtFromAuthHeader(Objects.requireNonNull(res.getHeaders().getFirst(HttpHeaders.SET_COOKIE)));
+                    }
                     return Mono.justOrEmpty(new RefreshOutcome(at, setCookies));
                 });
     }

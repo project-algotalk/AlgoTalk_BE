@@ -104,8 +104,9 @@ public class TokenReissueService implements ITokenReissueService {
         // 7. 새로운 Refresh Token을 Cookie에 담아서 Response에 추가
         setRefreshTokenCookie(newRefreshToken, response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
 
-        // 8. 새로운 Access Token을 헤더에 담아서 Response에 추가
+        // 8. 새로운 Access Token을 헤더 및 쿠키에 담아서 Response에 추가
         setAccessTokenHeader(newAccessToken, response);
+        setAccessTokenCookie(newAccessToken, response);
 
         // 9. 토큰 메타 정보만 Response DTO로 반환
         TokenReissueResponseDTO rDTO = TokenReissueResponseDTO.builder()
@@ -142,6 +143,24 @@ public class TokenReissueService implements ITokenReissueService {
         log.info("{}.setAccessTokenHeader Start!", this.getClass().getName());
         response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
         log.info("{}.setAccessTokenHeader End!", this.getClass().getName());
+    }
+
+    // 토큰 삭제 및 저장 함수
+    private void setAccessTokenCookie(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenCookie Start!", this.getClass().getName());
+
+        // 새로운 Refresh Token이 저장된 쿠키 생성 및 추가
+        ResponseCookie cookie = ResponseCookie.from(accessCookieName, accessToken)
+                .httpOnly(true) // 항상 true (XSS 방어)
+                .secure(cookieSecure) // yml 설정값 사용
+                .path("/")
+                .sameSite(sameSite) // yml 설정값 사용
+                .maxAge(accessTokenExpiration / 1000) // ms -> 초 변환
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        log.info("{}.setAccessTokenCookie End!", this.getClass().getName());
     }
 
     // 토큰 삭제 및 저장 함수
