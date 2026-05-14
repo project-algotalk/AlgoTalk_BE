@@ -153,7 +153,7 @@ public class UserRegService implements IUserRegService {
         // 1.3. 이메일 중복 최종 확인
         // 회원가입 API를 직접 호출하는 경우를 대비해 insert 직전 서버 측에서 한 번 더 검증
         if (isEmailDuplicated(CheckEmailRequestDTO.builder()
-                .email(CmmUtil.nvl(pDTO.email()))
+                .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
                 .build())) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
         }

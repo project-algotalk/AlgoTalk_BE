@@ -42,6 +42,7 @@ class TokenReissueServiceMockTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(tokenReissueService, "accessCookieName", "AccessToken");
         ReflectionTestUtils.setField(tokenReissueService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(tokenReissueService, "cookieSecure", false);
         ReflectionTestUtils.setField(tokenReissueService, "sameSite", "Lax");

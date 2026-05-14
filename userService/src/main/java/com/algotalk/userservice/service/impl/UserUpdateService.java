@@ -339,7 +339,12 @@ public class UserUpdateService implements IUserUpdateService {
 
         log.info("userId: {}", userId);
 
-        // 1. 이메일 변경
+        // 1. 이메일 인증 여부 확인
+        if (!emailService.isEmailVerified(pDTO.email().strip())) {
+            throw new BusinessException(EMAIL_NOT_VERIFIED);
+        }
+
+        // 2. 이메일 변경
         int res = userUpdateMapper.updateEmail(
                 UserInfoCommand.builder()
                         .userId(userId)
