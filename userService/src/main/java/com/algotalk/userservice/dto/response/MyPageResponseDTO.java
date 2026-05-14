@@ -27,14 +27,14 @@ public class MyPageResponseDTO {
     private List<String> socialProviders;
 
     // 목표 직무 목록
-    private List<TargetJobInfo> targetJobs;
+    private List<TargetJobInfoDTO> targetJobs;
 
     // 재직 이력 목록
-    private List<EmploymentInfo> employments;
+    private List<EmploymentInfoDTO> employments;
 
     @Getter
     @Builder
-    public static class TargetJobInfo {
+    public static class TargetJobInfoDTO {
         private Long categoryId;
         private String categoryName;
         private LocalDate startDate;
@@ -43,7 +43,7 @@ public class MyPageResponseDTO {
 
     @Getter
     @Builder
-    public static class EmploymentInfo {
+    public static class EmploymentInfoDTO {
         private String companyName;
         private Long categoryId;
         private String categoryName;

@@ -221,7 +221,7 @@ class UserUpdateControllerTest {
                                         .content(objectMapper.writeValueAsString(pDTO)),
                                 cmd.getUserId()
                         ))
-                .andExpect(status().isUnauthorized())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(CUR_PASSWORD_MISMATCH.getCode())) // 커스텀 에러 코드 확인!
                 .andExpect(jsonPath("$.message").exists())     // 에러 메시지가 존재하는지 확인
                 .andDo(print());

@@ -49,9 +49,9 @@ public class UserUpdateService implements IUserUpdateService {
                 .toList();
 
         // 3. 목표 직무 목록 조회
-        List<MyPageResponseDTO.TargetJobInfo> targetJobs =
+        List<MyPageResponseDTO.TargetJobInfoDTO> targetJobs =
                 userUpdateMapper.getMyPageTargetJobsByUserId(userId).stream()
-                    .map(job -> MyPageResponseDTO.TargetJobInfo.builder()
+                    .map(job -> MyPageResponseDTO.TargetJobInfoDTO.builder()
                             .categoryId(job.getCategoryId())
                             .categoryName(job.getCategoryName())
                             .startDate(job.getStartDate())
@@ -60,9 +60,9 @@ public class UserUpdateService implements IUserUpdateService {
                     .toList();
 
         // 4. 재직 이력 목록 조회
-        List<MyPageResponseDTO.EmploymentInfo> employments =
+        List<MyPageResponseDTO.EmploymentInfoDTO> employments =
                 userUpdateMapper.getMyPageEmploymentsByUserId(userId).stream()
-                    .map(emp -> MyPageResponseDTO.EmploymentInfo.builder()
+                    .map(emp -> MyPageResponseDTO.EmploymentInfoDTO.builder()
                             .companyName(emp.getCompanyName())
                             .categoryId(emp.getEmploymentCategoryId())
                             .categoryName(emp.getEmploymentCategoryName())
