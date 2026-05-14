@@ -129,7 +129,7 @@ public class AutoRefreshOn401Filter implements WebFilter {
     private String extractAtFromAuthHeader(String authorization) {
         String auth = CmmUtil.nvl(authorization.strip());
         if (auth.isBlank()) return null;
-        if (auth.regionMatches(true, 0, "Bearer ", 0, 4)) {
+        if (auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
             String token = auth.substring(7).strip();
             return token.isBlank() ? null : token;
         }
@@ -160,7 +160,7 @@ public class AutoRefreshOn401Filter implements WebFilter {
                     List<String> setCookies = res.getHeaders().get(HttpHeaders.SET_COOKIE);
                     String at = extractAt(setCookies);
                     if (at == null || at.isBlank()) {
-                        at = extractAtFromAuthHeader(Objects.requireNonNull(res.getHeaders().getFirst(HttpHeaders.SET_COOKIE)));
+                        at = extractAtFromAuthHeader(res.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
                     }
                     return Mono.justOrEmpty(new RefreshOutcome(at, setCookies));
                 });
@@ -255,14 +255,16 @@ public class AutoRefreshOn401Filter implements WebFilter {
         }
 
         if (!isSelfRefreshCall(path) && needPreRefresh(exchange)) {
-            return callRefresh(exchange).flatMap(outcome -> {
-                if (outcome != null && !CmmUtil.nvl(outcome.at()).isBlank()) {
-                    applySetCookies(exchange.getResponse(), outcome.setCookies());
-                    ServerWebExchange resumed = mutateWithNewAT(exchange, outcome.at());
-                    return chain.filter(resumed);
-                }
-                return on401RetryOnce(exchange, chain);
-            });
+            return callRefresh(exchange)
+                    .flatMap(outcome -> {
+                        if (outcome != null && !CmmUtil.nvl(outcome.at()).isBlank()) {
+                            applySetCookies(exchange.getResponse(), outcome.setCookies());
+                            ServerWebExchange resumed = mutateWithNewAT(exchange, outcome.at());
+                            return chain.filter(resumed);
+                        }
+                        return on401RetryOnce(exchange, chain);
+                    })
+                    .switchIfEmpty(on401RetryOnce(exchange, chain));
         }
 
         return on401RetryOnce(exchange, chain);

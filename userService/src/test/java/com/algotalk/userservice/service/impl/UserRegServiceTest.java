@@ -161,7 +161,7 @@ class UserRegServiceTest {
                 .loginId("reg04")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email(EncryptUtil.encAES128CBC("reg04@algotalk.com"))
+                .email("reg04@algotalk.com")
                 .name("홍길동")
                 .nickname("둘리")
                 .build();
@@ -191,7 +191,7 @@ class UserRegServiceTest {
                 .loginId("reg05")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email(EncryptUtil.encAES128CBC("reg05@algotalk.com"))
+                .email("reg05@algotalk.com")
                 .name("홍길동")
                 .build();
 
@@ -229,7 +229,7 @@ class UserRegServiceTest {
                 .loginId("reg06")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email(EncryptUtil.encAES128CBC("reg06@algotalk.com"))
+                .email("reg06@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -286,7 +286,7 @@ class UserRegServiceTest {
                 .loginId("reg07")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email(EncryptUtil.encAES128CBC("reg07@algotalk.com"))
+                .email("reg07@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -339,7 +339,7 @@ class UserRegServiceTest {
                 .loginId("reg08")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email(EncryptUtil.encAES128CBC("reg08@algotalk.com"))
+                .email("reg08@algotalk.com")
                 .name("홍길동")
                 .employments(employments)
                 .build();
