@@ -13,11 +13,11 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TokenReissueController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -38,20 +38,21 @@ class TokenReissueControllerTest {
 
         // given
         TokenReissueResponseDTO responseDTO = TokenReissueResponseDTO.builder()
-                .accessToken("new.access.token")
                 .tokenType("Bearer")
                 .expiresIn(600L)
                 .build();
 
         given(tokenReissueService.reissueToken(any(), any()))
-                .willReturn(responseDTO);
+                .willAnswer(invocation -> {
+                    jakarta.servlet.http.HttpServletResponse response = invocation.getArgument(1);
+                    response.setHeader("Authorization", "Bearer new.access.token");
+                    return responseDTO;
+                });
 
         // when & then
         mockMvc.perform(post("/user/v1/token/reissue"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").value("new.access.token"))
-                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.data.expiresIn").value(600));
+                .andExpect(header().string("Authorization", startsWith("Bearer ")));
     }
 
     @Test

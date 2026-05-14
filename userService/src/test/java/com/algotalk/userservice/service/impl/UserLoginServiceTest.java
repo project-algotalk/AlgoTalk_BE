@@ -18,6 +18,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -42,7 +44,7 @@ public class UserLoginServiceTest {
 
     @Test
     @Transactional
-    @DisplayName("로그인 성공 - Access Token 반환 및 RefreshToken Cookie 설정")
+    @DisplayName("로그인 성공 - Access/Refresh Token Cookie 설정")
     void login_success() throws Exception {
         // given
         String loginId = "test" + System.currentTimeMillis();
@@ -71,27 +73,21 @@ public class UserLoginServiceTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
-        LoginResponseDTO rDTO = userLoginService.login(pDTO, response);
-
-        log.info("accessToken: {}", rDTO.accessToken());
-        log.info("tokenType: {}", rDTO.tokenType());
-        log.info("expiresIn: {}", rDTO.expiresIn());
+        userLoginService.login(pDTO, response);
 
         // then
-        assertThat(rDTO).isNotNull();
-        assertThat(rDTO.accessToken()).isNotNull();
-        assertThat(rDTO.tokenType()).isEqualTo("Bearer");
-        assertThat(rDTO.expiresIn()).isPositive();
+        String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
 
-        String setCookie = response.getHeader("Set-Cookie");
+        assertThat(allSetCookie).isNotBlank();
+        assertThat(allSetCookie).contains("AccessToken=");
+        assertThat(allSetCookie).contains("RefreshToken=");
+        assertThat(allSetCookie).contains("HttpOnly");
+        assertThat(allSetCookie).contains("SameSite");
 
-        assertThat(setCookie).isNotNull();
-        assertThat(setCookie).contains("RefreshToken=");
-        assertThat(setCookie).contains("HttpOnly");
-        assertThat(setCookie).contains("SameSite");
+        String accessToken = Objects.requireNonNull(response.getCookie("AccessToken")).getValue();
 
         // cleanup: AT에서 실제 userId 추출 후 Redis 정리
-        Long userId = jwtTokenService.getUserIdFromToken(rDTO.accessToken());
+        Long userId = jwtTokenService.getUserIdFromToken(accessToken);
         log.info("cleanup - userId: {}", userId);
         stringRedisTemplate.delete(REFRESH_TOKEN_KEY_PREFIX + userId);
         stringRedisTemplate.delete("email:verified:" + email);
@@ -222,10 +218,11 @@ public class UserLoginServiceTest {
                 .build();
 
         MockHttpServletResponse loginResponse = new MockHttpServletResponse();
-        LoginResponseDTO loginResult = userLoginService.login(pDTO, loginResponse);
+        userLoginService.login(pDTO, loginResponse);
 
         // AT에서 실제 userId 추출
-        Long userId = jwtTokenService.getUserIdFromToken(loginResult.accessToken());
+        String accessToken = loginResponse.getCookie("AccessToken").getValue();
+        Long userId = jwtTokenService.getUserIdFromToken(accessToken);
         log.info("로그아웃 대상 userId: {}", userId);
 
         // when
@@ -238,11 +235,12 @@ public class UserLoginServiceTest {
         assertThat(savedRT).isNull();
 
         // then: Cookie 만료 확인
-        String setCookie = logoutResponse.getHeader("Set-Cookie");
+        String allSetCookie = String.join("\n", logoutResponse.getHeaders("Set-Cookie"));
 
-        assertThat(setCookie).isNotNull();
-        assertThat(setCookie).contains("RefreshToken=");
-        assertThat(setCookie).contains("Max-Age=0");
+        assertThat(allSetCookie).isNotBlank();
+        assertThat(allSetCookie).contains("AccessToken=");
+        assertThat(allSetCookie).contains("RefreshToken=");
+        assertThat(allSetCookie).contains("Max-Age=0");
 
         // cleanup
         stringRedisTemplate.delete("email:verified:" + email);

@@ -42,6 +42,7 @@ class TokenReissueServiceMockTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(tokenReissueService, "accessCookieName", "AccessToken");
         ReflectionTestUtils.setField(tokenReissueService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(tokenReissueService, "cookieSecure", false);
         ReflectionTestUtils.setField(tokenReissueService, "sameSite", "Lax");
@@ -79,7 +80,6 @@ class TokenReissueServiceMockTest {
 
         // then
         assertThat(result).isNotNull();
-        assertThat(result.accessToken()).isEqualTo("new.access.token");
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(600L);
 

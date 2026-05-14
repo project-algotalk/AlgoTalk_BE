@@ -1,5 +1,6 @@
 package com.algotalk.userservice.config;
 
+import com.algotalk.userservice.auth.oauth2.CustomAuthorizationRequestResolver;
 import com.algotalk.userservice.auth.oauth2.CustomOAuth2UserService;
 import com.algotalk.userservice.auth.oauth2.OAuth2FailureHandler;
 import com.algotalk.userservice.auth.oauth2.OAuth2LoginSuccessHandler;
@@ -25,6 +26,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final CustomAuthorizationRequestResolver customAuthorizationRequestResolver;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2FailureHandler oAuth2FailureHandler;
@@ -67,6 +69,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(customAuthorizationRequestResolver)
+                        )
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)

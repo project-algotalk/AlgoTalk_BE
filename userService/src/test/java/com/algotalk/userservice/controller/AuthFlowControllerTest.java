@@ -20,14 +20,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class AuthFlowControllerTest {
 
     @Autowired
@@ -41,6 +44,8 @@ class AuthFlowControllerTest {
     @Autowired
     StringRedisTemplate stringRedisTemplate;
 
+    @Value("${cookie.access.name}")
+    private String accessCookieName;
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
@@ -106,11 +111,9 @@ class AuthFlowControllerTest {
                                         .build()
                         )))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andReturn();
 
-        String accessToken = objectMapper.readTree(loginResult.getResponse().getContentAsString())
-                .path("data").path("accessToken").asText();
+        String accessToken = getSetCookieValue(loginResult, accessCookieName);
 
         String refreshToken = getSetCookieValue(loginResult, refreshCookieName);
 
@@ -118,11 +121,10 @@ class AuthFlowControllerTest {
         MvcResult reissueResult = mockMvc.perform(post("/user/v1/token/reissue")
                         .cookie(new MockCookie(refreshCookieName, refreshToken)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andExpect(header().string("Authorization", startsWith("Bearer ")))
                 .andReturn();
 
-        String newAccessToken = objectMapper.readTree(reissueResult.getResponse().getContentAsString())
-                .path("data").path("accessToken").asText();
+        String newAccessToken = Objects.requireNonNull(reissueResult.getResponse().getHeader("Authorization")).replace("Bearer ", "");
 
         String newRefreshToken = getSetCookieValue(reissueResult, refreshCookieName);
 

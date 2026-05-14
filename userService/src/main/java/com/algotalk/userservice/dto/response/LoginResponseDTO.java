@@ -8,18 +8,16 @@ import java.util.List;
 /**
  * 로그인 성공 시 반환되는 DTO
  * @param userId
+ * @param loginId
  * @param nickname
  * @param roles
- * @param tokenType
  */
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record LoginResponseDTO(
         Long userId,
+        String loginId,
         String nickname,
-        List<String> roles,
-        String tokenType, // "Bearer"
-        String accessToken,
-        Long expiresIn
+        List<String> roles
 ) {
 }

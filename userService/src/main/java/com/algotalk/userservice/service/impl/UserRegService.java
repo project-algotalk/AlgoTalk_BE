@@ -43,7 +43,7 @@ public class UserRegService implements IUserRegService {
     private static final int MAX_NICKNAME_LENGTH = 10;
 
     @Override
-    public boolean isLoginIdDuplicated(LoginIdCheckRequestDTO pDTO) throws Exception {
+    public boolean isLoginIdDuplicated(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.isLoginIdDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -58,7 +58,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isNicknameDuplicated(NicknameCheckRequestDTO pDTO) throws Exception {
+    public boolean isNicknameDuplicated(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.isNicknameDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -70,7 +70,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isEmailDuplicated(EmailCheckRequestDTO pDTO) throws Exception {
+    public boolean isEmailDuplicated(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
@@ -83,7 +83,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateLoginIdUnique(LoginIdCheckRequestDTO pDTO) throws Exception {
+    public void validateLoginIdUnique(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.validateLoginIdUnique Start!", this.getClass().getName());
 
         // 1. 값 잘 넘어왔는지 확인(로그인 아이디)
@@ -98,7 +98,7 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateNicknameUnique(NicknameCheckRequestDTO pDTO) throws Exception {
+    public void validateNicknameUnique(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.validateNicknameUnique Start!", this.getClass().getName());
         // 1. 값 잘 넘어왔는지 확인(닉네임)
         String nickName = CmmUtil.nvl(pDTO.nickname());
@@ -113,16 +113,21 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateEmailUnique(EmailCheckRequestDTO pDTO) throws Exception {
+    public void validateEmailUnique(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.validateEmailUnique Start!", this.getClass().getName());
 
         // 1. 값 잘 넘어왔는지 확인(이메일)
         String email = CmmUtil.nvl(pDTO.email());
         log.info("email: {}", email);
 
+        // 2. 이메일 암호화
+        CheckEmailRequestDTO encDTO = CheckEmailRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(email))
+                .build();
+
         log.info("{}.validateEmailUnique End!", this.getClass().getName());
 
-        if(isEmailDuplicated(pDTO)) {
+        if(isEmailDuplicated(encDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
         }
     }
@@ -144,20 +149,30 @@ public class UserRegService implements IUserRegService {
         if (!emailService.isEmailVerified(pDTO.email())) {
             throw new BusinessException(UserErrorCode.EMAIL_NOT_VERIFIED);
         }
-        // 1.3. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
+
+        // 1.3. 이메일 중복 최종 확인
+        // 회원가입 API를 직접 호출하는 경우를 대비해 insert 직전 서버 측에서 한 번 더 검증
+        if (isEmailDuplicated(CheckEmailRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
+                .build())) {
+            throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 1.4. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 // USERS
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
-                .nickname(CmmUtil.nvl(pDTO.resolvedNickname()))
+                .nickname(CmmUtil.nvl(pDTO.resolvedNickname().strip()))
                 .name(CmmUtil.nvl(pDTO.name()))
                 .addr1(CmmUtil.nvl(pDTO.addr1()))
                 .addr2(CmmUtil.nvl(pDTO.addr2()))
                 // USER_CREDENTIAL
                 .loginId(CmmUtil.nvl(pDTO.loginId()))
                 .password(passwordEncoder.encode(CmmUtil.nvl(pDTO.password())))
+                .passwordSetYn("Y")
                 .build();
 
-        // 1.4. USER 테이블에 INSERT (userId 채번)
+        // 1.5. USER 테이블에 INSERT (userId 채번)
         userRegMapper.insertUser(pCommand);
 
         // 2. USER_CREDENTIAL
@@ -269,11 +284,17 @@ public class UserRegService implements IUserRegService {
                     ))
                     .addr1(CmmUtil.nvl(pDTO.addr1()))
                     .addr2(CmmUtil.nvl(pDTO.addr2()))
+                    .loginId(generateLoginId(provider))
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .passwordSetYn("N")
                     .build();
 
             userRegMapper.insertUser(pCommand);
 
-            // 3. USER_ROLES 테이블에 INSERT (userId, role)
+            // 3. USER_CREDENTIAL 테이블에 INSERT (소셜 가입자는 비밀번호 미설정 상태)
+            userRegMapper.insertUserCredential(pCommand);
+
+            // 4. USER_ROLES 테이블에 INSERT (userId, role)
             userRegMapper.insertUserRoles(
                     UserInfoCommand.builder()
                             .userId(pCommand.getUserId())
@@ -281,7 +302,7 @@ public class UserRegService implements IUserRegService {
                             .build()
             );
 
-            // 4. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
+            // 5. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
             SocialAccountCommand socialCommand = SocialAccountCommand.builder()
                     .userId(pCommand.getUserId())
                     .provider(provider)
@@ -291,8 +312,8 @@ public class UserRegService implements IUserRegService {
 
             socialAccountMapper.insertSocialAccount(socialCommand);
 
-            // 5. USER_TARGET_JOB
-            // 5.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
+            // 6. USER_TARGET_JOB
+            // 6.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
             List<TargetJobRequestDTO> targetJobs = pDTO.targetJobs();
             if (targetJobs != null && !targetJobs.isEmpty()) {
                 for (TargetJobRequestDTO job : targetJobs) {
@@ -313,8 +334,8 @@ public class UserRegService implements IUserRegService {
                 }
             }
 
-            // 6. USER_EMPLOYMENT
-            // 6.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
+            // 7. USER_EMPLOYMENT
+            // 7.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
             List<EmploymentRequestDTO> employments = pDTO.employments();
             if (employments != null && !employments.isEmpty()) {
                 for (EmploymentRequestDTO emp : employments) {
@@ -368,5 +389,18 @@ public class UserRegService implements IUserRegService {
                 .substring(0, 5); // 5자리
 
         return trimmed + uuidPart;
+    }
+
+    private String generateLoginId(String provider) {
+        String normalizedProvider = CmmUtil.nvl(provider).toLowerCase();
+        String prefix = normalizedProvider + "_";
+        int uuidLength = Math.max(1, 20 - prefix.length());
+
+        String uuidPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, uuidLength);
+
+        return prefix + uuidPart;
     }
 }

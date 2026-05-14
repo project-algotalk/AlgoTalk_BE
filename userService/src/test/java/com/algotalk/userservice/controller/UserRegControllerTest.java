@@ -1,7 +1,7 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.LoginIdCheckRequestDTO;
+import com.algotalk.userservice.dto.request.CheckLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,7 +53,7 @@ class UserRegControllerTest {
     @DisplayName("loginId 중복 확인 - 중복 되지 않은 경우")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("notExistId")
                 .build();
 
@@ -79,13 +78,14 @@ class UserRegControllerTest {
                 .loginId("existId")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
+                .passwordSetYn("Y")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("existId") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
@@ -101,7 +101,7 @@ class UserRegControllerTest {
     @DisplayName("loginId 중복 확인 - loginId 누락")
     void checkLoginId_missingLoginId()  throws Exception {
         // given
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("") // 빈 문자열로 설정
                 .build();
 
@@ -142,6 +142,7 @@ class UserRegControllerTest {
                 .email("test@algotalk.com")
                 .loginId("test")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 

@@ -70,6 +70,7 @@ class FindAccountServiceTest {
                 .email(EncryptUtil.encAES128CBC("find02@algotalk.com"))
                 .loginId("findtest02")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .build();
         userRegMapper.insertUser(user);
         userRegMapper.insertUserCredential(user);
@@ -196,6 +197,7 @@ class FindAccountServiceTest {
                 .email(EncryptUtil.encAES128CBC("find06@algotalk.com"))
                 .loginId("findtest06")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .deletedYn("N")
                 .build();
         // USERS INSERT (userId 채번)

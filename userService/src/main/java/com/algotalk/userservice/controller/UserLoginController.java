@@ -11,10 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -32,13 +29,28 @@ public class UserLoginController {
      * @throws Exception
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponseDTO>> login(@Valid @RequestBody LoginRequestDTO pDTO,
+    public ResponseEntity<ApiResponse<Void>> login(@Valid @RequestBody LoginRequestDTO pDTO,
                                                                HttpServletResponse response) throws Exception {
         log.info("{}.login Start!", this.getClass().getName());
 
-        LoginResponseDTO rDTO = userLoginService.login(pDTO, response);
+        userLoginService.login(pDTO, response);
 
         log.info("{}.login End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> me(@AuthenticationPrincipal Jwt jwt) throws Exception {
+        log.info("{}.me Start!", this.getClass().getName());
+
+        LoginResponseDTO rDTO = LoginResponseDTO.builder()
+                .userId(Long.valueOf(jwt.getSubject()))
+                .loginId(jwt.getClaimAsString("loginId"))
+                .nickname(jwt.getClaimAsString("nickname"))
+                .roles(jwt.getClaimAsStringList("roles"))
+                .build();
+
+        log.info("{}.me End!",  this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }
 

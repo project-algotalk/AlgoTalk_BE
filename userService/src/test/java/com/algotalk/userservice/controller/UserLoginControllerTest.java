@@ -18,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -43,7 +45,7 @@ public class UserLoginControllerTest {
 
     @Test
     @Transactional
-    @DisplayName("로그인 성공 - 200 + AT Body + RT Cookie")
+    @DisplayName("로그인 성공 - 200 + AT/RT Cookie")
     void login_success() throws Exception {
         // given
         String loginId = "test" + System.currentTimeMillis();
@@ -73,21 +75,17 @@ public class UserLoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.data.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.data.expiresIn").isNumber())
-                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("RefreshToken=")))
-                .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("HttpOnly")))
+                .andExpect(cookie().exists("AccessToken"))
+                .andExpect(cookie().exists("RefreshToken"))
+                .andExpect(cookie().httpOnly("AccessToken", true))
+                .andExpect(cookie().httpOnly("RefreshToken", true))
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("SameSite")))
                 .andReturn();
 
         log.info("응답 Body: {}", result.getResponse().getContentAsString());
 
         // cleanup
-        // readTree: JSON을 자바 객체가 아닌 트리 구조로 읽고 특정 값을 접근할 수 있게 해줌
-        String accessToken = objectMapper.readTree(
-                result.getResponse().getContentAsString())
-                .path("data").path("accessToken").asText();
+        String accessToken = Objects.requireNonNull(result.getResponse().getCookie("AccessToken")).getValue();
 
         long userId = jwtTokenService.getUserIdFromToken(accessToken);
 
@@ -253,10 +251,7 @@ public class UserLoginControllerTest {
                 .andReturn();
 
         // AT 추출
-        String responseBody = loginResult.getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(responseBody)
-                .path("data").path("accessToken").asText();
-        log.info("로그아웃 테스트용 AT: {}", accessToken);
+        String accessToken = Objects.requireNonNull(loginResult.getResponse().getCookie("AccessToken")).getValue();
 
         // when: 로그아웃 (AT를 Authorization 헤더에 포함)
         mockMvc.perform(post("/user/v1/logout")

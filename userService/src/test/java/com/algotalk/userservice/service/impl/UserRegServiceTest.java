@@ -6,6 +6,7 @@ import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUserRegService;
+import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.*;
 
 import static java.time.LocalDate.of;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
@@ -45,16 +47,12 @@ class UserRegServiceTest {
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("not_exist_id")
                 .build();
 
-        // when
-       userRegService.validateLoginIdUnique(pDTO);
-//        log.info("loginId 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateLoginIdUnique(pDTO));
     }
 
     @Test
@@ -65,9 +63,10 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("플로우테스트")
                 .name("테스트")
-                .email("reg01@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg01@algotalk.com"))
                 .loginId("reg01")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -75,7 +74,7 @@ class UserRegServiceTest {
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        LoginIdCheckRequestDTO pDTO = LoginIdCheckRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("reg01") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
@@ -93,16 +92,17 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("reg02@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg02@algotalk.com"))
                 .loginId("reg02")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        NicknameCheckRequestDTO pDTO = NicknameCheckRequestDTO.builder()
+        CheckNicknameRequestDTO pDTO = CheckNicknameRequestDTO.builder()
                 .nickname("중복 닉네임") // 실제 DB에 존재하는 nickname
                 .build();
 
@@ -116,16 +116,12 @@ class UserRegServiceTest {
     @DisplayName("email 중복 확인 - 존재하지 않으면 false 반환")
     void isEmailDuplicated_notExists() throws Exception {
         // given
-        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
                 .email("not_exist@algotalk.com")
                 .build();
 
-        // when
-        userRegService.validateEmailUnique(pDTO);
-//        log.info("email 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateEmailUnique(pDTO));
     }
 
     @Test
@@ -136,16 +132,17 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("reg03@algotalk.com")
+                .email(EncryptUtil.encAES128CBC("reg03@algotalk.com"))
                 .loginId("reg03")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        EmailCheckRequestDTO pDTO = EmailCheckRequestDTO.builder()
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
                 .email("reg03@algotalk.com") // 실제 DB에 존재하는 email
                 .build();
 

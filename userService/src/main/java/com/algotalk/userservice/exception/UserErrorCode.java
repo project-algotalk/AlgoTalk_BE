@@ -24,22 +24,34 @@ public enum UserErrorCode implements ErrorCode {
 
     // 회원 정보 변경
     // 아이디/비밀번호 변경,
-    FIND_PASSWORD_SESSION_EXPIRED ("USER_031", "비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다.", HttpStatus.GONE),
-    PASSWORD_RESET_FAIL            ("USER_032", "비밀번호 재설정 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    LOGIN_ID_UPDATE_FAIL            ("USER_043", "아이디 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    FIND_PASSWORD_SESSION_EXPIRED   ("USER_031", "비밀번호 재설정 요청이 만료되었거나 유효하지 않습니다.", HttpStatus.GONE),
+    PASSWORD_RESET_FAIL             ("USER_032", "비밀번호 재설정 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
     // 로그인 정보 수정
-    CUR_PASSWORD_MISMATCH   ("USER_033", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
-    NOW_PASSWORD_SAME ("USER_034", "현재 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
-    PASSWORD_UPDATE_FAIL            ("USER_035", "비밀번호 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
-
+    CUR_PASSWORD_MISMATCH           ("USER_033", "현재 비밀번호가 일치하지 않습니다.", HttpStatus.BAD_REQUEST),
+    NOW_PASSWORD_SAME               ("USER_034", "현재 비밀번호와 동일한 비밀번호로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_ALREADY_SET            ("USER_035", "이미 비밀번호가 설정된 계정입니다.", HttpStatus.BAD_REQUEST),
+    PASSWORD_UPDATE_FAIL            ("USER_036", "비밀번호 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    NICKNAME_UPDATE_FAIL            ("USER_037", "닉네임 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    EMAIL_UPDATE_FAIL               ("USER_038", "이메일 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    NAME_UPDATE_FAIL                ("USER_039", "이름 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    ADDR_UPDATE_FAIL                ("USER_040", "주소 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
+    WITHDRAW_FAIL                   ("USER_041", "회원 탈퇴 처리에 실패했습니다.", HttpStatus.BAD_REQUEST),
+    WITHDRAW_PASSWORD_REQUIRED      ("USER_042", "비밀번호 가입 회원은 현재 비밀번호 입력이 필요합니다.", HttpStatus.BAD_REQUEST),
 
     // 소셜
-    SOCIAL_ALREADY_LINKED   ("USER_040", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
-    LAST_USER_METHOD        ("USER_041", "마지막 로그인 수단은 해제할 수 없습니다.", HttpStatus.BAD_REQUEST),
-    OAUTH2_PROVIDER_NOT_SUPPORTED("USER_042", "지원하지 않는 소셜 로그인입니다.", HttpStatus.BAD_REQUEST),
-    OAUTH2_LOGIN_FAILED          ("USER_043", "소셜 로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
-    OAUTH2_TEMP_TOKEN_NOT_FOUND  ("USER_044", "소셜 로그인 임시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
-    OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_045", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
-    SOCIAL_SIGN_UP_FAIL            ("USER_050", "소셜 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
+    LAST_USER_METHOD        ("USER_051", "마지막 로그인 수단은 해제할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    OAUTH2_PROVIDER_NOT_SUPPORTED("USER_052", "지원하지 않는 소셜 로그인입니다.", HttpStatus.BAD_REQUEST),
+    OAUTH2_LOGIN_FAILED          ("USER_053", "소셜 로그인에 실패했습니다.", HttpStatus.UNAUTHORIZED),
+    OAUTH2_TEMP_TOKEN_NOT_FOUND  ("USER_054", "소셜 로그인 임시 토큰이 존재하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    OAUTH2_TEMP_TOKEN_EXPIRED    ("USER_055", "소셜 로그인 임시 토큰이 만료되었습니다.", HttpStatus.UNAUTHORIZED),
+    SOCIAL_NOT_LINKED            ("USER_056", "연동되지 않은 소셜 계정입니다.", HttpStatus.BAD_REQUEST),
+    UNAUTHORIZED_LINK_REQUEST    ("USER_057", "연결 요청 주체를 확인할 수 없습니다.", HttpStatus.UNAUTHORIZED),
+    SOCIAL_ALREADY_LINKED_ME     ("USER_058", "이미 연결된 소셜 계정입니다.", HttpStatus.BAD_REQUEST),
+    SOCIAL_ALREADY_LINKED_OTHER  ("USER_059", "다른 계정에 이미 연결된 소셜 계정입니다.", HttpStatus.CONFLICT),
+    SOCIAL_SIGN_UP_FAIL            ("USER_060", "소셜 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    OAUTH2_LINK_FAILED           ("USER_061", "소셜 계정 연결에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 권한
     UNAUTHORIZED            ("USER_900", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),

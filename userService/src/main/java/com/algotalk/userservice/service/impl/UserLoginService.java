@@ -45,6 +45,9 @@ public class UserLoginService implements IUserLoginService {
     @Value("${jwt.access.token.expiration}")
     private long accessTokenExpiration;
 
+    @Value("${cookie.access.name}")
+    private String accessCookieName;
+
     @Value("${cookie.refresh.name}")
     private String refreshCookieName;
 
@@ -58,7 +61,7 @@ public class UserLoginService implements IUserLoginService {
     private long refreshTokenExpiration;
 
     @Override
-    public LoginResponseDTO login(LoginRequestDTO pDTO, HttpServletResponse response) throws Exception {
+    public void login(LoginRequestDTO pDTO, HttpServletResponse response) throws Exception {
         log.info("{}.login Start!", this.getClass().getName());
 
         String loginId = CmmUtil.nvl(pDTO.loginId());
@@ -103,15 +106,11 @@ public class UserLoginService implements IUserLoginService {
         // 9. Refresh Token 쿠키 설정
         setRefreshTokenCookie(refreshToken, response);
 
-        LoginResponseDTO rDTO = LoginResponseDTO.builder()
-                .accessToken(accessToken)
-                .tokenType("Bearer")
-                .expiresIn(accessTokenExpiration / 1000) // ms -> 초 변환
-                .build();
-
+        // 10. Access Token 헤더 설정
+//        setAccessTokenHeader(accessToken, response);
+        setAccessTokenCookie(accessToken, response);
 
         log.info("{}.login End!", this.getClass().getName());
-        return rDTO;
     }
 
     @Override
@@ -122,6 +121,7 @@ public class UserLoginService implements IUserLoginService {
         refreshTokenService.deleteRefreshToken(userId);
 
         // 2. Refresh Token 쿠키 삭제
+        expireAccessTokenCookie(response);
         expireRefreshTokenCookie(response);
 
         log.info("{}.logout End!", this.getClass().getName());
@@ -150,6 +150,44 @@ public class UserLoginService implements IUserLoginService {
             stringRedisTemplate.opsForValue().set(lockKey, "Y", lockMinutes, TimeUnit.MINUTES);
             log.warn("계정 잠금 처리: key={}, lockMinutes={}분", lockKey, lockMinutes);
         }
+    }
+
+    private void setAccessTokenHeader(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenHeader Start!", this.getClass().getName());
+        response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+        log.info("{}.setAccessTokenHeader End!", this.getClass().getName());
+    }
+
+    private void setAccessTokenCookie(String accessToken, HttpServletResponse response) {
+        log.info("{}.setAccessTokenCookie Start!", this.getClass().getName());
+
+        ResponseCookie cookie = ResponseCookie.from(accessCookieName, accessToken)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(accessTokenExpiration / 1000)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        log.info("{}.setAccessTokenCookie End!", this.getClass().getName());
+    }
+
+    private void expireAccessTokenCookie(HttpServletResponse response) {
+        log.info("{}.expireAccessTokenCookie Start!", this.getClass().getName());
+
+        ResponseCookie cookie = ResponseCookie.from(accessCookieName, "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        log.info("{}.expireAccessTokenCookie End!", this.getClass().getName());
     }
 
     private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
