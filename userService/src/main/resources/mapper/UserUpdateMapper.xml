@@ -66,7 +66,7 @@
 
     <!--  변경 전 아이디 중복 확인  -->
     <select id="getLoginIdExists"
-            parameterType="UpdateLoginIdRequestDTO"
+            parameterType="UserInfoCommand"
             resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(LOGIN_ID) > 0, 'Y', 'N') AS existsYn
@@ -122,7 +122,7 @@
 
     <!--  변경 전 닉네임 중복 확인  -->
     <select id="getNicknameExists"
-            parameterType="UpdateNicknameRequestDTO"
+            parameterType="UserInfoCommand"
             resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(NICKNAME) > 0, 'Y', 'N') AS existsYn
@@ -142,7 +142,7 @@
 
     <!--  변경 전 이메일 중복 확인  -->
     <select id="getEmailExists"
-            parameterType="UpdateEmailRequestDTO"
+            parameterType="UserInfoCommand"
             resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(EMAIL) > 0, 'Y', 'N') AS existsYn

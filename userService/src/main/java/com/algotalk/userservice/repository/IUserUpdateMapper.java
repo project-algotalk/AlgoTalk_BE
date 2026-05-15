@@ -18,34 +18,34 @@ public interface IUserUpdateMapper {
     List<UserInfoCommand> getMyPageEmploymentsByUserId(Long userId) throws Exception;
 
     // 아이디 중복 확인
-    ExistsResponseDTO getLoginIdExists(UpdateLoginIdRequestDTO requestDTO) throws Exception;
+    ExistsResponseDTO getLoginIdExists(UserInfoCommand pCommand) throws Exception;
 
     // 아이디 변경
     int updateLoginId(UserInfoCommand pCommand) throws Exception;
 
     // 현재 비밀번호 조회
-    UserInfoCommand getUserInfoByUserId(UserInfoCommand rCommand) throws Exception;
+    UserInfoCommand getUserInfoByUserId(UserInfoCommand pCommand) throws Exception;
 
     // 로그인 정보 변경
     // 비밀번호 변경
-    int updatePassword(UserInfoCommand rCommand) throws Exception;
+    int updatePassword(UserInfoCommand pCommand) throws Exception;
 
     // 회원 정보 변경
     // 닉네임 중복 확인
-    ExistsResponseDTO getNicknameExists(UpdateNicknameRequestDTO pDTO) throws Exception;
+    ExistsResponseDTO getNicknameExists(UserInfoCommand pCommand) throws Exception;
 
     // 닉네임 변경
-    int updateNickname(UserInfoCommand rCommand) throws Exception;
+    int updateNickname(UserInfoCommand pCommand) throws Exception;
 
     // 이름 변경(이름은 중복 확인 필요 X)
-    int updateName(UserInfoCommand rCommand) throws Exception;
+    int updateName(UserInfoCommand pCommand) throws Exception;
 
     // 이메일 중복 확인
-    ExistsResponseDTO getEmailExists(UpdateEmailRequestDTO rDTO) throws Exception;
+    ExistsResponseDTO getEmailExists(UserInfoCommand pCommand) throws Exception;
 
     // 이메일 변경
-    int updateEmail(UserInfoCommand rCommand) throws Exception;
+    int updateEmail(UserInfoCommand pCommand) throws Exception;
 
     // 주소 변경(주소는 중복 확인 필요 X)
-    int updateAddr(UserInfoCommand rCommand) throws Exception;
+    int updateAddr(UserInfoCommand pCommand) throws Exception;
 }

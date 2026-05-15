@@ -98,23 +98,18 @@ public class UserUpdateService implements IUserUpdateService {
         log.info("{}.updateLoginId Start!", this.getClass().getName());
 
         // 1. 아이디 중복 확인
-        ExistsResponseDTO rDTO = userUpdateMapper.getLoginIdExists(
-                UpdateLoginIdRequestDTO.builder()
-                        .loginId(pDTO.loginId())
-                        .build()
-        );
+        UserInfoCommand rCommand = UserInfoCommand.builder()
+                                    .userId(userId)
+                                    .loginId(CmmUtil.nvl(pDTO.loginId()))
+                                    .build();
+        ExistsResponseDTO rDTO = userUpdateMapper.getLoginIdExists(rCommand);
 
         if ("Y".equals(rDTO.existsYn())) {
             throw new BusinessException(DUPLICATE_LOGIN_ID);
         }
 
         // 2. 아이디 변경
-        int res = userUpdateMapper.updateLoginId(
-                UserInfoCommand.builder()
-                        .userId(userId)
-                        .loginId(CmmUtil.nvl(pDTO.loginId()))
-                        .build()
-        );
+        int res = userUpdateMapper.updateLoginId(rCommand);
 
         if (res != 1) {
             throw new BusinessException(LOGIN_ID_UPDATE_FAIL);
@@ -239,7 +234,12 @@ public class UserUpdateService implements IUserUpdateService {
         int res = 0;
 
         // 1. 닉네임 중복 검증
-        ExistsResponseDTO rDTO = userUpdateMapper.getNicknameExists(pDTO);
+        UserInfoCommand pCommand = UserInfoCommand.builder()
+                .userId(userId)
+                .nickname(CmmUtil.nvl(pDTO.nickname().strip()))
+                .build();
+
+        ExistsResponseDTO rDTO = userUpdateMapper.getNicknameExists(pCommand);
         String existsYn = rDTO.existsYn();
 
         if(existsYn.equals("Y")) {
@@ -316,12 +316,12 @@ public class UserUpdateService implements IUserUpdateService {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. 이메일 암호화
-        UpdateEmailRequestDTO encDTO = UpdateEmailRequestDTO.builder()
+        UserInfoCommand pCommand = UserInfoCommand.builder()
                 .email(EncryptUtil.encAES128CBC(pDTO.email().strip()))
                 .build();
 
         // 2. DB 조회
-        ExistsResponseDTO rDTO = userUpdateMapper.getEmailExists(encDTO);
+        ExistsResponseDTO rDTO = userUpdateMapper.getEmailExists(pCommand);
         String existsYn = rDTO.existsYn();
 
         if(existsYn.equals("Y")) {

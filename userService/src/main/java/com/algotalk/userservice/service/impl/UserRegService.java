@@ -47,7 +47,9 @@ public class UserRegService implements IUserRegService {
         log.info("{}.isLoginIdDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(pDTO);
+        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(UserInfoCommand.builder()
+                                    .loginId(CmmUtil.nvl(pDTO.loginId()))
+                                    .build());
         String existsYn = rDTO.existsYn();
         log.info("existsYn from DB: {}", existsYn);
 
@@ -62,7 +64,9 @@ public class UserRegService implements IUserRegService {
         log.info("{}.isNicknameDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        ExistsResponseDTO rDTO = userRegMapper.getNicknameExists(pDTO);
+        ExistsResponseDTO rDTO = userRegMapper.getNicknameExists(UserInfoCommand.builder()
+                                    .nickname(CmmUtil.nvl(pDTO.nickname()))
+                                    .build());
         String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
@@ -74,7 +78,9 @@ public class UserRegService implements IUserRegService {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        ExistsResponseDTO rDTO = userRegMapper.getEmailExists(pDTO);
+        ExistsResponseDTO rDTO = userRegMapper.getEmailExists(UserInfoCommand.builder()
+                                    .email(CmmUtil.nvl(pDTO.email()))
+                                    .build());
         String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
