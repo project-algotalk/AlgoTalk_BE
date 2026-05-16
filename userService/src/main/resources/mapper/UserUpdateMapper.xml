@@ -171,4 +171,46 @@
         WHERE USER_ID = #{userId}
     </update>
 
+    <!--  기존 목표직무 삭제  -->
+    <delete id="deleteTargetJobsByUserId"
+            parameterType="UserInfoCommand">
+        DELETE FROM USER_TARGET_JOB
+        WHERE USER_ID = #{userId}
+    </delete>
+
+    <!--  새로운 목표직무 등록  -->
+    <insert id="insertTargetJobByUserId"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_TARGET_JOB (
+             USER_ID, CATEGORY_ID, CATEGORY_NAME,
+             START_DATE, END_DATE,
+             CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+            #{userId}, #{categoryId}, #{categoryName},
+            #{startDate}, #{endDate},
+            NOW(), #{userId}, NOW(), #{userId}
+        )
+    </insert>
+
+    <!--  기존 재직이력 삭제  -->
+    <delete id="deleteEmploymentsByUserId"
+            parameterType="UserInfoCommand">
+        DELETE FROM USER_EMPLOYMENT
+        WHERE USER_ID = #{userId}
+    </delete>
+
+    <!--  새로운 재직이력 등록  -->
+    <insert id="insertEmploymentByUserId"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_EMPLOYMENT (
+            USER_ID, COMPANY_NAME, CATEGORY_ID,
+            START_DATE, END_DATE,
+            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+            #{userId}, #{companyName}, #{categoryId},
+            #{startDate}, #{endDate},
+            NOW(), #{userId}, NOW(), #{userId}
+        )
+    </insert>
+
 </mapper>

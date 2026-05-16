@@ -211,7 +211,7 @@ public class UserRegService implements IUserRegService {
                                 .categoryId(job.categoryId())
                                 .categoryName(job.categoryName())
                                 .startDate(job.startDate())
-                                .endDate(job.endDate())
+                                .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : job.endDate())
                                 .build()
                 );
             }
@@ -232,8 +232,7 @@ public class UserRegService implements IUserRegService {
                                 .categoryName(emp.categoryName())
                                 .companyName(emp.companyName())
                                 .startDate(emp.startDate())
-                                .endDate(emp.endDate())
-                                .build()
+                                .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : emp.endDate())                                .build()
                 );
             }
         }
@@ -334,8 +333,7 @@ public class UserRegService implements IUserRegService {
                                     .categoryId(job.categoryId())
                                     .categoryName(job.categoryName())
                                     .startDate(job.startDate())
-                                    .endDate(job.endDate())
-                                    .build()
+                                    .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : job.endDate())                                    .build()
                     );
                 }
             }
@@ -355,7 +353,7 @@ public class UserRegService implements IUserRegService {
                                     .categoryName(emp.categoryName())
                                     .companyName(emp.companyName())
                                     .startDate(emp.startDate())
-                                    .endDate(emp.endDate())
+                                    .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : emp.endDate())
                                     .build()
                     );
                 }

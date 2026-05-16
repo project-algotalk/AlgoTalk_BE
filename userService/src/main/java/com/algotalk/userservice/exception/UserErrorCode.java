@@ -38,6 +38,9 @@ public enum UserErrorCode implements ErrorCode {
     ADDR_UPDATE_FAIL                ("USER_040", "주소 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
     WITHDRAW_FAIL                   ("USER_041", "회원 탈퇴 처리에 실패했습니다.", HttpStatus.BAD_REQUEST),
     WITHDRAW_PASSWORD_REQUIRED      ("USER_042", "비밀번호 가입 회원은 현재 비밀번호 입력이 필요합니다.", HttpStatus.BAD_REQUEST),
+    TARGET_JOB_LIMIT_EXCEEDED       ("USER_043", "목표 직무는 최대 3개까지 등록 가능합니다.", HttpStatus.BAD_REQUEST),
+    TARGET_JOB_UPDATE_FAIL          ("USER_044", "목표 직무 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    EMPLOYMENT_UPDATE_FAIL          ("USER_045", "재직 이력 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),

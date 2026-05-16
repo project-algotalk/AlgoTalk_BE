@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
@@ -359,5 +360,73 @@ public class UserUpdateService implements IUserUpdateService {
 
         log.info("{}.updateEmail End!", this.getClass().getName());
         return res;
+    }
+
+    @Transactional
+    @Override
+    public int updateTargetJobs(Long userId, List<TargetJobRequestDTO> pDTO) throws Exception {
+        log.info("{}.updateTargetJobs Start!", this.getClass().getName());
+
+        // 1. 최대 3개 직무까지만 등록 가능하도록 검증
+        if (pDTO != null && pDTO.size() > 3) {
+            throw new BusinessException(TARGET_JOB_LIMIT_EXCEEDED);
+        }
+
+        // 2. 기존 목표 직무 삭제 (빈 리스트 요청 시 전체 삭제 후 종료)
+        userUpdateMapper.deleteTargetJobsByUserId(UserInfoCommand.builder()
+                .userId(userId)
+                .build());
+        if (pDTO == null || pDTO.isEmpty()) {
+            return 1;
+        }
+
+        // 3. 새로운 목표 직무 등록
+        for (TargetJobRequestDTO job : pDTO) {
+            int res = userUpdateMapper.insertTargetJobByUserId(
+                UserInfoCommand.builder()
+                    .userId(userId)
+                    .categoryId(job.categoryId())
+                    .startDate(job.startDate())
+                    .endDate(job.endDate() == null ? LocalDate.of(9999, 12, 31) : job.endDate())
+                    .build());
+            if (res != 1) {
+                throw new BusinessException(TARGET_JOB_UPDATE_FAIL);
+            }
+        }
+
+        log.info("{}.updateTargetJobs End!", this.getClass().getName());
+        return 1;
+    }
+
+    @Transactional
+    @Override
+    public int updateEmployments(Long userId, List<EmploymentRequestDTO> pDTO) throws Exception {
+        log.info("{}.updateEmployments Start!", this.getClass().getName());
+
+        // 1. 기존 재직 이력 삭제 (빈 리스트 요청 시 전체 삭제 후 종료)
+        userUpdateMapper.deleteEmploymentsByUserId(UserInfoCommand.builder()
+                .userId(userId)
+                .build());
+        if (pDTO == null || pDTO.isEmpty()) {
+            return 1;
+        }
+
+        // 2. 새로운 재직 이력 등록
+        for (EmploymentRequestDTO emp : pDTO) {
+            int res = userUpdateMapper.insertEmploymentByUserId(
+                UserInfoCommand.builder()
+                    .userId(userId)
+                    .companyName(emp.companyName())
+                    .categoryId(emp.categoryId())
+                    .startDate(emp.startDate())
+                    .endDate(emp.endDate() == null ? LocalDate.of(9999, 12, 31) : emp.endDate())
+                    .build());
+            if (res != 1) {
+                throw new BusinessException(EMPLOYMENT_UPDATE_FAIL);
+            }
+        }
+
+        log.info("{}.updateEmployments End!", this.getClass().getName());
+        return 1;
     }
 }

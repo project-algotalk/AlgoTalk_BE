@@ -16,6 +16,7 @@
         WHERE STATUS_YN = 'Y'
         ORDER BY CATEGORY_TYPE,
                  PARENT_ID,
-                 SORT_ORDER;
+                 DEPTH,
+                 SORT_ORDER
     </select>
 </mapper>

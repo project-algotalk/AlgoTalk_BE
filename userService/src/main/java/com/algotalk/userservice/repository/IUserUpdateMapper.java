@@ -2,9 +2,6 @@ package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.UpdateEmailRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateLoginIdRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -48,4 +45,16 @@ public interface IUserUpdateMapper {
 
     // 주소 변경(주소는 중복 확인 필요 X)
     int updateAddr(UserInfoCommand pCommand) throws Exception;
+
+    // 기존 목표직무 삭제
+    void deleteTargetJobsByUserId(UserInfoCommand pCommand) throws Exception;
+
+    // 새로운 목표직무 등록
+    int insertTargetJobByUserId(UserInfoCommand pCommand) throws Exception;
+
+    // 기존 재직이력 삭제
+    void deleteEmploymentsByUserId(UserInfoCommand pCommand) throws Exception;
+
+    // 새로운 재직이력 등록
+    int insertEmploymentByUserId(UserInfoCommand pCommand) throws Exception;
 }
