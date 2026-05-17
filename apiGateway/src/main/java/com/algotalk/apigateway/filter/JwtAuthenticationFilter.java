@@ -39,6 +39,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/user/v1/reg/**",
             "/api/user/v1/signup",
             "/api/user/v1/signup/social",
+            "/api/cs-categories/v1/**",
             "/api/user/v1/login",
             "/api/user/v1/token/reissue",
             "/api/oauth2/**",

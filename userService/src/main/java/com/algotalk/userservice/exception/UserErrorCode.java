@@ -20,6 +20,7 @@ public enum UserErrorCode implements ErrorCode {
     DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
     DUPLICATE_NICKNAME      ("USER_022", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT),
     PASSWORD_MISMATCH       ("USER_023", "비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
+    INVALID_DATE_FORMAT     ("USER_024", "날짜 형식이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
     SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
     // 회원 정보 변경

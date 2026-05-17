@@ -6,10 +6,12 @@ import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
+import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import com.algotalk.userservice.util.CmmUtil;
+import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
+import static com.algotalk.userservice.exception.UserErrorCode.INVALID_DATE_FORMAT;
 
 @Slf4j
 @Service
@@ -387,8 +390,8 @@ public class UserUpdateService implements IUserUpdateService {
                     .userId(userId)
                     .categoryId(job.categoryId())
                     .categoryName(job.categoryName())
-                    .startDate(job.startDate())
-                    .endDate(job.endDate() == null ? LocalDate.of(9999, 12, 31) : job.endDate())
+                    .startDate(parseDateOrThrow(job.startDate()))
+                    .endDate(job.endDate() == null ? LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
                     .build());
             if (res != 1) {
                 throw new BusinessException(TARGET_JOB_UPDATE_FAIL);
@@ -420,8 +423,8 @@ public class UserUpdateService implements IUserUpdateService {
                     .companyName(emp.companyName())
                     .categoryId(emp.categoryId())
                     .categoryName(emp.categoryName())
-                    .startDate(emp.startDate())
-                    .endDate(emp.endDate() == null ? LocalDate.of(9999, 12, 31) : emp.endDate())
+                    .startDate(parseDateOrThrow(emp.startDate()))
+                    .endDate(emp.endDate() == null ? LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
                     .build());
             if (res != 1) {
                 throw new BusinessException(EMPLOYMENT_UPDATE_FAIL);
@@ -430,5 +433,13 @@ public class UserUpdateService implements IUserUpdateService {
 
         log.info("{}.updateEmployments End!", this.getClass().getName());
         return 1;
+    }
+
+    private LocalDate parseDateOrThrow(String rawDate) {
+        try {
+            return DateUtil.parseLocalDate(rawDate);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(INVALID_DATE_FORMAT);
+        }
     }
 }

@@ -38,7 +38,7 @@
             resultType="UserInfoCommand">
         SELECT
             UTJ.CATEGORY_ID AS categoryId,
-            C.NAME AS categoryName,
+            C.CATEGORY_NAME AS categoryName,
             UTJ.START_DATE AS startDate,
             UTJ.END_DATE AS endDate
         FROM USER_TARGET_JOB UTJ
@@ -54,7 +54,7 @@
         SELECT
             UE.COMPANY_NAME AS companyName,
             UE.CATEGORY_ID AS employmentCategoryId,
-            C.NAME AS employmentCategoryName,
+            C.CATEGORY_NAME AS employmentCategoryName,
             UE.START_DATE AS startDate,
             UE.END_DATE AS endDate
         FROM USER_EMPLOYMENT UE

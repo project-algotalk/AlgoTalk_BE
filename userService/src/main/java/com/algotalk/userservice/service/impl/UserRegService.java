@@ -12,6 +12,7 @@ import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
 import com.algotalk.userservice.util.CmmUtil;
+import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,13 +21,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.algotalk.userservice.exception.UserErrorCode.OAUTH2_TEMP_TOKEN_NOT_FOUND;
-import static com.algotalk.userservice.exception.UserErrorCode.SOCIAL_SIGN_UP_FAIL;
+import static com.algotalk.userservice.exception.UserErrorCode.*;
 
 @Slf4j
 @Service
@@ -210,8 +211,9 @@ public class UserRegService implements IUserRegService {
                                 .userId(pCommand.getUserId())
                                 .categoryId(job.categoryId())
                                 .categoryName(job.categoryName())
-                                .startDate(job.startDate())
-                                .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : job.endDate())
+                                .categoryName(job.categoryName())
+                                .startDate(parseDateOrThrow(job.startDate()))
+                                .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
                                 .build()
                 );
             }
@@ -231,8 +233,9 @@ public class UserRegService implements IUserRegService {
                                 .categoryId(emp.categoryId())
                                 .categoryName(emp.categoryName())
                                 .companyName(emp.companyName())
-                                .startDate(emp.startDate())
-                                .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : emp.endDate())                                .build()
+                                .startDate(parseDateOrThrow(emp.startDate()))
+                                .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
+                                .build()
                 );
             }
         }
@@ -332,8 +335,9 @@ public class UserRegService implements IUserRegService {
                                     .userId(pCommand.getUserId())
                                     .categoryId(job.categoryId())
                                     .categoryName(job.categoryName())
-                                    .startDate(job.startDate())
-                                    .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : job.endDate())                                    .build()
+                                    .startDate(parseDateOrThrow(job.startDate()))
+                                    .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
+                                    .build()
                     );
                 }
             }
@@ -352,8 +356,8 @@ public class UserRegService implements IUserRegService {
                                     .categoryId(emp.categoryId())
                                     .categoryName(emp.categoryName())
                                     .companyName(emp.companyName())
-                                    .startDate(emp.startDate())
-                                    .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : emp.endDate())
+                                    .startDate(parseDateOrThrow(emp.startDate()))
+                                    .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
                                     .build()
                     );
                 }
@@ -406,5 +410,13 @@ public class UserRegService implements IUserRegService {
                 .substring(0, uuidLength);
 
         return prefix + uuidPart;
+    }
+
+    private LocalDate parseDateOrThrow(String rawDate) {
+        try {
+            return DateUtil.parseLocalDate(rawDate);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(INVALID_DATE_FORMAT);
+        }
     }
 }

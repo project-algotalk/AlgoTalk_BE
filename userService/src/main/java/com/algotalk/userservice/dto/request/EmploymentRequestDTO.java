@@ -16,10 +16,10 @@ public record EmploymentRequestDTO(
         @NotBlank(message = "회사명을 입력해주세요.")
         String companyName,
 
-        @NotNull(message = "입사일을 입력해주세요.")
-        LocalDate startDate,
+        @NotBlank(message = "입사일을 입력해주세요.")
+        String startDate,
 
         // 종료일 null = 현재 재직중
-        LocalDate endDate
+        String endDate
 ) {
 }
