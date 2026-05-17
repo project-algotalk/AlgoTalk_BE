@@ -3,7 +3,6 @@ package com.algotalk.userservice.repository;
 import com.algotalk.userservice.dto.command.CsCategoryCommand;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mybatis.spring.boot.test.autoconfigure.MybatisTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 @ActiveProfiles("local")
-class ICsCategoryMapperTest {
+class CsCategoryMapperTest {
 
     @Autowired
     private ICsCategoryMapper csCategoryMapper;
@@ -32,6 +31,7 @@ class ICsCategoryMapperTest {
                 .sorted(
                         Comparator.comparing(CsCategoryCommand::getCategoryType, Comparator.nullsFirst(String::compareTo))
                                 .thenComparing(CsCategoryCommand::getParentId, Comparator.nullsFirst(Long::compareTo))
+                                .thenComparing(CsCategoryCommand::getDepth, Comparator.nullsFirst(Integer::compareTo))
                                 .thenComparing(CsCategoryCommand::getSortOrder, Comparator.nullsFirst(Integer::compareTo))
                 )
                 .toList();

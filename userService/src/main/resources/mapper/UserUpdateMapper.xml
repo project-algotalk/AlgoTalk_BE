@@ -203,11 +203,11 @@
     <insert id="insertEmploymentByUserId"
             parameterType="UserInfoCommand">
         INSERT INTO USER_EMPLOYMENT (
-            USER_ID, COMPANY_NAME, CATEGORY_ID,
+            USER_ID, COMPANY_NAME, CATEGORY_ID, CATEGORY_NAME,
             START_DATE, END_DATE,
             CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
         ) VALUES (
-            #{userId}, #{companyName}, #{categoryId},
+            #{userId}, #{companyName}, #{categoryId}, #{categoryName},
             #{startDate}, #{endDate},
             NOW(), #{userId}, NOW(), #{userId}
         )

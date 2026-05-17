@@ -386,6 +386,7 @@ public class UserUpdateService implements IUserUpdateService {
                 UserInfoCommand.builder()
                     .userId(userId)
                     .categoryId(job.categoryId())
+                    .categoryName(job.categoryName())
                     .startDate(job.startDate())
                     .endDate(job.endDate() == null ? LocalDate.of(9999, 12, 31) : job.endDate())
                     .build());
@@ -418,6 +419,7 @@ public class UserUpdateService implements IUserUpdateService {
                     .userId(userId)
                     .companyName(emp.companyName())
                     .categoryId(emp.categoryId())
+                    .categoryName(emp.categoryName())
                     .startDate(emp.startDate())
                     .endDate(emp.endDate() == null ? LocalDate.of(9999, 12, 31) : emp.endDate())
                     .build());

@@ -1,10 +1,7 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.UpdateAddrRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdateNicknameRequestDTO;
-import com.algotalk.userservice.dto.request.UpdatePasswordRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.util.EncryptUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +18,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.util.List;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -542,5 +542,41 @@ class UserUpdateControllerTest {
                         ))
                 .andExpect(status().isOk())
                 .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("목표직무 수정 실패 - 3개 초과")
+    void updateTargetJobs_fail_limitExceeded() throws Exception {
+        UserInfoCommand cmd = UserInfoCommand.builder()
+                .nickname("테스트유저")
+                .name("테스트")
+                .email(EncryptUtil.encAES128CBC("target-limit@algotalk.com"))
+                .loginId("targetlimit")
+                .password(passwordEncoder.encode("CurrentPass1!"))
+                .passwordSetYn("Y")
+                .role("USER")
+                .build();
+
+        userRegMapper.insertUser(cmd);
+        userRegMapper.insertUserCredential(cmd);
+        userRegMapper.insertUserRoles(cmd);
+
+        List<TargetJobRequestDTO> pDTO = List.of(
+                TargetJobRequestDTO.builder().categoryId(101L).categoryName("백엔드").startDate(LocalDate.of(2026,1,1)).build(),
+                TargetJobRequestDTO.builder().categoryId(102L).categoryName("프론트엔드").startDate(LocalDate.of(2026,1,1)).build(),
+                TargetJobRequestDTO.builder().categoryId(103L).categoryName("풀스택").startDate(LocalDate.of(2026,1,1)).build(),
+                TargetJobRequestDTO.builder().categoryId(104L).categoryName("모바일").startDate(LocalDate.of(2026,1,1)).build()
+        );
+
+        mockMvc.perform(
+                        withMockJwt(
+                                post("/mypage/v1/target-jobs")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(objectMapper.writeValueAsString(pDTO)),
+                                cmd.getUserId()
+                        ))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(TARGET_JOB_LIMIT_EXCEEDED.getCode()));
     }
 }
