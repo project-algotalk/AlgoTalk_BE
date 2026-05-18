@@ -19,8 +19,9 @@ public class CacheConfig {
     /**
      * Spring Cache(Redis) 기본 설정
      * - 키: 문자열(StringRedisSerializer)
-     * - 값: JSON(JdkSerializationRedisSerializer)
+     * - 값: JDK 직렬화(JdkSerializationRedisSerializer)
      * - 캐시 만료시간: 3시간
+     * - 주의: 캐시되는 객체와 중첩 객체는 Serializable을 구현해야 함
      * @param cf
      * @return
      */
