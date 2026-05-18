@@ -353,10 +353,10 @@ class UserUpdateServiceTest {
         // given
         Long userId = 1L;
         List<TargetJobRequestDTO> pDTO = List.of(
-                TargetJobRequestDTO.builder().categoryId(101L).categoryName("백엔드").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(102L).categoryName("프론트엔드").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(103L).categoryName("풀스택").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(104L).categoryName("모바일").startDate(LocalDate.of(2026,1,1)).build()
+                TargetJobRequestDTO.builder().categoryId(101L).categoryName("백엔드").startDate("2026-3-1").build(),
+                TargetJobRequestDTO.builder().categoryId(102L).categoryName("프론트엔드").startDate("2026-3-1").build(),
+                TargetJobRequestDTO.builder().categoryId(103L).categoryName("풀스택").startDate("2026-3-1").build(),
+                TargetJobRequestDTO.builder().categoryId(104L).categoryName("모바일").startDate("2026-3-1").build()
         );
 
         // when
@@ -389,7 +389,7 @@ class UserUpdateServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드")
-                        .startDate(LocalDate.of(2026,1,1))
+                        .startDate("2026-3-1")
                         .endDate(null).build()
         );
 
@@ -423,7 +423,7 @@ class UserUpdateServiceTest {
                         .categoryId(101L)
                         .categoryName("백엔드")
                         .companyName("알고톡")
-                        .startDate(LocalDate.of(2025,1,1))
+                        .startDate("2025-3-1")
                         .endDate(null)
                         .build()
         );

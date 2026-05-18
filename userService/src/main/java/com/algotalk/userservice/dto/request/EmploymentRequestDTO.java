@@ -4,8 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
-import java.time.LocalDate;
-
 @Builder
 public record EmploymentRequestDTO(
         @NotNull(message = "직무 카테고리를 선택해주세요.")

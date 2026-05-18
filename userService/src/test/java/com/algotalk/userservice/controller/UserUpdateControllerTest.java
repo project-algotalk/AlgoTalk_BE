@@ -563,10 +563,10 @@ class UserUpdateControllerTest {
         userRegMapper.insertUserRoles(cmd);
 
         List<TargetJobRequestDTO> pDTO = List.of(
-                TargetJobRequestDTO.builder().categoryId(101L).categoryName("백엔드").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(102L).categoryName("프론트엔드").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(103L).categoryName("풀스택").startDate(LocalDate.of(2026,1,1)).build(),
-                TargetJobRequestDTO.builder().categoryId(104L).categoryName("모바일").startDate(LocalDate.of(2026,1,1)).build()
+                TargetJobRequestDTO.builder().categoryId(101L).categoryName("백엔드").startDate("2026-1-1").build(),
+                TargetJobRequestDTO.builder().categoryId(102L).categoryName("프론트엔드").startDate("2026-1-1").build(),
+                TargetJobRequestDTO.builder().categoryId(103L).categoryName("풀스택").startDate("2026-1-1").build(),
+                TargetJobRequestDTO.builder().categoryId(104L).categoryName("모바일").startDate("2026-1-1").build()
         );
 
         mockMvc.perform(
