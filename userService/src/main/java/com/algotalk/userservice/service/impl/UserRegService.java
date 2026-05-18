@@ -211,7 +211,6 @@ public class UserRegService implements IUserRegService {
                                 .userId(pCommand.getUserId())
                                 .categoryId(job.categoryId())
                                 .categoryName(job.categoryName())
-                                .categoryName(job.categoryName())
                                 .startDate(parseDateOrThrow(job.startDate()))
                                 .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
                                 .build()

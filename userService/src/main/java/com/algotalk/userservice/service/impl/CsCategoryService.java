@@ -5,7 +5,9 @@ import com.algotalk.userservice.repository.ICsCategoryMapper;
 import com.algotalk.userservice.service.ICsCategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,7 +18,9 @@ public class CsCategoryService implements ICsCategoryService {
 
     private final ICsCategoryMapper csCategoryMapper;
 
+    @Transactional(readOnly = true)
     @Override
+    @Cacheable(cacheNames = "cs", key = "'csCategories'", sync = true)
     public List<CsCategoryResponseDTO> getCsCategories() throws Exception {
         log.info("{}.getCsCategories Start!", this.getClass().getName());
 

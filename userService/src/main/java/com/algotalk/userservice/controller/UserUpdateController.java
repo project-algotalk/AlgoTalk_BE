@@ -189,7 +189,7 @@ public class UserUpdateController {
     @PostMapping("/target-jobs")
     public ResponseEntity<ApiResponse<Void>> updateTargetJobs(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody List<TargetJobRequestDTO> pDTO
+            @Valid @RequestBody List<TargetJobRequestDTO> pDTO
     ) throws Exception {
         log.info("{}.updateTargetJobs Start!", this.getClass().getName());
 
@@ -202,7 +202,7 @@ public class UserUpdateController {
     @PostMapping("/employments")
     public ResponseEntity<ApiResponse<Void>> updateEmployments(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestBody List<EmploymentRequestDTO> pDTO
+            @Valid @RequestBody List<EmploymentRequestDTO> pDTO
     ) throws Exception {
         log.info("{}.updateEmployments Start!", this.getClass().getName());
 
