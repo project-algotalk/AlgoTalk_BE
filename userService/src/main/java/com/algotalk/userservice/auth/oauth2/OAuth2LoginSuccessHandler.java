@@ -71,6 +71,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private static final String SIGNUP_PATH = "/oauth2/signup";
     private static final String CALLBACK_PATH = "/oauth2/callback";
     private static final String FAILURE_PATH = "/oauth2/failure";
+    private static final String LINK_FAILURE_PATH = "/oauth2/link/failure";
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -216,7 +217,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             Map<Object, Object> tokenData = redisTemplate.opsForHash().entries(key);
             if (tokenData.isEmpty()) {
                 String error = URLEncoder.encode("LINK_TOKEN_EXPIRED", StandardCharsets.UTF_8);
-                response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+                response.sendRedirect(frontendUrl + LINK_FAILURE_PATH + "?error=" + error);
                 return;
             }
 
@@ -229,7 +230,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             if (!expectedProvider.equals(actualProvider)) {
                 String error = URLEncoder.encode("PROVIDER_MISMATCH", StandardCharsets.UTF_8);
-                response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+                response.sendRedirect(frontendUrl + LINK_FAILURE_PATH + "?error=" + error);
                 return;
             }
 
@@ -242,11 +243,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         } catch (BusinessException be) {
             // 중복 연결 등의 비즈니스 예외는 에러코드 그대로 전달
             String error = URLEncoder.encode(be.getErrorCode().getCode(), StandardCharsets.UTF_8);
-            response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + error);
+            response.sendRedirect(frontendUrl + LINK_FAILURE_PATH + "?error=" + error);
         } catch (Exception e) {
             log.error("소셜 계정 연결 중 오류", e);
             String errorCode = URLEncoder.encode(OAUTH2_LOGIN_FAILED.getCode(), StandardCharsets.UTF_8);
-            response.sendRedirect(frontendUrl + FAILURE_PATH + "?error=" + errorCode);
+            response.sendRedirect(frontendUrl + LINK_FAILURE_PATH + "?error=" + errorCode);
         }
     }
 }

@@ -11,13 +11,13 @@ import org.apache.ibatis.annotations.Mapper;
 public interface IUserRegMapper {
 
     // 회원가입 전 아이디 중복 확인
-    ExistsResponseDTO getLoginIdExists(CheckLoginIdRequestDTO pDTO) throws Exception;
+    ExistsResponseDTO getLoginIdExists(UserInfoCommand pCommand) throws Exception;
 
     // 회원가입 전 닉네임 중복 확인
-    ExistsResponseDTO getNicknameExists(CheckNicknameRequestDTO pDTO) throws Exception;
+    ExistsResponseDTO getNicknameExists(UserInfoCommand pCommand) throws Exception;
 
     // 회원가입 전 이메일 중복 확인
-    ExistsResponseDTO getEmailExists(CheckEmailRequestDTO pDTO) throws Exception;
+    ExistsResponseDTO getEmailExists(UserInfoCommand pCommand) throws Exception;
 
     // 회원 가입 - USER 테이블
     int insertUser(UserInfoCommand pCommand) throws Exception;

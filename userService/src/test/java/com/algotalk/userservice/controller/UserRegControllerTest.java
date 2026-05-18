@@ -220,7 +220,7 @@ class UserRegControllerTest {
                         TargetJobRequestDTO.builder()
                                 .categoryId(101L)
                                 .categoryName("백엔드 개발자")
-                                .startDate(LocalDate.of(2026, 1, 1))
+                                .startDate("2026-1-1")
                                 .build()
                 ))
                 .build();

@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/user/v1/login",
                                 "/user/v1/find/**",
                                 "/user/v1/token/reissue",
+                                "/cs-categories/v1",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 "/actuator/**",

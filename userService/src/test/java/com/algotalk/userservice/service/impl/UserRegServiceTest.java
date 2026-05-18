@@ -221,7 +221,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -262,7 +262,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -270,7 +270,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(102L)
                         .categoryName("풀스택 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -278,7 +278,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(121L)
                         .categoryName("DevOps/SRE 엔지니어")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -320,8 +320,8 @@ class UserRegServiceTest {
                         .categoryId(111L)
                         .categoryName("데이터 사이언티스트")
                         .companyName("알고톡")
-                        .startDate(of(2022, 11, 1))
-                        .endDate(of(2023, 12, 1))
+                        .startDate("2022-11-1")
+                        .endDate("2023-12-1")
                         .build()
         );
 
@@ -330,7 +330,7 @@ class UserRegServiceTest {
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
                         .companyName("비바리퍼블리카")
-                        .startDate(of(2024, 1, 1))
+                        .startDate("2024-3-1")
                         .build()
         );
 
@@ -410,7 +410,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 

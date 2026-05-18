@@ -3,6 +3,8 @@ package com.algotalk.userservice.service;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
 
+import java.util.List;
+
 
 public interface IUserUpdateService {
     // 마이페이지
@@ -32,4 +34,10 @@ public interface IUserUpdateService {
 
     // 이메일 변경
     int updateEmail(Long userId, UpdateEmailRequestDTO pDTO) throws Exception;
+
+    // 목표직무 변경
+    int updateTargetJobs(Long userId, List<TargetJobRequestDTO> pDTO) throws Exception;
+
+    // 재직이력 변경
+    int updateEmployments(Long userId, List<EmploymentRequestDTO> pDTO) throws Exception;
 }

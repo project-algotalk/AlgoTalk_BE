@@ -6,10 +6,12 @@ import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
+import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserUpdateService;
 import com.algotalk.userservice.util.CmmUtil;
+import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,9 +19,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
+import static com.algotalk.userservice.exception.UserErrorCode.INVALID_DATE_FORMAT;
 
 @Slf4j
 @Service
@@ -98,23 +102,18 @@ public class UserUpdateService implements IUserUpdateService {
         log.info("{}.updateLoginId Start!", this.getClass().getName());
 
         // 1. 아이디 중복 확인
-        ExistsResponseDTO rDTO = userUpdateMapper.getLoginIdExists(
-                UpdateLoginIdRequestDTO.builder()
-                        .loginId(pDTO.loginId())
-                        .build()
-        );
+        UserInfoCommand rCommand = UserInfoCommand.builder()
+                                    .userId(userId)
+                                    .loginId(CmmUtil.nvl(pDTO.loginId()))
+                                    .build();
+        ExistsResponseDTO rDTO = userUpdateMapper.getLoginIdExists(rCommand);
 
         if ("Y".equals(rDTO.existsYn())) {
             throw new BusinessException(DUPLICATE_LOGIN_ID);
         }
 
         // 2. 아이디 변경
-        int res = userUpdateMapper.updateLoginId(
-                UserInfoCommand.builder()
-                        .userId(userId)
-                        .loginId(CmmUtil.nvl(pDTO.loginId()))
-                        .build()
-        );
+        int res = userUpdateMapper.updateLoginId(rCommand);
 
         if (res != 1) {
             throw new BusinessException(LOGIN_ID_UPDATE_FAIL);
@@ -239,7 +238,12 @@ public class UserUpdateService implements IUserUpdateService {
         int res = 0;
 
         // 1. 닉네임 중복 검증
-        ExistsResponseDTO rDTO = userUpdateMapper.getNicknameExists(pDTO);
+        UserInfoCommand pCommand = UserInfoCommand.builder()
+                .userId(userId)
+                .nickname(CmmUtil.nvl(pDTO.nickname().strip()))
+                .build();
+
+        ExistsResponseDTO rDTO = userUpdateMapper.getNicknameExists(pCommand);
         String existsYn = rDTO.existsYn();
 
         if(existsYn.equals("Y")) {
@@ -316,12 +320,12 @@ public class UserUpdateService implements IUserUpdateService {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. 이메일 암호화
-        UpdateEmailRequestDTO encDTO = UpdateEmailRequestDTO.builder()
+        UserInfoCommand pCommand = UserInfoCommand.builder()
                 .email(EncryptUtil.encAES128CBC(pDTO.email().strip()))
                 .build();
 
         // 2. DB 조회
-        ExistsResponseDTO rDTO = userUpdateMapper.getEmailExists(encDTO);
+        ExistsResponseDTO rDTO = userUpdateMapper.getEmailExists(pCommand);
         String existsYn = rDTO.existsYn();
 
         if(existsYn.equals("Y")) {
@@ -359,5 +363,83 @@ public class UserUpdateService implements IUserUpdateService {
 
         log.info("{}.updateEmail End!", this.getClass().getName());
         return res;
+    }
+
+    @Transactional
+    @Override
+    public int updateTargetJobs(Long userId, List<TargetJobRequestDTO> pDTO) throws Exception {
+        log.info("{}.updateTargetJobs Start!", this.getClass().getName());
+
+        // 1. 최대 3개 직무까지만 등록 가능하도록 검증
+        if (pDTO != null && pDTO.size() > 3) {
+            throw new BusinessException(TARGET_JOB_LIMIT_EXCEEDED);
+        }
+
+        // 2. 기존 목표 직무 삭제 (빈 리스트 요청 시 전체 삭제 후 종료)
+        userUpdateMapper.deleteTargetJobsByUserId(UserInfoCommand.builder()
+                .userId(userId)
+                .build());
+        if (pDTO == null || pDTO.isEmpty()) {
+            return 1;
+        }
+
+        // 3. 새로운 목표 직무 등록
+        for (TargetJobRequestDTO job : pDTO) {
+            int res = userUpdateMapper.insertTargetJobByUserId(
+                UserInfoCommand.builder()
+                    .userId(userId)
+                    .categoryId(job.categoryId())
+                    .categoryName(job.categoryName())
+                    .startDate(parseDateOrThrow(job.startDate()))
+                    .endDate(job.endDate() == null ? LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
+                    .build());
+            if (res != 1) {
+                throw new BusinessException(TARGET_JOB_UPDATE_FAIL);
+            }
+        }
+
+        log.info("{}.updateTargetJobs End!", this.getClass().getName());
+        return 1;
+    }
+
+    @Transactional
+    @Override
+    public int updateEmployments(Long userId, List<EmploymentRequestDTO> pDTO) throws Exception {
+        log.info("{}.updateEmployments Start!", this.getClass().getName());
+
+        // 1. 기존 재직 이력 삭제 (빈 리스트 요청 시 전체 삭제 후 종료)
+        userUpdateMapper.deleteEmploymentsByUserId(UserInfoCommand.builder()
+                .userId(userId)
+                .build());
+        if (pDTO == null || pDTO.isEmpty()) {
+            return 1;
+        }
+
+        // 2. 새로운 재직 이력 등록
+        for (EmploymentRequestDTO emp : pDTO) {
+            int res = userUpdateMapper.insertEmploymentByUserId(
+                UserInfoCommand.builder()
+                    .userId(userId)
+                    .companyName(emp.companyName())
+                    .categoryId(emp.categoryId())
+                    .categoryName(emp.categoryName())
+                    .startDate(parseDateOrThrow(emp.startDate()))
+                    .endDate(emp.endDate() == null ? LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
+                    .build());
+            if (res != 1) {
+                throw new BusinessException(EMPLOYMENT_UPDATE_FAIL);
+            }
+        }
+
+        log.info("{}.updateEmployments End!", this.getClass().getName());
+        return 1;
+    }
+
+    private LocalDate parseDateOrThrow(String rawDate) {
+        try {
+            return DateUtil.parseLocalDate(rawDate);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(INVALID_DATE_FORMAT);
+        }
     }
 }

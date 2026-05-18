@@ -20,7 +20,8 @@ public enum UserErrorCode implements ErrorCode {
     DUPLICATE_EMAIL         ("USER_021", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT),
     DUPLICATE_NICKNAME      ("USER_022", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT),
     PASSWORD_MISMATCH       ("USER_023", "비밀번호가 일치하지 않습니다.", HttpStatus.UNAUTHORIZED),
-    SIGN_UP_FAIL            ("USER_030", "회원가입에 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    INVALID_DATE_FORMAT     ("USER_024", "날짜 형식이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
+    SIGN_UP_FAIL            ("USER_030", "회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
     // 회원 정보 변경
     // 아이디/비밀번호 변경,
@@ -38,6 +39,9 @@ public enum UserErrorCode implements ErrorCode {
     ADDR_UPDATE_FAIL                ("USER_040", "주소 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
     WITHDRAW_FAIL                   ("USER_041", "회원 탈퇴 처리에 실패했습니다.", HttpStatus.BAD_REQUEST),
     WITHDRAW_PASSWORD_REQUIRED      ("USER_042", "비밀번호 가입 회원은 현재 비밀번호 입력이 필요합니다.", HttpStatus.BAD_REQUEST),
+    TARGET_JOB_LIMIT_EXCEEDED       ("USER_043", "목표 직무는 최대 3개까지 등록 가능합니다.", HttpStatus.BAD_REQUEST),
+    TARGET_JOB_UPDATE_FAIL          ("USER_044", "목표 직무 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    EMPLOYMENT_UPDATE_FAIL          ("USER_045", "재직 이력 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),

@@ -14,6 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @RestController
 @RequestMapping(value = "/mypage/v1")
@@ -182,6 +184,32 @@ public class UserUpdateController {
 
         log.info("{}.issueLinkToken End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(java.util.Map.of("linkToken", linkToken)));
+    }
+
+    @PostMapping("/target-jobs")
+    public ResponseEntity<ApiResponse<Void>> updateTargetJobs(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody List<TargetJobRequestDTO> pDTO
+    ) throws Exception {
+        log.info("{}.updateTargetJobs Start!", this.getClass().getName());
+
+        userUpdateService.updateTargetJobs(Long.valueOf(jwt.getSubject()), pDTO);
+
+        log.info("{}.updateTargetJobs End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping("/employments")
+    public ResponseEntity<ApiResponse<Void>> updateEmployments(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody List<EmploymentRequestDTO> pDTO
+    ) throws Exception {
+        log.info("{}.updateEmployments Start!", this.getClass().getName());
+
+        userUpdateService.updateEmployments(Long.valueOf(jwt.getSubject()), pDTO);
+
+        log.info("{}.updateEmployments End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
     }
 }
 

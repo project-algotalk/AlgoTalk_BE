@@ -27,10 +27,11 @@ class UserRegMapperTest {
     @DisplayName("DB 연결 확인 - USERS 테이블 조회")
     void dbConnectionTest() throws Exception {
         // USERS 테이블이 존재하고 연결되면 예외 없이 통과
-        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
+        UserInfoCommand pCommand = UserInfoCommand.builder()
                 .loginId("connection_test")
                 .build();
-        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(pDTO);
+
+        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(pCommand);
         log.info("DB 연결 확인 결과: {}", rDTO.existsYn());
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.existsYn()).isIn("Y", "N");
