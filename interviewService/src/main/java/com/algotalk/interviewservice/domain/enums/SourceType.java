@@ -1,7 +1,15 @@
 package com.algotalk.interviewservice.domain.enums;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum SourceType {
-    LLM_GENERATED,  // LLM이 생성한 답변
-    USER_INPUT,     // 사용자가 입력한 답변
-    SCRAP_REFERENCE // 스크랩한 자료에서 추출한 답변
+    LLM_GENERATED("LLM_GENERATED", "AI가 생성한 질문"),
+    USER_INPUT("USER_INPUT", "사용자가 직접 입력한 질문"),
+    SCRAP_REFERENCE("SCRAP_REFERENCE", "커뮤니티 게시글에서 스크랩한 질문");
+
+    private final String type;
+    private final String description;
 }

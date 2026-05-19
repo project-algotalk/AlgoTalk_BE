@@ -19,7 +19,7 @@
             #{sessionId}, #{refId}, #{questionText},
             #{sourceType}, #{questionOrder}, #{questionIntent},
             #{questionKeywords, typeHandler=com.algotalk.interviewservice.util.JsonListTypeHandler},
-            NOW(), #{createdBy}, NOW(), #{updatedBy}
+            NOW(), #{userId}, NOW(), #{userId}
         )
     </insert>
 
