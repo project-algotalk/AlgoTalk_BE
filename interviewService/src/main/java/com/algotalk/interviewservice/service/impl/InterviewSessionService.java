@@ -38,13 +38,7 @@ public class InterviewSessionService implements IInterviewSessionService {
         // 1. selectedCategories 검증
         validateCategories(pCommand.getSelectedCategories());
 
-        // 2. JOB 타입 카테고리 추출 (LLM 프롬프트용 - 추후 aiService 연동 시 사용)
-        CategoryItemRequestDTO jobCategory = pCommand.getSelectedCategories().stream()
-                .filter(c -> "JOB".equals(c.categoryType()))
-                .findFirst()
-                .orElseThrow(() -> new BusinessException(JOB_CATEGORY_REQUIRED));
-
-        // 3. 면접 세션 INSERT
+        // 2. 면접 세션 INSERT
         InterviewSessionCommand sessionCommand = InterviewSessionCommand.builder()
                 .userId(pCommand.getUserId())
                 .sessionTitle(pCommand.getSessionTitle())
@@ -55,7 +49,7 @@ public class InterviewSessionService implements IInterviewSessionService {
         interviewSessionMapper.insertInterviewSession(sessionCommand);
         Long sessionId = sessionCommand.getSessionId();
 
-        // 4. 질문 생성 및 INSERT
+        // 3. 질문 생성 및 INSERT
         // TODO: aiService 연동 후 LLM 생성 질문으로 교체해야됨
         List<SessionQuestionCommand> questionCommands = buildDummyQuestions(
                 sessionId, pCommand.getUserId(), pCommand.getQuestionCount()
@@ -64,11 +58,11 @@ public class InterviewSessionService implements IInterviewSessionService {
             sessionQuestionMapper.insertSessionQuestion(questionCommand);
         }
 
-        // 5. 저장된 질문 목록 조회
+        // 4. 저장된 질문 목록 조회
         List<SessionQuestionCommand> savedQuestions =
                 sessionQuestionMapper.getSessionQuestionList(String.valueOf(sessionId));
 
-        // 6. Response DTO 조립
+        // 5. Response DTO 조립
         List<QuestionItemResponseDTO> questionItems = savedQuestions.stream()
                 .map(q -> QuestionItemResponseDTO.builder()
                         .sessionQuestionId(q.getSessionQuestionId())
@@ -95,24 +89,17 @@ public class InterviewSessionService implements IInterviewSessionService {
     }
 
     // validateCategories 메서드 수정
-    private void validateCategories(List<CategoryItemRequestDTO> selectedCategories) throws BusinessException {
+    private void validateCategories(List<CategoryItemRequestDTO> selectedCategories) {
+        // 전체 카테고리 최소 1개 검증 (COMMON_CS + JOB 합산)
+        if (selectedCategories.isEmpty()) {
+            throw new BusinessException(CATEGORY_REQUIRED);
+        }
 
         // categoryType 화이트리스트 검증
         boolean hasInvalidType = selectedCategories.stream()
                 .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
         if (hasInvalidType) {
             throw new BusinessException(INVALID_CATEGORY_TYPE);
-        }
-
-        // JOB 타입 개수 검증
-        long jobCount = selectedCategories.stream()
-                .filter(c -> "JOB".equals(c.categoryType()))
-                .count();
-        if (jobCount == 0) {
-            throw new BusinessException(JOB_CATEGORY_REQUIRED);
-        }
-        if (jobCount > 1) {
-            throw new BusinessException(JOB_CATEGORY_DUPLICATED);
         }
     }
 
