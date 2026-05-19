@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.interviewservice.repository.IInterviewSessionMapper">
+
+    <!--  면접 세션 생성  -->
+    <insert id="insertInterviewSession"
+            parameterType="InterviewSessionCommand"
+            useGeneratedKeys="true"
+            keyProperty="sessionId"
+    >
+        INSERT INTO INTERVIEW_SESSION (
+            USER_ID, SESSION_TITLE, SESSION_STATUS, TOTAL_QUESTIONS,
+            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        )
+        VALUES (
+            #{userId}, #{sessionTitle}, #{sessionStatus}, #{totalQuestions},
+            NOW(), #{userId}, NOW(), #{userId}
+       )
+    </insert>
+
+</mapper>
