@@ -101,6 +101,11 @@ public class InterviewSessionService implements IInterviewSessionService {
         if (hasInvalidType) {
             throw new BusinessException(INVALID_CATEGORY_TYPE);
         }
+
+        // TODO(interviewService): categoryId 실존 검증 추가
+        // - userService GET /cs-categories/v1 (OpenFeign)로 활성 카테고리 목록 조회
+        // - 조회 결과를 Caffeine 로컬 캐시(짧은 TTL, 예: 1~5분) 후 categoryId 포함 여부 검증
+        // - userService 조회 실패/타임아웃 또는 미존재 categoryId는 fail-close로 BusinessException 처리
     }
 
     // aiService 연동 전 임시 더미 질문 생성
