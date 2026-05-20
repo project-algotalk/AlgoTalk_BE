@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.repository;
 
+import com.algotalk.interviewservice.dto.command.InterviewSessionCommand;
 import com.algotalk.interviewservice.dto.command.SessionQuestionCommand;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -12,5 +13,5 @@ public interface ISessionQuestionMapper {
     int insertSessionQuestion(SessionQuestionCommand pCommand) throws Exception;
 
     // 세션 질문 목록 조회
-    List<SessionQuestionCommand> getSessionQuestionList(String sessionId);
+    List<SessionQuestionCommand> getSessionQuestionList(InterviewSessionCommand pCommand) throws Exception;
 }

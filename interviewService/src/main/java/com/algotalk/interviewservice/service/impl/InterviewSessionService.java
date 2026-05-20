@@ -60,7 +60,7 @@ public class InterviewSessionService implements IInterviewSessionService {
 
         // 4. 저장된 질문 목록 조회
         List<SessionQuestionCommand> savedQuestions =
-                sessionQuestionMapper.getSessionQuestionList(String.valueOf(sessionId));
+                sessionQuestionMapper.getSessionQuestionList(sessionCommand);
 
         // 5. Response DTO 조립
         List<QuestionItemResponseDTO> questionItems = savedQuestions.stream()

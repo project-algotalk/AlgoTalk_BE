@@ -24,7 +24,10 @@
     </insert>
 
     <!--  세션 질문 목록 조회  -->
-    <select id="getSessionQuestionList">
+    <select id="getSessionQuestionList"
+            parameterType="InterviewSessionCommand"
+            resultType="SessionQuestionCommand"
+    >
         SELECT
             SESSION_QUESTION_ID,
             SESSION_ID,
