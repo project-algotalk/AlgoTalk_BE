@@ -3,6 +3,12 @@
 
 <mapper namespace="com.algotalk.interviewservice.repository.ISessionQuestionMapper">
 
+    <!-- QUESTION_KEYWORDS JsonListTypeHandler 명시적 매핑 -->
+    <resultMap id="sessionQuestionResultMap" type="SessionQuestionCommand">
+        <result property="questionKeywords" column="QUESTION_KEYWORDS"
+                typeHandler="com.algotalk.interviewservice.util.JsonListTypeHandler"/>
+    </resultMap>
+
     <!--  세션 질문 단건 저장  -->
     <insert id="insertSessionQuestion"
             parameterType="SessionQuestionCommand"
@@ -26,7 +32,7 @@
     <!--  세션 질문 목록 조회  -->
     <select id="getSessionQuestionList"
             parameterType="InterviewSessionCommand"
-            resultType="SessionQuestionCommand"
+            resultMap="sessionQuestionResultMap"
     >
         SELECT
             SESSION_QUESTION_ID,

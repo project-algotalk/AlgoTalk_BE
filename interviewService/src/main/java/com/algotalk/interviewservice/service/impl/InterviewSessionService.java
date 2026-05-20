@@ -55,7 +55,10 @@ public class InterviewSessionService implements IInterviewSessionService {
                 sessionId, pCommand.getUserId(), pCommand.getQuestionCount()
         );
         for (SessionQuestionCommand questionCommand : questionCommands) {
-            sessionQuestionMapper.insertSessionQuestion(questionCommand);
+            int res = sessionQuestionMapper.insertSessionQuestion(questionCommand);
+            if (res != 1) {
+                throw new BusinessException(QUESTION_INSERT_FAILED);
+            }
         }
 
         // 4. 저장된 질문 목록 조회

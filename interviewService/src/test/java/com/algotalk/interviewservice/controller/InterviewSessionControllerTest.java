@@ -152,7 +152,7 @@ class InterviewSessionControllerTest {
                         post("/interview/v1/sessions")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(pDTO)))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isUnauthorized())
                 .andDo(print());
     }
 

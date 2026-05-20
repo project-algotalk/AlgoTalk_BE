@@ -7,7 +7,7 @@ import lombok.Builder;
 @Builder
 public record CategoryItemRequestDTO(
 
-        @NotBlank(message = "카테고리 ID는 필수입니다.")
+        @NotNull(message = "카테고리 ID는 필수입니다.")
         Long categoryId,   // CS_CATEGORY 카테고리 ID
 
         @NotBlank(message = "카테고리 타입은 필수입니다.")

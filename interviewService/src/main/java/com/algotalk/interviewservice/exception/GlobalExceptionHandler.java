@@ -15,11 +15,11 @@ import static com.algotalk.interviewservice.exception.InterviewErrorCode.INTERNA
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.UNAUTHORIZED;
 
 /**
- * userService 전역 예외 처리기
+ * interviewService 전역 예외 처리기
  *
  * 처리 우선순위:
  *  1. BusinessException → 의도한 비즈니스 오류 (4xx)
- *  2. MissingRequestHeaderException → 필수 헤더 누락 (400)
+ *  2. MissingRequestHeaderException → 필수 헤더 누락 (401)
  *  3. MethodArgumentNotValidException → @Valid 실패 (필드별 오류 목록 반환)
  *  4. Exception → 예상치 못한 서버 오류 (500)
  */
