@@ -38,7 +38,7 @@ public record UserInfoResponseDTO(
 
         String role = pCommand.getRole();
 
-        List<String> roles = (role != null || !role.isBlank()) ?
+        List<String> roles = (role != null && !role.isBlank()) ?
                 Collections.singletonList(role) : Collections.emptyList();
 
         return UserInfoResponseDTO.builder()
