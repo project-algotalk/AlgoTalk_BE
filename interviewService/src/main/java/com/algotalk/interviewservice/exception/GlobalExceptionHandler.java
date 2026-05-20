@@ -7,18 +7,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.INTERNAL_ERROR;
+import static com.algotalk.interviewservice.exception.InterviewErrorCode.UNAUTHORIZED;
 
 /**
  * userService 전역 예외 처리기
  *
  * 처리 우선순위:
  *  1. BusinessException → 의도한 비즈니스 오류 (4xx)
- *  2. MethodArgumentNotValidException → @Valid 실패 (필드별 오류 목록 반환)
- *  3. Exception → 예상치 못한 서버 오류 (500)
+ *  2. MissingRequestHeaderException → 필수 헤더 누락 (400)
+ *  3. MethodArgumentNotValidException → @Valid 실패 (필드별 오류 목록 반환)
+ *  4. Exception → 예상치 못한 서버 오류 (500)
  */
 @Slf4j
 @RestControllerAdvice
@@ -34,6 +37,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(e.getErrorCode().getHttpStatus())
                 .body(ErrorResponse.of(e.getErrorCode()));
+    }
+
+    /**
+     * 필수 요청 헤더 누락 처리
+     * X-User-Id 헤더가 없을 때
+     */
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+        log.warn("[MissingRequestHeaderException] header={}", e.getHeaderName());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(UNAUTHORIZED));
     }
 
     /**

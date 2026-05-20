@@ -5,9 +5,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
 import java.util.List;
 
+@Builder
 public record SessionCreateRequestDTO(
 
         @NotBlank(message = "세션 제목은 필수입니다.")
