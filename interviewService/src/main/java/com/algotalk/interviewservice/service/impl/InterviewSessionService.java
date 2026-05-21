@@ -85,7 +85,7 @@ public class InterviewSessionService implements IInterviewSessionService {
         // 1. 질문 목록 검증
         List<ManualQuestionItemRequestDTO> manualQuestions = pCommand.getManualQuestions();
         if (manualQuestions == null || manualQuestions.isEmpty()) {
-            throw new BusinessException(CATEGORY_REQUIRED);
+            throw new BusinessException(MANUAL_QUESTION_REQUIRED);
         }
 
         // 2. categoryId 실존 검증 + 카테고리명 기반 세션 제목 자동 생성
@@ -114,6 +114,11 @@ public class InterviewSessionService implements IInterviewSessionService {
         }
 
         // 4. CS 관련 아닌 질문 필터링
+        if (validationResponse == null || validationResponse.results() == null) {
+            log.error("aiService CS 질문 검증 응답이 null 입니다.");
+            throw new BusinessException(AI_CALL_FAILED);
+        }
+
         List<String> invalidQuestions = validationResponse.results().stream()
                 .filter(r -> !r.isValid())
                 .map(CsValidationItemDTO::questionText)

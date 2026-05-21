@@ -1,17 +1,13 @@
 package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
-import com.algotalk.interviewservice.client.UserFeignClient;
 import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.INVALID_CATEGORY_ID;
 
@@ -20,14 +16,13 @@ import static com.algotalk.interviewservice.exception.InterviewErrorCode.INVALID
 @RequiredArgsConstructor
 public class CsCategoryService implements ICsCategoryService {
 
-    private final UserFeignClient userFeignClient;
+    private final CsCategoryFeignService csCategoryFeignService;
 
-    @Cacheable(cacheNames = "csCategory", key = "'csCategories'")
     @Override
     public List<CsCategoryResponseDTO> getCsCategories() {
         log.info("{}.getCsCategories Start!", this.getClass().getName());
 
-        List<CsCategoryResponseDTO> rDTO = userFeignClient.getCsCategories().getData();
+        List<CsCategoryResponseDTO> rDTO = csCategoryFeignService.getCategories();
 
         log.info("{}.getCsCategories End!", this.getClass().getName());
         return rDTO;
@@ -37,8 +32,8 @@ public class CsCategoryService implements ICsCategoryService {
     public CsCategoryResponseDTO getCategoryById(Long categoryId) {
         log.info("{}.getCategoryById Start!", this.getClass().getName());
 
-        // 캐시된 목록에서 categoryId로 조회
-        CsCategoryResponseDTO rDTO = getCsCategories().stream()
+        // 캐시된 목록에서 categoryId로 조회 (별도 빈을 통해 캐시 적용)
+        CsCategoryResponseDTO rDTO = csCategoryFeignService.getCategories().stream()
                 .filter(c -> c.categoryId().equals(categoryId))
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(INVALID_CATEGORY_ID));

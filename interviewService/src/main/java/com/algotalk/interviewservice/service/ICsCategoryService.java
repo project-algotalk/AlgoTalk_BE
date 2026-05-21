@@ -3,7 +3,6 @@ package com.algotalk.interviewservice.service;
 import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
 
 import java.util.List;
-import java.util.Map;
 
 public interface ICsCategoryService {
 
