@@ -14,6 +14,8 @@ public enum InterviewErrorCode implements ErrorCode {
     CATEGORY_REQUIRED       ("INTERVIEW_002", "카테고리를 최소 1개 선택해주세요.", HttpStatus.BAD_REQUEST),  // ← 변경
     SESSION_CREATE_FAIL     ("INTERVIEW_003", "면접 세션 생성 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     QUESTION_INSERT_FAILED  ("INTERVIEW_004", "면접 질문 생성 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    INVALID_CATEGORY_ID("INTERVIEW_005", "존재하지 않거나 허용되지 않는 카테고리입니다.", HttpStatus.BAD_REQUEST),
+    AI_CALL_FAILED("INTERVIEW_006", "AI 질문 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.BAD_GATEWAY),
 
     // 권한
     UNAUTHORIZED                ("INTERVIEW_900", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),
