@@ -1,6 +1,5 @@
 package com.algotalk.interviewservice.dto.feign;
 
-import com.fasterxml.jackson.databind.introspect.Annotated;
 import lombok.Builder;
 
 import java.util.List;

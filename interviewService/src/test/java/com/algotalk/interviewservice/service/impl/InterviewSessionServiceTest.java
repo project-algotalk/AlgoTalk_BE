@@ -1,8 +1,11 @@
 package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
+import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
+import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -11,14 +14,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @Slf4j
 @SpringBootTest
@@ -28,6 +35,23 @@ class InterviewSessionServiceTest {
 
     @Autowired
     private IInterviewSessionService interviewSessionService;
+
+    @MockBean
+    private AiFeignClient aiFeignClient;
+
+    private AiQuestionResponseDTO mockAiResponse(int questionCount) {
+        List<AiQuestionItemDTO> questions = IntStream.rangeClosed(1, questionCount)
+                .mapToObj(i -> new AiQuestionItemDTO(
+                        i,
+                        "자료구조/알고리즘",
+                        "MEDIUM",
+                        "테스트 질문 " + i + "번입니다.",
+                        "테스트 출제 의도",
+                        List.of("키워드1", "키워드2")
+                ))
+                .toList();
+        return new AiQuestionResponseDTO(questions);
+    }
 
     @Test
     @Transactional
@@ -45,6 +69,9 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(3));
 
         // when
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);
@@ -81,6 +108,9 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(3));
 
         // when
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);
@@ -121,6 +151,9 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(3));
 
         // when
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);
@@ -166,6 +199,9 @@ class InterviewSessionServiceTest {
                 .questionCount(5)
                 .build();
 
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(5));
+
         // when
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);
         log.info("세션 생성 결과: {}", rDTO);
@@ -199,6 +235,9 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(1)
                 .build();
+
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(1));
 
         // when
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);

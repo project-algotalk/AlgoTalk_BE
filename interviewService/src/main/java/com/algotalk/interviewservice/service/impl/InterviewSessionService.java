@@ -65,9 +65,9 @@ public class InterviewSessionService implements IInterviewSessionService {
             Map.entry(131L, "서비스 기획자/PO"),
             Map.entry(132L, "UI/UX 디자이너"),
             Map.entry(133L, "QA 엔지니어")
+            // 24L(기타/직접입력)은 의도적으로 제외 - 면접 세션 생성 시 허용하지 않음
     );
 
-    @Transactional
     @Override
     public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) throws Exception {
         log.info("{}.createSession Start!", this.getClass().getName());
@@ -75,7 +75,42 @@ public class InterviewSessionService implements IInterviewSessionService {
         // 1. selectedCategories 검증
         validateCategories(pCommand.getSelectedCategories());
 
-        // 2. 면접 세션 INSERT
+        // 2. categoryId → 카테고리명 변환 (@Transactional 밖에서 수행)
+        List<String> categoryNames = pCommand.getSelectedCategories().stream()
+                .map(c -> {
+                    String categoryName = CATEGORY_NAME_MAP.get(c.categoryId());
+                    if (categoryName == null) {
+                        // TODO: userService 연동 후 실존 검증으로 교체
+                        throw new BusinessException(INVALID_CATEGORY_TYPE);
+                    }
+                    return categoryName;
+                })
+                .toList();
+
+        // 3. aiService 호출하여 LLM 질문 생성 (@Transactional 밖에서 수행)
+        AiQuestionRequestDTO aiRequest = AiQuestionRequestDTO.builder()
+                .categories(categoryNames)
+                .questionCount(pCommand.getQuestionCount())
+                .build();
+
+        AiQuestionResponseDTO aiResponse = aiFeignClient.generateQuestions(aiRequest);
+
+        // 4. aiService 응답 검증
+        if (aiResponse == null || aiResponse.questions() == null || aiResponse.questions().isEmpty()) {
+            throw new BusinessException(QUESTION_INSERT_FAILED);
+        }
+        if (aiResponse.questions().size() != pCommand.getQuestionCount()) {
+            throw new BusinessException(QUESTION_INSERT_FAILED);
+        }
+
+        // 5. DB 저장 (트랜잭션 범위)
+        return saveSession(pCommand, aiResponse.questions());
+    }
+
+    @Transactional
+    public SessionCreateResponseDTO saveSession(SessionCreateCommand pCommand,
+                                                List<AiQuestionItemDTO> aiQuestions) throws Exception {
+        // 1. 면접 세션 INSERT
         InterviewSessionCommand sessionCommand = InterviewSessionCommand.builder()
                 .userId(pCommand.getUserId())
                 .sessionTitle(pCommand.getSessionTitle())
@@ -86,23 +121,8 @@ public class InterviewSessionService implements IInterviewSessionService {
         interviewSessionMapper.insertInterviewSession(sessionCommand);
         Long sessionId = sessionCommand.getSessionId();
 
-        // 3. categoryId → 카테고리명 변환
-        List<String> categoryNames = pCommand.getSelectedCategories().stream()
-                .map(c -> CATEGORY_NAME_MAP.getOrDefault(c.categoryId(), "기타"))
-                .toList();
-
-        // 4. aiService 호출하여 LLM 질문 생성
-        AiQuestionRequestDTO aiRequest = AiQuestionRequestDTO.builder()
-                .categories(categoryNames)
-                .questionCount(pCommand.getQuestionCount())
-                .build();
-
-        AiQuestionResponseDTO aiResponse = aiFeignClient.generateQuestions(aiRequest);
-
-        // 5. 생성된 질문 INSERT
-        List<AiQuestionItemDTO> aiQuestions = aiResponse.questions();
-        for (int i = 0; i < aiQuestions.size(); i++) {
-            AiQuestionItemDTO aiQuestion = aiQuestions.get(i);
+        // 2. 생성된 질문 INSERT
+        for (AiQuestionItemDTO aiQuestion : aiQuestions) {
             SessionQuestionCommand questionCommand = SessionQuestionCommand.builder()
                     .sessionId(sessionId)
                     .userId(pCommand.getUserId())
@@ -120,11 +140,11 @@ public class InterviewSessionService implements IInterviewSessionService {
             }
         }
 
-        // 6. 저장된 질문 목록 조회
+        // 3. 저장된 질문 목록 조회
         List<SessionQuestionCommand> savedQuestions =
                 sessionQuestionMapper.getSessionQuestionList(sessionCommand);
 
-        // 7. Response DTO 조립
+        // 4. Response DTO 조립
         List<QuestionItemResponseDTO> questionItems = savedQuestions.stream()
                 .map(q -> QuestionItemResponseDTO.builder()
                         .sessionQuestionId(q.getSessionQuestionId())
@@ -152,12 +172,10 @@ public class InterviewSessionService implements IInterviewSessionService {
     }
 
     private void validateCategories(List<CategoryItemRequestDTO> selectedCategories) {
-        // 전체 카테고리 최소 1개 검증 (COMMON_CS + JOB 합산)
         if (selectedCategories.isEmpty()) {
             throw new BusinessException(CATEGORY_REQUIRED);
         }
 
-        // categoryType 화이트리스트 검증
         boolean hasInvalidType = selectedCategories.stream()
                 .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
         if (hasInvalidType) {
