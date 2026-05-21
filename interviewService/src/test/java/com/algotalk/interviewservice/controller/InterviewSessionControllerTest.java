@@ -1,7 +1,13 @@
 package com.algotalk.interviewservice.controller;
 
+import com.algotalk.common.response.ApiResponse;
+import com.algotalk.interviewservice.client.AiFeignClient;
+import com.algotalk.interviewservice.client.UserFeignClient;
+import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.request.SessionCreateRequestDTO;
+import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
+import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -9,14 +15,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,8 +41,32 @@ class InterviewSessionControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @MockBean
+    private AiFeignClient aiFeignClient;
+
+    @MockBean
+    private UserFeignClient userFeignClient;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+    private AiQuestionResponseDTO mockAiResponse(int questionCount) {
+        List<AiQuestionItemDTO> questions = IntStream.rangeClosed(1, questionCount)
+                .mapToObj(i -> new AiQuestionItemDTO(
+                        i,
+                        "자료구조/알고리즘",
+                        "MEDIUM",
+                        "테스트 질문 " + i + "번입니다.",
+                        "테스트 출제 의도",
+                        List.of("키워드1", "키워드2")
+                ))
+                .toList();
+        return new AiQuestionResponseDTO(questions);
+    }
+
+    private CsCategoryResponseDTO mockCategory(Long categoryId, String categoryType, String categoryName) {
+        return new CsCategoryResponseDTO(categoryId, categoryType, categoryName, null, 2, 1);
+    }
 
     @Test
     @Transactional
@@ -53,6 +87,19 @@ class InterviewSessionControllerTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
+
+        // aiService Mock 설정
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(3));
 
         // when, then
         mockMvc.perform(
@@ -85,6 +132,19 @@ class InterviewSessionControllerTest {
                 ))
                 .questionCount(1)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
+
+        // aiService Mock 설정
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(1));
 
         // when, then
         mockMvc.perform(
@@ -120,6 +180,19 @@ class InterviewSessionControllerTest {
                 ))
                 .questionCount(5)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
+
+        // aiService Mock 설정
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(5));
 
         // when, then
         mockMvc.perform(

@@ -1,11 +1,14 @@
 package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.common.response.ApiResponse;
 import com.algotalk.interviewservice.client.AiFeignClient;
+import com.algotalk.interviewservice.client.UserFeignClient;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
 import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
+import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,9 @@ class InterviewSessionServiceTest {
     @MockBean
     private AiFeignClient aiFeignClient;
 
+    @MockBean
+    private UserFeignClient userFeignClient;
+
     private AiQuestionResponseDTO mockAiResponse(int questionCount) {
         List<AiQuestionItemDTO> questions = IntStream.rangeClosed(1, questionCount)
                 .mapToObj(i -> new AiQuestionItemDTO(
@@ -51,6 +57,10 @@ class InterviewSessionServiceTest {
                 ))
                 .toList();
         return new AiQuestionResponseDTO(questions);
+    }
+
+    private CsCategoryResponseDTO mockCategory(Long categoryId, String categoryType, String categoryName) {
+        return new CsCategoryResponseDTO(categoryId, categoryType, categoryName, null, 2, 1);
     }
 
     @Test
@@ -69,6 +79,15 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
 
         when(aiFeignClient.generateQuestions(any()))
                 .thenReturn(mockAiResponse(3));
@@ -108,6 +127,15 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
 
         when(aiFeignClient.generateQuestions(any()))
                 .thenReturn(mockAiResponse(3));
@@ -151,6 +179,15 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
 
         when(aiFeignClient.generateQuestions(any()))
                 .thenReturn(mockAiResponse(3));
@@ -199,6 +236,15 @@ class InterviewSessionServiceTest {
                 .questionCount(5)
                 .build();
 
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
+
         when(aiFeignClient.generateQuestions(any()))
                 .thenReturn(mockAiResponse(5));
 
@@ -235,6 +281,15 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(1)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
 
         when(aiFeignClient.generateQuestions(any()))
                 .thenReturn(mockAiResponse(1));
@@ -296,6 +351,14 @@ class InterviewSessionServiceTest {
                 .questionCount(3)
                 .build();
 
+        // userService Mock 설정 (999L은 목록에 없으므로 INVALID_CATEGORY_ID 발생)
+        when(userFeignClient.getCsCategories()).thenReturn(ApiResponse.ok(List.of(
+                mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                mockCategory(101L, "JOB", "백엔드 개발자"),
+                mockCategory(102L, "JOB", "풀스택 개발자"),
+                mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+        )));
+
         // when, then
         BusinessException ex = assertThrows(BusinessException.class, () ->
                 interviewSessionService.createSession(pCommand));
@@ -317,6 +380,15 @@ class InterviewSessionServiceTest {
                 ))
                 .questionCount(3)
                 .build();
+
+        // userService Mock 설정
+        when(userFeignClient.getCsCategories())
+                .thenReturn(ApiResponse.ok(List.of(
+                        mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                        mockCategory(101L, "JOB", "백엔드 개발자"),
+                        mockCategory(102L, "JOB", "풀스택 개발자"),
+                        mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
+                )));
 
         // aiService가 요청한 것보다 적은 질문 반환
         when(aiFeignClient.generateQuestions(any()))

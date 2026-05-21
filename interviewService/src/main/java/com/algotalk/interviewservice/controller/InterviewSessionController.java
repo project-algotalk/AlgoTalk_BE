@@ -20,7 +20,7 @@ public class InterviewSessionController {
 
     private final IInterviewSessionService interviewSessionService;
 
-    @PostMapping("/sessions")
+    @PostMapping("/sessions/llm")
     public ResponseEntity<ApiResponse<SessionCreateResponseDTO>> createSession(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody SessionCreateRequestDTO pDTO
@@ -29,7 +29,6 @@ public class InterviewSessionController {
 
         SessionCreateCommand pCommand = SessionCreateCommand.builder()
                 .userId(userId)
-                .sessionTitle(pDTO.sessionTitle())
                 .selectedCategories(pDTO.selectedCategories())
                 .questionCount(pDTO.questionCount())
                 .build();
