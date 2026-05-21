@@ -3,9 +3,13 @@ package com.algotalk.interviewservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
+import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
+import com.algotalk.interviewservice.dto.request.CsValidationRequestDTO;
+import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
+import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
@@ -15,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 
@@ -71,6 +74,62 @@ public class InterviewSessionService implements IInterviewSessionService {
         SessionCreateResponseDTO rDTO = sessionSaveService.saveSession(pCommand.toBuilder().sessionTitle(sessionTitle).build(), aiResponse.questions());
 
         log.info("{}.createSession End!", this.getClass().getName());
+
+        return rDTO;
+    }
+
+    @Override
+    public SessionCreateResponseDTO createManualSession(SessionCreateCommand pCommand) throws Exception {
+        log.info("{}.createManualSession Start!", this.getClass().getName());
+
+        // 1. 질문 목록 검증
+        List<ManualQuestionItemRequestDTO> manualQuestions = pCommand.getManualQuestions();
+        if (manualQuestions == null || manualQuestions.isEmpty()) {
+            throw new BusinessException(CATEGORY_REQUIRED);
+        }
+
+        // 2. categoryId 실존 검증 + 카테고리명 기반 세션 제목 자동 생성
+        List<String> categoryNames = manualQuestions.stream()
+                .map(q -> csCategoryService.getCategoryById(q.categoryId()).categoryName())
+                .distinct()
+                .toList();
+
+        String sessionTitle = String.join(" · ", categoryNames) + " 모의면접";
+
+        // 3. CS 관련 질문 여부 검증 (aiService 호출)
+        List<String> questionTexts = manualQuestions.stream()
+                .map(ManualQuestionItemRequestDTO::questionText)
+                .toList();
+
+        CsValidationResponseDTO validationResponse;
+        try {
+            validationResponse = aiFeignClient.validateCsQuestions(
+                    CsValidationRequestDTO.builder()
+                            .questions(questionTexts)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("aiService CS 질문 검증 호출 실패: {}", e.getMessage(), e);
+            throw new BusinessException(AI_CALL_FAILED);
+        }
+
+        // 4. CS 관련 아닌 질문 필터링
+        List<String> invalidQuestions = validationResponse.results().stream()
+                .filter(r -> !r.isValid())
+                .map(CsValidationItemDTO::questionText)
+                .toList();
+
+        if (!invalidQuestions.isEmpty()) {
+            log.warn("CS 관련 아닌 질문 포함: {}", invalidQuestions);
+            throw new BusinessException(INVALID_CS_QUESTION);
+        }
+
+        // 5. DB 저장 (트랜잭션 범위)
+        SessionCreateResponseDTO rDTO = sessionSaveService.saveManualSession(
+                pCommand.toBuilder().sessionTitle(sessionTitle).build()
+        );
+
+        log.info("{}.createManualSession End!", this.getClass().getName());
 
         return rDTO;
     }

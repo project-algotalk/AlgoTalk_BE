@@ -11,4 +11,6 @@ public interface ISessionSaveService {
     // 면접 세션 및 질문 DB 저장
     SessionCreateResponseDTO saveSession(SessionCreateCommand pCommand,
                                          List<AiQuestionItemDTO> aiQuestions) throws Exception;
+
+    SessionCreateResponseDTO saveManualSession(SessionCreateCommand pCommand) throws Exception;
 }

@@ -1,5 +1,8 @@
 package com.algotalk.interviewservice.dto.response;
 
+import lombok.Builder;
+
+@Builder
 public record CsCategoryResponseDTO(
         Long categoryId,     // 카테고리 ID
         String categoryType, // 카테고리 유형 (COMMON_CS / JOB)
