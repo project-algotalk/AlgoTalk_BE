@@ -2,29 +2,19 @@ package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
-import com.algotalk.interviewservice.domain.enums.SourceType;
-import com.algotalk.interviewservice.dto.command.InterviewSessionCommand;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
-import com.algotalk.interviewservice.dto.command.SessionQuestionCommand;
-import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
-import com.algotalk.interviewservice.dto.response.QuestionItemResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
-import com.algotalk.interviewservice.repository.IInterviewSessionMapper;
-import com.algotalk.interviewservice.repository.ISessionQuestionMapper;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-import static com.algotalk.interviewservice.domain.enums.SessionStatus.READY;
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 
 @Slf4j
@@ -32,12 +22,9 @@ import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 @RequiredArgsConstructor
 public class InterviewSessionService implements IInterviewSessionService {
 
-    private final IInterviewSessionMapper interviewSessionMapper;
-    private final ISessionQuestionMapper sessionQuestionMapper;
     private final AiFeignClient aiFeignClient;
+    private final SessionSaveService sessionSaveService;
 
-    // categoryId → 카테고리명 변환 Map (임시 하드코딩)
-    // TODO(interviewService): userService OpenFeign 연동 후 교체
     private static final Map<Long, String> CATEGORY_NAME_MAP = Map.ofEntries(
             Map.entry(10L, "자료구조/알고리즘"),
             Map.entry(11L, "데이터베이스"),
@@ -65,7 +52,7 @@ public class InterviewSessionService implements IInterviewSessionService {
             Map.entry(131L, "서비스 기획자/PO"),
             Map.entry(132L, "UI/UX 디자이너"),
             Map.entry(133L, "QA 엔지니어")
-            // 24L(기타/직접입력)은 의도적으로 제외 - 면접 세션 생성 시 허용하지 않음
+            // 24L(기타/직접입력)은 의도적으로 제외
     );
 
     @Override
@@ -75,96 +62,43 @@ public class InterviewSessionService implements IInterviewSessionService {
         // 1. selectedCategories 검증
         validateCategories(pCommand.getSelectedCategories());
 
-        // 2. categoryId → 카테고리명 변환 (@Transactional 밖에서 수행)
+        // 2. categoryId -> 카테고리명 변환
         List<String> categoryNames = pCommand.getSelectedCategories().stream()
                 .map(c -> {
                     String categoryName = CATEGORY_NAME_MAP.get(c.categoryId());
                     if (categoryName == null) {
                         // TODO: userService 연동 후 실존 검증으로 교체
-                        throw new BusinessException(INVALID_CATEGORY_TYPE);
+                        throw new BusinessException(INVALID_CATEGORY_ID);
                     }
                     return categoryName;
                 })
                 .toList();
 
-        // 3. aiService 호출하여 LLM 질문 생성 (@Transactional 밖에서 수행)
+        // 3. aiService 호출하여 LLM 질문 생성 (트랜잭션 밖에서 수행)
         AiQuestionRequestDTO aiRequest = AiQuestionRequestDTO.builder()
                 .categories(categoryNames)
                 .questionCount(pCommand.getQuestionCount())
                 .build();
 
-        AiQuestionResponseDTO aiResponse = aiFeignClient.generateQuestions(aiRequest);
+        AiQuestionResponseDTO aiResponse;
+        try {
+            aiResponse = aiFeignClient.generateQuestions(aiRequest);
+        } catch (Exception e) {
+            // aiService 호출 실패 (타임아웃/5xx 등)
+            log.error("aiService 호출 실패: {}", e.getMessage());
+            throw new BusinessException(AI_CALL_FAILED);
+        }
 
         // 4. aiService 응답 검증
         if (aiResponse == null || aiResponse.questions() == null || aiResponse.questions().isEmpty()) {
-            throw new BusinessException(QUESTION_INSERT_FAILED);
+            throw new BusinessException(AI_CALL_FAILED);
         }
         if (aiResponse.questions().size() != pCommand.getQuestionCount()) {
-            throw new BusinessException(QUESTION_INSERT_FAILED);
+            throw new BusinessException(AI_CALL_FAILED);
         }
 
-        // 5. DB 저장 (트랜잭션 범위)
-        return saveSession(pCommand, aiResponse.questions());
-    }
-
-    @Transactional
-    public SessionCreateResponseDTO saveSession(SessionCreateCommand pCommand,
-                                                List<AiQuestionItemDTO> aiQuestions) throws Exception {
-        // 1. 면접 세션 INSERT
-        InterviewSessionCommand sessionCommand = InterviewSessionCommand.builder()
-                .userId(pCommand.getUserId())
-                .sessionTitle(pCommand.getSessionTitle())
-                .sessionStatus(READY.getStatus())
-                .totalQuestions(pCommand.getQuestionCount())
-                .build();
-
-        interviewSessionMapper.insertInterviewSession(sessionCommand);
-        Long sessionId = sessionCommand.getSessionId();
-
-        // 2. 생성된 질문 INSERT
-        for (AiQuestionItemDTO aiQuestion : aiQuestions) {
-            SessionQuestionCommand questionCommand = SessionQuestionCommand.builder()
-                    .sessionId(sessionId)
-                    .userId(pCommand.getUserId())
-                    .questionText(aiQuestion.content())
-                    .sourceType(SourceType.LLM_GENERATED.getType())
-                    .questionOrder(aiQuestion.order())
-                    .difficulty(aiQuestion.difficulty())
-                    .questionIntent(aiQuestion.intent())
-                    .questionKeywords(aiQuestion.keywords())
-                    .build();
-
-            int res = sessionQuestionMapper.insertSessionQuestion(questionCommand);
-            if (res != 1) {
-                throw new BusinessException(QUESTION_INSERT_FAILED);
-            }
-        }
-
-        // 3. 저장된 질문 목록 조회
-        List<SessionQuestionCommand> savedQuestions =
-                sessionQuestionMapper.getSessionQuestionList(sessionCommand);
-
-        // 4. Response DTO 조립
-        List<QuestionItemResponseDTO> questionItems = savedQuestions.stream()
-                .map(q -> QuestionItemResponseDTO.builder()
-                        .sessionQuestionId(q.getSessionQuestionId())
-                        .questionOrder(q.getQuestionOrder())
-                        .questionText(q.getQuestionText())
-                        .sourceType(q.getSourceType())
-                        .difficulty(q.getDifficulty())
-                        .questionIntent(q.getQuestionIntent())
-                        .questionKeywords(q.getQuestionKeywords())
-                        .build())
-                .toList();
-
-        SessionCreateResponseDTO rDTO = SessionCreateResponseDTO.builder()
-                .sessionId(sessionId)
-                .sessionTitle(pCommand.getSessionTitle())
-                .status(READY.getStatus())
-                .totalQuestions(pCommand.getQuestionCount())
-                .questions(questionItems)
-                .createdAt(LocalDateTime.now())
-                .build();
+        // 5. DB 저장 (별도 빈의 @Transactional 적용)
+        SessionCreateResponseDTO rDTO = sessionSaveService.saveSession(pCommand, aiResponse.questions());
 
         log.info("{}.createSession End!", this.getClass().getName());
 
