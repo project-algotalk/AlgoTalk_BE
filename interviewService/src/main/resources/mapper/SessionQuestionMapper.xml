@@ -17,13 +17,15 @@
     >
         INSERT INTO SESSION_QUESTION (
             SESSION_ID, REF_ID, QUESTION_TEXT,
-            SOURCE_TYPE, QUESTION_ORDER, QUESTION_INTENT,
+            SOURCE_TYPE, QUESTION_ORDER, DIFFICULTY,
+            QUESTION_INTENT,
             QUESTION_KEYWORDS,
             CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
         )
         VALUES (
             #{sessionId}, #{refId}, #{questionText},
-            #{sourceType}, #{questionOrder}, #{questionIntent},
+            #{sourceType}, #{questionOrder}, #{difficulty},
+            #{questionIntent},
             #{questionKeywords, typeHandler=com.algotalk.interviewservice.util.JsonListTypeHandler},
             NOW(), #{userId}, NOW(), #{userId}
         )
@@ -40,6 +42,7 @@
             QUESTION_TEXT,
             SOURCE_TYPE,
             QUESTION_ORDER,
+            DIFFICULTY,
             QUESTION_INTENT,
             QUESTION_KEYWORDS
         FROM SESSION_QUESTION
