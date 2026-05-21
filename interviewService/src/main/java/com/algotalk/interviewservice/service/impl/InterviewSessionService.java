@@ -8,6 +8,7 @@ import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
+import com.algotalk.interviewservice.service.ISessionSaveService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 public class InterviewSessionService implements IInterviewSessionService {
 
     private final AiFeignClient aiFeignClient;
-    private final SessionSaveService sessionSaveService;
+    private final ISessionSaveService sessionSaveService;
 
     private static final Map<Long, String> CATEGORY_NAME_MAP = Map.ofEntries(
             Map.entry(10L, "자료구조/알고리즘"),
@@ -84,8 +85,9 @@ public class InterviewSessionService implements IInterviewSessionService {
         try {
             aiResponse = aiFeignClient.generateQuestions(aiRequest);
         } catch (Exception e) {
-            // aiService 호출 실패 (타임아웃/5xx 등)
-            log.error("aiService 호출 실패: {}", e.getMessage());
+            // aiService 호출 실패
+            log.error("aiService 호출 실패. categories={}, questionCount={}",
+                    categoryNames, pCommand.getQuestionCount(), e);
             throw new BusinessException(AI_CALL_FAILED);
         }
 

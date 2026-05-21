@@ -279,4 +279,52 @@ class InterviewSessionServiceTest {
                 interviewSessionService.createSession(pCommand));
         assertThat(ex.getErrorCode()).isEqualTo(INVALID_CATEGORY_TYPE);
     }
+
+    @Test
+    @DisplayName("세션 생성 실패 - 존재하지 않는 categoryId")
+    void createSession_fail_invalidCategoryId() {
+        // given
+        SessionCreateCommand pCommand = SessionCreateCommand.builder()
+                .userId(1L)
+                .sessionTitle("모의면접")
+                .selectedCategories(List.of(
+                        CategoryItemRequestDTO.builder()
+                                .categoryId(999L)  // 존재하지 않는 categoryId
+                                .categoryType("COMMON_CS")
+                                .build()
+                ))
+                .questionCount(3)
+                .build();
+
+        // when, then
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                interviewSessionService.createSession(pCommand));
+        assertThat(ex.getErrorCode()).isEqualTo(INVALID_CATEGORY_ID);
+    }
+
+    @Test
+    @DisplayName("세션 생성 실패 - aiService 응답 질문 수 불일치")
+    void createSession_fail_aiResponseCountMismatch() {
+        // given
+        SessionCreateCommand pCommand = SessionCreateCommand.builder()
+                .userId(1L)
+                .sessionTitle("모의면접")
+                .selectedCategories(List.of(
+                        CategoryItemRequestDTO.builder()
+                                .categoryId(101L)
+                                .categoryType("JOB")
+                                .build()
+                ))
+                .questionCount(3)
+                .build();
+
+        // aiService가 요청한 것보다 적은 질문 반환
+        when(aiFeignClient.generateQuestions(any()))
+                .thenReturn(mockAiResponse(2));
+
+        // when, then
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                interviewSessionService.createSession(pCommand));
+        assertThat(ex.getErrorCode()).isEqualTo(AI_CALL_FAILED);
+    }
 }
