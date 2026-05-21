@@ -57,6 +57,12 @@ class InterviewSessionServiceTest {
         assertThat(rDTO.status()).isEqualTo("READY");
         assertThat(rDTO.totalQuestions()).isEqualTo(3);
         assertThat(rDTO.questions()).hasSize(3);
+
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.difficulty()).isIn("EASY", "MEDIUM", "HARD");
+            assertThat(q.questionIntent()).isNotBlank();
+            assertThat(q.questionKeywords()).isNotEmpty();
+        });
     }
 
     @Test
@@ -87,6 +93,12 @@ class InterviewSessionServiceTest {
         assertThat(rDTO.status()).isEqualTo("READY");
         assertThat(rDTO.totalQuestions()).isEqualTo(3);
         assertThat(rDTO.questions()).hasSize(3);
+
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.difficulty()).isIn("EASY", "MEDIUM", "HARD");
+            assertThat(q.questionIntent()).isNotBlank();
+            assertThat(q.questionKeywords()).isNotEmpty();
+        });
     }
 
     @Test
@@ -121,6 +133,12 @@ class InterviewSessionServiceTest {
         assertThat(rDTO.status()).isEqualTo("READY");
         assertThat(rDTO.totalQuestions()).isEqualTo(3);
         assertThat(rDTO.questions()).hasSize(3);
+
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.difficulty()).isIn("EASY", "MEDIUM", "HARD");
+            assertThat(q.questionIntent()).isNotBlank();
+            assertThat(q.questionKeywords()).isNotEmpty();
+        });
     }
 
     @Test
@@ -157,6 +175,12 @@ class InterviewSessionServiceTest {
         assertThat(rDTO.sessionId()).isNotNull();
         assertThat(rDTO.totalQuestions()).isEqualTo(5);
         assertThat(rDTO.questions()).hasSize(5);
+
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.difficulty()).isIn("EASY", "MEDIUM", "HARD");
+            assertThat(q.questionIntent()).isNotBlank();
+            assertThat(q.questionKeywords()).isNotEmpty();
+        });
     }
 
     @Test
@@ -183,6 +207,12 @@ class InterviewSessionServiceTest {
         // then
         assertThat(rDTO).isNotNull();
         assertThat(rDTO.questions()).hasSize(1);
+
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.difficulty()).isIn("EASY", "MEDIUM", "HARD");
+            assertThat(q.questionIntent()).isNotBlank();
+            assertThat(q.questionKeywords()).isNotEmpty();
+        });
     }
 
     @Test

@@ -10,6 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface AiFeignClient {
 
     // aiService 면접 질문 생성 요청
-    @PostMapping("/ai/v1/interview")
+    @PostMapping("/ai/v1/interview/questions")
     AiQuestionResponseDTO generateQuestions(@RequestBody AiQuestionRequestDTO request);
 }
