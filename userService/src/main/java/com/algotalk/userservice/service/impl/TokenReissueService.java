@@ -62,7 +62,7 @@ public class TokenReissueService implements ITokenReissueService {
         Long userId; // userId 추출 실패 했을 때 예외 처리 위해 try-catch로 감싸기
         try {
             userId = jwtTokenService.getUserIdFromToken(refreshToken);
-            log.info("추출된 userId: {}", userId);
+            log.debug("Refresh Token에서 userId 추출 완료");
         } catch (Exception e) {
             // decode 실패 시 예외 처리 (유효하지 않은 토큰)
             log.warn("유효하지 않은 Refresh Token입니다. class={}", e.getClass().getSimpleName());
@@ -74,13 +74,13 @@ public class TokenReissueService implements ITokenReissueService {
 
         // Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않는 경우(null) 예외 처리
         if(stored == null) {
-            log.warn("Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않습니다: userId={}", userId);
+            log.warn("Redis에 저장된 Refresh Token이 존재하지 않습니다.");
             throw new BusinessException(TOKEN_EXPIRED);
         }
 
         // Redis에 저장된 Refresh Token과 제공된 Refresh Token이 일치하지 않는 경우 예외 처리
         if(!stored.equals(refreshToken)) {
-            log.warn("제공된 Refresh Token이 Redis에 저장된 토큰과 일치하지 않습니다: userId={}", userId);
+            log.warn("제공된 Refresh Token이 저장된 토큰과 일치하지 않습니다.");
             throw new BusinessException(TOKEN_MISMATCH);
         }
         
@@ -90,7 +90,7 @@ public class TokenReissueService implements ITokenReissueService {
         );
 
         if(rCommand == null) {
-            log.warn("해당 userId로 사용자 정보를 DB에서 조회할 수 없습니다: userId={}", userId);
+            log.warn("토큰 재발급 대상 사용자 정보를 DB에서 조회할 수 없습니다.");
             throw new BusinessException(USER_NOT_FOUND);
         }
 
