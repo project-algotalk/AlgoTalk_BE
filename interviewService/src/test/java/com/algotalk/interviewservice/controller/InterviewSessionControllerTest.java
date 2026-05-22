@@ -4,10 +4,14 @@ import com.algotalk.common.response.ApiResponse;
 import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.client.UserFeignClient;
 import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
+import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
+import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
+import com.algotalk.interviewservice.dto.request.ManualSessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.request.SessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
 import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
+import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -325,6 +329,114 @@ class InterviewSessionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(INVALID_CATEGORY_TYPE.getCode()))
                 .andExpect(jsonPath("$.message").exists())
+                .andDo(print());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("직접입력 세션 생성 성공 - 질문 2개")
+    void createManualSession_success() throws Exception {
+        // given
+        int questionCount = 2;
+
+        ManualSessionCreateRequestDTO pDTO = ManualSessionCreateRequestDTO.builder()
+                .questions(List.of(
+                        ManualQuestionItemRequestDTO.builder()
+                                .categoryId(101L)
+                                .questionText("프로세스와 스레드의 차이를 설명하세요.")
+                                .build(),
+                        ManualQuestionItemRequestDTO.builder()
+                                .categoryId(12L)
+                                .questionText("TCP와 UDP의 차이점은 무엇인가요?")
+                                .build()
+                ))
+                .build();
+
+        when(userFeignClient.getCsCategories()).thenReturn(mockCategoryList());
+        when(aiFeignClient.validateCsQuestions(any()))
+                .thenReturn(CsValidationResponseDTO.builder()
+                        .results(List.of(
+                                CsValidationItemDTO.builder()
+                                        .questionText("프로세스와 스레드의 차이를 설명하세요.")
+                                        .isValid(true)
+                                        .reason("CS 관련 질문입니다.")
+                                        .build(),
+                                CsValidationItemDTO.builder()
+                                        .questionText("TCP와 UDP의 차이점은 무엇인가요?")
+                                        .isValid(true)
+                                        .reason("CS 관련 질문입니다.")
+                                        .build()
+                        ))
+                        .build());
+
+        // when, then
+        mockMvc.perform(
+                        post("/interview/v1/sessions/manual")
+                                .header("X-User-Id", "1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(pDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sessionId").exists())
+                .andExpect(jsonPath("$.data.sessionTitle").exists())
+                .andExpect(jsonPath("$.data.status").value("READY"))
+                .andExpect(jsonPath("$.data.totalQuestions").value(questionCount))
+                .andExpect(jsonPath("$.data.questions.length()").value(questionCount))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("직접입력 세션 생성 실패 - CS 관련 아닌 질문 포함")
+    void createManualSession_fail_invalidCsQuestion() throws Exception {
+        // given
+        String invalidQuestion = "오늘 점심 뭐 먹을까?";
+
+        ManualSessionCreateRequestDTO pDTO = ManualSessionCreateRequestDTO.builder()
+                .questions(List.of(
+                        ManualQuestionItemRequestDTO.builder()
+                                .categoryId(101L)
+                                .questionText(invalidQuestion)
+                                .build()
+                ))
+                .build();
+
+        when(userFeignClient.getCsCategories()).thenReturn(mockCategoryList());
+        when(aiFeignClient.validateCsQuestions(any()))
+                .thenReturn(CsValidationResponseDTO.builder()
+                        .results(List.of(
+                                CsValidationItemDTO.builder()
+                                        .questionText(invalidQuestion)
+                                        .isValid(false)
+                                        .reason("CS와 무관한 질문입니다.")
+                                        .build()
+                        ))
+                        .build());
+
+        // when, then
+        mockMvc.perform(
+                        post("/interview/v1/sessions/manual")
+                                .header("X-User-Id", "1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(pDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(INVALID_CS_QUESTION.getCode()))
+                .andDo(print());
+    }
+
+    @Test
+    @DisplayName("직접입력 세션 생성 실패 - 질문 없음")
+    void createManualSession_fail_emptyQuestions() throws Exception {
+        // given
+        ManualSessionCreateRequestDTO pDTO = ManualSessionCreateRequestDTO.builder()
+                .questions(List.of())
+                .build();
+
+        // when, then
+        mockMvc.perform(
+                        post("/interview/v1/sessions/manual")
+                                .header("X-User-Id", "1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(pDTO)))
+                .andExpect(status().isBadRequest())
                 .andDo(print());
     }
 }

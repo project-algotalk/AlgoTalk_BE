@@ -35,8 +35,16 @@ public class InterviewSessionService implements IInterviewSessionService {
     public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) throws Exception {
         log.info("{}.createSession Start!", this.getClass().getName());
 
-        // 1. selectedCategories 검증
-        validateCategories(pCommand.getSelectedCategories());
+        // 1. categoryType 화이트리스트 검증
+        boolean hasInvalidType = pCommand.getSelectedCategories().stream()
+                .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
+        if (hasInvalidType) {
+            throw new BusinessException(INVALID_CATEGORY_TYPE);
+        }
+
+        if (pCommand.getSelectedCategories().isEmpty()) {
+            throw new BusinessException(CATEGORY_REQUIRED);
+        }
 
         // 2. categoryId -> 카테고리명 변환 (userService 조회 + Caffeine 캐시)
         List<String> categoryNames = pCommand.getSelectedCategories().stream()
@@ -53,6 +61,7 @@ public class InterviewSessionService implements IInterviewSessionService {
                 .build();
 
         AiQuestionResponseDTO aiResponse;
+
         try {
             aiResponse = aiFeignClient.generateQuestions(aiRequest);
         } catch (Exception e) {
@@ -119,6 +128,14 @@ public class InterviewSessionService implements IInterviewSessionService {
             throw new BusinessException(AI_CALL_FAILED);
         }
 
+        // results 수 불일치 검증
+        if (validationResponse.results().isEmpty() ||
+                validationResponse.results().size() != questionTexts.size()) {
+            log.error("aiService CS 질문 검증 결과 수 불일치. 요청: {}, 반환: {}",
+                    questionTexts.size(), validationResponse.results().size());
+            throw new BusinessException(AI_CALL_FAILED);
+        }
+
         List<String> invalidQuestions = validationResponse.results().stream()
                 .filter(r -> !r.isValid())
                 .map(CsValidationItemDTO::questionText)
@@ -137,22 +154,5 @@ public class InterviewSessionService implements IInterviewSessionService {
         log.info("{}.createManualSession End!", this.getClass().getName());
 
         return rDTO;
-    }
-
-    private void validateCategories(List<CategoryItemRequestDTO> selectedCategories) {
-        if (selectedCategories.isEmpty()) {
-            throw new BusinessException(CATEGORY_REQUIRED);
-        }
-
-        // categoryType 화이트리스트 검증
-        boolean hasInvalidType = selectedCategories.stream()
-                .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
-        if (hasInvalidType) {
-            throw new BusinessException(INVALID_CATEGORY_TYPE);
-        }
-
-        // categoryId 실존 검증 (userService OpenFeign + Caffeine 캐시)
-        // getCategoryById() 내부에서 존재하지 않는 categoryId는 INVALID_CATEGORY_ID로 fail-close 처리
-        selectedCategories.forEach(c -> csCategoryService.getCategoryById(c.categoryId()));
     }
 }

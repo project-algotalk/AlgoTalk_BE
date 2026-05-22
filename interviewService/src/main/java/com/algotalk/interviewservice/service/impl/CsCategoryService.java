@@ -2,6 +2,7 @@ package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
+import com.algotalk.interviewservice.service.ICsCategoryFeignService;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import static com.algotalk.interviewservice.exception.InterviewErrorCode.INVALID
 @RequiredArgsConstructor
 public class CsCategoryService implements ICsCategoryService {
 
-    private final CsCategoryFeignService csCategoryFeignService;
+    private final ICsCategoryFeignService csCategoryFeignService;
 
     @Override
     public List<CsCategoryResponseDTO> getCsCategories() {
