@@ -127,7 +127,7 @@ public class AutoRefreshOn401Filter implements WebFilter {
     }
 
     private String extractAtFromAuthHeader(String authorization) {
-        String auth = CmmUtil.nvl(authorization.strip());
+        String auth = CmmUtil.nvl(authorization).strip();
         if (auth.isBlank()) return null;
         if (auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
             String token = auth.substring(7).strip();
@@ -160,7 +160,7 @@ public class AutoRefreshOn401Filter implements WebFilter {
                     List<String> setCookies = res.getHeaders().get(HttpHeaders.SET_COOKIE);
                     String at = extractAt(setCookies);
                     if (at == null || at.isBlank()) {
-                        at = extractAtFromAuthHeader(res.getHeaders().getFirst(HttpHeaders.SET_COOKIE));
+                        at = extractAtFromAuthHeader(res.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
                     }
                     return Mono.justOrEmpty(new RefreshOutcome(at, setCookies));
                 });
