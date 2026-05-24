@@ -25,7 +25,7 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
     private static final String COL_NM = "interview_analysis_report";
 
     @Override
-    public int insertData(InterviewAnalysisDocument pDoc) throws Exception {
+    public int insertData(InterviewAnalysisDocument pDoc) {
         log.info("{}.insertData Start!", this.getClass().getName());
 
         // Spring ObjectMapper는 JavaTimeModule이 등록되어 있어서 LocalDateTime 처리 가능
@@ -37,7 +37,7 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
     }
 
     @Override
-    public Optional<InterviewAnalysisDocument> findBySessionQuestionId(Long sessionQuestionId) throws Exception {
+    public Optional<InterviewAnalysisDocument> findBySessionQuestionId(Long sessionQuestionId) {
         log.info("{}.findBySessionQuestionId Start!", this.getClass().getName());
 
         Document query = new Document("sessionQuestionId", sessionQuestionId);
@@ -61,7 +61,7 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
     }
 
     @Override
-    public List<InterviewAnalysisDocument> findBySessionId(Long sessionId) throws Exception {
+    public List<InterviewAnalysisDocument> findBySessionId(Long sessionId) {
         log.info("{}.findBySessionId Start!", this.getClass().getName());
 
         Document query = new Document("sessionId", sessionId);

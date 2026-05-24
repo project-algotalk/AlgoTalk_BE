@@ -24,7 +24,7 @@ public class InterviewAnswerController {
             @PathVariable Long sessionId,
             @PathVariable Long sessionQuestionId,
             @Valid @RequestBody InterviewAnswerRequestDTO pDTO
-    ) throws Exception {
+    ) {
         log.info("{}.saveAnswer Start!", this.getClass().getName());
 
         InterviewAnswerCommand pCommand = InterviewAnswerCommand.builder()

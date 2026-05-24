@@ -2,6 +2,7 @@ package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
+import com.algotalk.interviewservice.domain.enums.CsCategoryType;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
 import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
@@ -33,16 +34,17 @@ public class InterviewSessionService implements IInterviewSessionService {
     private final ICsCategoryService csCategoryService;
 
     @Override
-    public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) throws Exception {
+    public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) {
         log.info("{}.createSession Start!", this.getClass().getName());
 
         if (pCommand.getSelectedCategories() == null || pCommand.getSelectedCategories().isEmpty()) {
             throw new BusinessException(CATEGORY_REQUIRED);
         }
 
-        // 1. categoryType 화이트리스트 검증
+        // 1. categoryType 유효성 검증 (COMMON_CS 또는 JOB만 허용)
         boolean hasInvalidType = pCommand.getSelectedCategories().stream()
-                .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
+                .anyMatch(c -> !CsCategoryType.isValid(c.categoryType()));
+
         if (hasInvalidType) {
             throw new BusinessException(INVALID_CATEGORY_TYPE);
         }
@@ -102,7 +104,7 @@ public class InterviewSessionService implements IInterviewSessionService {
     }
 
     @Override
-    public SessionCreateResponseDTO createManualSession(SessionCreateCommand pCommand) throws Exception {
+    public SessionCreateResponseDTO createManualSession(SessionCreateCommand pCommand) {
         log.info("{}.createManualSession Start!", this.getClass().getName());
 
         // 1. 질문 목록 검증
@@ -146,10 +148,12 @@ public class InterviewSessionService implements IInterviewSessionService {
         }
 
         // 4. CS 관련 아닌 질문 필터링
-        if (validationResponse == null || validationResponse.results() == null) {
+        boolean responseNull = validationResponse == null;
+        boolean resultsNull = !responseNull && validationResponse.results() == null;
+
+        if (responseNull || resultsNull) {
             log.error("[AI_CALL_FAILED][validateCsQuestions] 응답 payload 이상. responseNull={}, resultsNull={}",
-                    validationResponse == null,
-                    validationResponse != null && validationResponse.results() == null);
+                    responseNull, resultsNull);
             throw new BusinessException(AI_CALL_FAILED);
         }
 

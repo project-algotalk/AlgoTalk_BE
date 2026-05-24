@@ -25,7 +25,7 @@ public class InterviewSessionController {
     public ResponseEntity<ApiResponse<SessionCreateResponseDTO>> createSession(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody SessionCreateRequestDTO pDTO
-            ) throws Exception {
+            ) {
         log.info("{}.createSession Start!", this.getClass().getName());
 
         SessionCreateCommand pCommand = SessionCreateCommand.builder()
@@ -45,7 +45,7 @@ public class InterviewSessionController {
     public ResponseEntity<ApiResponse<SessionCreateResponseDTO>> createManualSession(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody ManualSessionCreateRequestDTO pDTO
-    ) throws Exception {
+    ) {
         log.info("{}.createManualSession Start!", this.getClass().getName());
 
         SessionCreateCommand pCommand = SessionCreateCommand.builder()

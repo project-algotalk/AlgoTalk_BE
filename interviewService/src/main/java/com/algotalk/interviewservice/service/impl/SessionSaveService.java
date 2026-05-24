@@ -34,7 +34,7 @@ public class SessionSaveService implements ISessionSaveService {
     @Transactional
     @Override
     public SessionCreateResponseDTO saveSession(SessionCreateCommand pCommand,
-                                                List<AiQuestionItemDTO> aiQuestions) throws Exception {
+                                                List<AiQuestionItemDTO> aiQuestions) {
         log.info("{}.saveSession Start!", this.getClass().getName());
         // 1. 면접 세션 INSERT
         InterviewSessionCommand sessionCommand = InterviewSessionCommand.builder()
@@ -99,7 +99,7 @@ public class SessionSaveService implements ISessionSaveService {
 
     @Transactional
     @Override
-    public SessionCreateResponseDTO saveManualSession(SessionCreateCommand pCommand) throws Exception {
+    public SessionCreateResponseDTO saveManualSession(SessionCreateCommand pCommand) {
         log.info("{}.saveManualSession Start!", this.getClass().getName());
 
         // 1. 면접 세션 INSERT

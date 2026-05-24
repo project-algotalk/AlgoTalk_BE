@@ -8,11 +8,11 @@ import java.util.Optional;
 public interface IInterviewAnalysisMapper {
 
     // 답변 분석 결과 저장
-    int insertData(InterviewAnalysisDocument pDoc) throws Exception;
+    int insertData(InterviewAnalysisDocument pDoc);
 
     // sessionQuestionId로 분석 결과 조회
-    Optional<InterviewAnalysisDocument> findBySessionQuestionId(Long sessionQuestionId) throws Exception;
+    Optional<InterviewAnalysisDocument> findBySessionQuestionId(Long sessionQuestionId);
 
     // sessionId로 전체 분석 결과 조회
-    List<InterviewAnalysisDocument> findBySessionId(Long sessionId) throws Exception;
+    List<InterviewAnalysisDocument> findBySessionId(Long sessionId);
 }

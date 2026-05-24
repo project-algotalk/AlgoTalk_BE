@@ -16,7 +16,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
     private final IInterviewAnalysisMapper interviewAnalysisMapper;
 
     @Override
-    public void saveAnswer(InterviewAnswerCommand pCommand) throws Exception {
+    public void saveAnswer(InterviewAnswerCommand pCommand) {
         log.info("{}.saveAnswer Start!", this.getClass().getName());
 
         InterviewAnalysisDocument rDoc = InterviewAnalysisDocument.from(pCommand);
