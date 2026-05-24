@@ -2,6 +2,7 @@ package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
+import com.algotalk.interviewservice.domain.enums.CsCategoryType;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
 import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
@@ -14,6 +15,7 @@ import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import com.algotalk.interviewservice.service.ISessionSaveService;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,18 +34,19 @@ public class InterviewSessionService implements IInterviewSessionService {
     private final ICsCategoryService csCategoryService;
 
     @Override
-    public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) throws Exception {
+    public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) {
         log.info("{}.createSession Start!", this.getClass().getName());
 
-        // 1. categoryType 화이트리스트 검증
-        boolean hasInvalidType = pCommand.getSelectedCategories().stream()
-                .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
-        if (hasInvalidType) {
-            throw new BusinessException(INVALID_CATEGORY_TYPE);
+        if (pCommand.getSelectedCategories() == null || pCommand.getSelectedCategories().isEmpty()) {
+            throw new BusinessException(CATEGORY_REQUIRED);
         }
 
-        if (pCommand.getSelectedCategories().isEmpty()) {
-            throw new BusinessException(CATEGORY_REQUIRED);
+        // 1. categoryType 유효성 검증 (COMMON_CS 또는 JOB만 허용)
+        boolean hasInvalidType = pCommand.getSelectedCategories().stream()
+                .anyMatch(c -> !CsCategoryType.isValid(c.categoryType()));
+
+        if (hasInvalidType) {
+            throw new BusinessException(INVALID_CATEGORY_TYPE);
         }
 
         // 2. categoryId -> 카테고리명 변환 (userService 조회 + Caffeine 캐시)
@@ -64,18 +67,31 @@ public class InterviewSessionService implements IInterviewSessionService {
 
         try {
             aiResponse = aiFeignClient.generateQuestions(aiRequest);
-        } catch (Exception e) {
-            // aiService 호출 실패
-            log.error("aiService 호출 실패. categories={}, questionCount={}",
+        } catch (FeignException.GatewayTimeout e) {
+            log.error("[AI_CALL_FAILED][generateQuestions] 타임아웃. categories={}, questionCount={}",
                     categoryNames, pCommand.getQuestionCount(), e);
+            throw new BusinessException(AI_CALL_FAILED);
+        } catch (FeignException e) {
+            log.error("[AI_CALL_FAILED][generateQuestions] HTTP 오류. status={}, categories={}, questionCount={}",
+                    e.status(), categoryNames, pCommand.getQuestionCount(), e);
+            throw new BusinessException(AI_CALL_FAILED);
+        } catch (Exception e) {
+            log.error("[AI_CALL_FAILED][generateQuestions] type={}, categories={}, questionCount={}, message={}",
+                    e.getClass().getSimpleName(), categoryNames, pCommand.getQuestionCount(), e.getMessage(), e);
             throw new BusinessException(AI_CALL_FAILED);
         }
 
         // 4. aiService 응답 검증
         if (aiResponse == null || aiResponse.questions() == null || aiResponse.questions().isEmpty()) {
+            log.error("[AI_CALL_FAILED][generateQuestions] 응답 payload 이상. responseNull={}, questionsNullOrEmpty={}",
+                    aiResponse == null,
+                    aiResponse == null || aiResponse.questions() == null || aiResponse.questions().isEmpty());
             throw new BusinessException(AI_CALL_FAILED);
         }
+
         if (aiResponse.questions().size() != pCommand.getQuestionCount()) {
+            log.error("[AI_CALL_FAILED][generateQuestions] 질문 수 불일치. requested={}, returned={}",
+                    pCommand.getQuestionCount(), aiResponse.questions().size());
             throw new BusinessException(AI_CALL_FAILED);
         }
 
@@ -88,7 +104,7 @@ public class InterviewSessionService implements IInterviewSessionService {
     }
 
     @Override
-    public SessionCreateResponseDTO createManualSession(SessionCreateCommand pCommand) throws Exception {
+    public SessionCreateResponseDTO createManualSession(SessionCreateCommand pCommand) {
         log.info("{}.createManualSession Start!", this.getClass().getName());
 
         // 1. 질문 목록 검증
@@ -117,21 +133,34 @@ public class InterviewSessionService implements IInterviewSessionService {
                             .questions(questionTexts)
                             .build()
             );
+        } catch (FeignException.GatewayTimeout e) {
+            log.error("[AI_CALL_FAILED][validateCsQuestions] 타임아웃. questionCount={}",
+                    questionTexts.size(), e);
+            throw new BusinessException(AI_CALL_FAILED);
+        } catch (FeignException e) {
+            log.error("[AI_CALL_FAILED][validateCsQuestions] HTTP 오류. status={}, questionCount={}",
+                    e.status(), questionTexts.size(), e);
+            throw new BusinessException(AI_CALL_FAILED);
         } catch (Exception e) {
-            log.error("aiService CS 질문 검증 호출 실패: {}", e.getMessage(), e);
+            log.error("[AI_CALL_FAILED][validateCsQuestions] type={}, questionCount={}, message={}",
+                    e.getClass().getSimpleName(), questionTexts.size(), e.getMessage(), e);
             throw new BusinessException(AI_CALL_FAILED);
         }
 
         // 4. CS 관련 아닌 질문 필터링
-        if (validationResponse == null || validationResponse.results() == null) {
-            log.error("aiService CS 질문 검증 응답이 null 입니다.");
+        boolean responseNull = validationResponse == null;
+        boolean resultsNull = !responseNull && validationResponse.results() == null;
+
+        if (responseNull || resultsNull) {
+            log.error("[AI_CALL_FAILED][validateCsQuestions] 응답 payload 이상. responseNull={}, resultsNull={}",
+                    responseNull, resultsNull);
             throw new BusinessException(AI_CALL_FAILED);
         }
 
         // results 수 불일치 검증
         if (validationResponse.results().isEmpty() ||
                 validationResponse.results().size() != questionTexts.size()) {
-            log.error("aiService CS 질문 검증 결과 수 불일치. 요청: {}, 반환: {}",
+            log.error("[AI_CALL_FAILED][validateCsQuestions] 결과 수 불일치. requested={}, returned={}",
                     questionTexts.size(), validationResponse.results().size());
             throw new BusinessException(AI_CALL_FAILED);
         }
@@ -142,7 +171,7 @@ public class InterviewSessionService implements IInterviewSessionService {
                 .toList();
 
         if (!invalidQuestions.isEmpty()) {
-            log.warn("CS 관련 아닌 질문 포함: {}", invalidQuestions);
+            log.warn("[AI_CALL_FAILED][validateCsQuestions] CS 관련 아닌 질문 포함: {}", invalidQuestions);
             throw new BusinessException(INVALID_CS_QUESTION);
         }
 

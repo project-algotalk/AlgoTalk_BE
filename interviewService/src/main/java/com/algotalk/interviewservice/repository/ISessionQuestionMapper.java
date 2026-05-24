@@ -10,8 +10,8 @@ import java.util.List;
 public interface ISessionQuestionMapper {
 
     // 세션 질문 단건 저장
-    int insertSessionQuestion(SessionQuestionCommand pCommand) throws Exception;
+    int insertSessionQuestion(SessionQuestionCommand pCommand);
 
     // 세션 질문 목록 조회
-    List<SessionQuestionCommand> getSessionQuestionList(InterviewSessionCommand pCommand) throws Exception;
+    List<SessionQuestionCommand> getSessionQuestionList(InterviewSessionCommand pCommand);
 }
