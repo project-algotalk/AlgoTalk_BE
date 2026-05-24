@@ -35,15 +35,15 @@ public class InterviewSessionService implements IInterviewSessionService {
     public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) throws Exception {
         log.info("{}.createSession Start!", this.getClass().getName());
 
+        if (pCommand.getSelectedCategories() == null || pCommand.getSelectedCategories().isEmpty()) {
+            throw new BusinessException(CATEGORY_REQUIRED);
+        }
+
         // 1. categoryType 화이트리스트 검증
         boolean hasInvalidType = pCommand.getSelectedCategories().stream()
                 .anyMatch(c -> !"COMMON_CS".equals(c.categoryType()) && !"JOB".equals(c.categoryType()));
         if (hasInvalidType) {
             throw new BusinessException(INVALID_CATEGORY_TYPE);
-        }
-
-        if (pCommand.getSelectedCategories().isEmpty()) {
-            throw new BusinessException(CATEGORY_REQUIRED);
         }
 
         // 2. categoryId -> 카테고리명 변환 (userService 조회 + Caffeine 캐시)

@@ -306,6 +306,22 @@ class InterviewSessionServiceTest {
     }
 
     @Test
+    @DisplayName("세션 생성 실패 - 카테고리 목록 null")
+    void createSession_fail_nullCategories() {
+        // given
+        SessionCreateCommand pCommand = SessionCreateCommand.builder()
+                .userId(1L)
+                .selectedCategories(null)
+                .questionCount(3)
+                .build();
+
+        // when, then
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                interviewSessionService.createSession(pCommand));
+        assertThat(ex.getErrorCode()).isEqualTo(CATEGORY_REQUIRED);
+    }
+
+    @Test
     @DisplayName("세션 생성 실패 - 유효하지 않은 categoryType")
     void createSession_fail_invalidCategoryType() {
         // given
