@@ -8,7 +8,9 @@ import java.util.List;
 
 public interface ISessionSaveService {
 
-    // 면접 세션 저장(InterviewSessionService 내부에서만 사용하는 메서드)
+    // 면접 세션 및 질문 DB 저장
     SessionCreateResponseDTO saveSession(SessionCreateCommand pCommand,
                                          List<AiQuestionItemDTO> aiQuestions) throws Exception;
+
+    SessionCreateResponseDTO saveManualSession(SessionCreateCommand pCommand) throws Exception;
 }

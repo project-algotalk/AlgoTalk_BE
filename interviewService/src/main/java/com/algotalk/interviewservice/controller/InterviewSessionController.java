@@ -2,6 +2,7 @@ package com.algotalk.interviewservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
+import com.algotalk.interviewservice.dto.request.ManualSessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.request.SessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
@@ -20,7 +21,7 @@ public class InterviewSessionController {
 
     private final IInterviewSessionService interviewSessionService;
 
-    @PostMapping("/sessions")
+    @PostMapping("/sessions/llm")
     public ResponseEntity<ApiResponse<SessionCreateResponseDTO>> createSession(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody SessionCreateRequestDTO pDTO
@@ -29,7 +30,6 @@ public class InterviewSessionController {
 
         SessionCreateCommand pCommand = SessionCreateCommand.builder()
                 .userId(userId)
-                .sessionTitle(pDTO.sessionTitle())
                 .selectedCategories(pDTO.selectedCategories())
                 .questionCount(pDTO.questionCount())
                 .build();
@@ -37,6 +37,25 @@ public class InterviewSessionController {
         SessionCreateResponseDTO rDTO = interviewSessionService.createSession(pCommand);
 
         log.info("{}.createSession End!", this.getClass().getName());
+
+        return ResponseEntity.ok(ApiResponse.ok(rDTO));
+    }
+
+    @PostMapping("/sessions/manual")
+    public ResponseEntity<ApiResponse<SessionCreateResponseDTO>> createManualSession(
+            @RequestHeader("X-User-Id") Long userId,
+            @Valid @RequestBody ManualSessionCreateRequestDTO pDTO
+    ) throws Exception {
+        log.info("{}.createManualSession Start!", this.getClass().getName());
+
+        SessionCreateCommand pCommand = SessionCreateCommand.builder()
+                .userId(userId)
+                .manualQuestions(pDTO.questions())
+                .build();
+
+        SessionCreateResponseDTO rDTO = interviewSessionService.createManualSession(pCommand);
+
+        log.info("{}.createManualSession End!", this.getClass().getName());
 
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }

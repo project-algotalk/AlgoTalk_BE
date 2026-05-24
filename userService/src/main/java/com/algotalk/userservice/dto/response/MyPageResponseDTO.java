@@ -3,7 +3,6 @@ package com.algotalk.userservice.dto.response;
 import lombok.Builder;
 import lombok.Getter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -27,27 +26,8 @@ public class MyPageResponseDTO {
     private List<String> socialProviders;
 
     // 목표 직무 목록
-    private List<TargetJobInfoDTO> targetJobs;
+    private List<TargetJobInfoResponseDTO> targetJobs;
 
     // 재직 이력 목록
-    private List<EmploymentInfoDTO> employments;
-
-    @Getter
-    @Builder
-    public static class TargetJobInfoDTO {
-        private Long categoryId;
-        private String categoryName;
-        private LocalDate startDate;
-        private LocalDate endDate;
-    }
-
-    @Getter
-    @Builder
-    public static class EmploymentInfoDTO {
-        private String companyName;
-        private Long categoryId;
-        private String categoryName;
-        private LocalDate startDate;
-        private LocalDate endDate;
-    }
+    private List<EmploymentInfoResponseDTO> employments;
 }

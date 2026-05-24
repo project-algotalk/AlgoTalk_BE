@@ -2,11 +2,12 @@ package com.algotalk.userservice.service;
 
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
+import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
 
 import java.util.List;
 
 
-public interface IUserUpdateService {
+public interface IMypageService {
     // 마이페이지
     MyPageResponseDTO getMyPage(Long userId) throws Exception;
 
@@ -40,4 +41,8 @@ public interface IUserUpdateService {
 
     // 재직이력 변경
     int updateEmployments(Long userId, List<EmploymentRequestDTO> pDTO) throws Exception;
+
+    // 목표직무 조회
+    List<TargetJobInfoResponseDTO> getTargetJobs(Long userId) throws Exception;
+
 }

@@ -80,11 +80,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         log.info("{}.onAuthenticationSuccess() Start!", this.getClass().getSimpleName());
 
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        log.info("OAuth2 로그인 성공: provider: {}, providerId: {}, email: {}, name: {}",
+        log.info("OAuth2 로그인 성공: provider: {}, 신규회원여부: {}",
                 oAuth2User.getOAuth2UserInfo().getProvider(),
-                oAuth2User.getOAuth2UserInfo().getProviderId(),
-                oAuth2User.getOAuth2UserInfo().getEmail(),
-                oAuth2User.getDisplayName());
+                oAuth2User.isNewUser());
 
         String linkToken = extractLinkToken(request);
         log.info("신규 회원 확인: {}, linkToken 존재 여부: {}", oAuth2User.isNewUser(), linkToken != null);
@@ -115,7 +113,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         redisTemplate.opsForHash().putAll(TEMP_TOKEN_PREFIX + tempToken, tempData);
         redisTemplate.expire(TEMP_TOKEN_PREFIX + tempToken, TEMP_TOKEN_TTL, TimeUnit.SECONDS);
 
-        log.info("임시 토큰 발급 완료: tempToken={}", tempToken);
+        log.info("임시 토큰 발급 완료");
 
         String encodedToken = URLEncoder.encode(tempToken, StandardCharsets.UTF_8);
         response.sendRedirect(frontendUrl + SIGNUP_PATH + "?tempToken=" + encodedToken);
@@ -127,7 +125,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private void handleExistingUser(HttpServletResponse response, CustomOAuth2User oAuth2User) throws IOException {
         log.info("{}.handleExistingUser() Start!", this.getClass().getSimpleName());
 
-        log.info("기존 소셜 회원 처리 시작: userId={}", oAuth2User.getUserId());
+        log.info("기존 소셜 회원 처리 시작");
 
         try {
             UserInfoCommand userInfo = UserInfoCommand.builder()
@@ -146,7 +144,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
             setAccessTokenCookie(accessToken, response); // 리다이렉트하기 때문에 헤더로 전달 불가능
             setRefreshTokenCookie(refreshToken, response);
 
-            log.info("JWT 발급 완료: userId={}", oAuth2User.getUserId());
+            log.info("JWT 발급 완료");
 
             response.sendRedirect(frontendUrl + CALLBACK_PATH);
 

@@ -12,10 +12,6 @@ import java.util.List;
 
 @Builder
 public record SessionCreateRequestDTO(
-
-        @NotBlank(message = "세션 제목은 필수입니다.")
-        String sessionTitle,                              // 세션 제목
-
         @NotEmpty(message = "카테고리를 최소 1개 선택해주세요.")
         @Size(max = 3, message = "카테고리는 최대 3개까지 선택 가능합니다.")
         @Valid // 리스트 내부 CategoryItemRequestDTO 객체의 유효성 검사 활성화

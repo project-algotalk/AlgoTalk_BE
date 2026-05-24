@@ -4,19 +4,17 @@ import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.repository.IUserRegMapper;
-import com.algotalk.userservice.service.IUserUpdateService;
+import com.algotalk.userservice.service.IMypageService;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
@@ -29,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class UserUpdateServiceTest {
 
     @Autowired
-    private IUserUpdateService userUpdateService;
+    private IMypageService userUpdateService;
 
     @Autowired
     private IUserRegMapper userRegMapper;

@@ -1,7 +1,9 @@
 package com.algotalk.common.response;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -32,6 +34,18 @@ public class ApiResponse<T> {
         this.status = status;
         this.message = message;
         this.timestamp = LocalDateTime.now();
+        this.data = data;
+    }
+
+    @JsonCreator
+    private ApiResponse(
+            @JsonProperty("status") int status,
+            @JsonProperty("message") String message,
+            @JsonProperty("timestamp") LocalDateTime timestamp,
+            @JsonProperty("data") T data) {
+        this.status = status;
+        this.message = message;
+        this.timestamp = timestamp;
         this.data = data;
     }
 
