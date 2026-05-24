@@ -3,9 +3,10 @@ package com.algotalk.userservice.controller;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
+import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.ISocialLinkService;
-import com.algotalk.userservice.service.IUserUpdateService;
+import com.algotalk.userservice.service.IMypageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +21,9 @@ import java.util.List;
 @RestController
 @RequestMapping(value = "/mypage/v1")
 @RequiredArgsConstructor
-public class UserUpdateController {
+public class MyPageController {
 
-    private final IUserUpdateService userUpdateService;
+    private final IMypageService mypageService;
     private final IEmailService emailService;
     private final ISocialLinkService socialLinkService;
 
@@ -34,7 +35,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        MyPageResponseDTO rDTO = userUpdateService.getMyPage(userId);
+        MyPageResponseDTO rDTO = mypageService.getMyPage(userId);
 
         log.info("{}.getMypage End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
@@ -46,7 +47,7 @@ public class UserUpdateController {
             @Valid @RequestBody UpdateLoginIdRequestDTO pDTO
     ) throws Exception {
         log.info("{}.updateLoginId Start!", this.getClass().getName());
-        userUpdateService.updateLoginId(Long.valueOf(jwt.getSubject()), pDTO);
+        mypageService.updateLoginId(Long.valueOf(jwt.getSubject()), pDTO);
         log.info("{}.updateLoginId End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
     }
@@ -60,7 +61,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        userUpdateService.updatePassword(userId, pDTO);
+        mypageService.updatePassword(userId, pDTO);
 
         log.info("{}.updatePassword End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -74,7 +75,7 @@ public class UserUpdateController {
         log.info("{}.setPassword Start!", this.getClass().getName());
 
         Long userId = Long.valueOf(jwt.getSubject());
-        userUpdateService.setPassword(userId, pDTO);
+        mypageService.setPassword(userId, pDTO);
 
         log.info("{}.setPassword End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -89,7 +90,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        userUpdateService.updateNickname(userId, pDTO);
+        mypageService.updateNickname(userId, pDTO);
 
         log.info("{}.updateNickname End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -104,7 +105,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        userUpdateService.updateName(userId, pDTO);
+        mypageService.updateName(userId, pDTO);
 
         log.info("{}.updateName End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -119,7 +120,7 @@ public class UserUpdateController {
 
         Long userId = Long.valueOf(jwt.getSubject());
 
-        userUpdateService.updateAddr(userId, pDTO);
+        mypageService.updateAddr(userId, pDTO);
 
         log.info("{}.updateAddr End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -132,7 +133,7 @@ public class UserUpdateController {
         log.info("email: {}", pDTO.email());
 
         // 이메일 중복 확인 로직 처리
-        userUpdateService.isEmailDuplicated(UpdateEmailRequestDTO.builder()
+        mypageService.isEmailDuplicated(UpdateEmailRequestDTO.builder()
                 .email(pDTO.email())
                 .build());
 
@@ -163,7 +164,7 @@ public class UserUpdateController {
         log.info("{}.updateEmail Start!", this.getClass().getName());
 
         Long userId = Long.valueOf(jwt.getSubject());
-        userUpdateService.updateEmail(userId, pDTO);
+        mypageService.updateEmail(userId, pDTO);
 
         log.info("{}.updateEmail End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -193,7 +194,7 @@ public class UserUpdateController {
     ) throws Exception {
         log.info("{}.updateTargetJobs Start!", this.getClass().getName());
 
-        userUpdateService.updateTargetJobs(Long.valueOf(jwt.getSubject()), pDTO);
+        mypageService.updateTargetJobs(Long.valueOf(jwt.getSubject()), pDTO);
 
         log.info("{}.updateTargetJobs End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
@@ -206,10 +207,23 @@ public class UserUpdateController {
     ) throws Exception {
         log.info("{}.updateEmployments Start!", this.getClass().getName());
 
-        userUpdateService.updateEmployments(Long.valueOf(jwt.getSubject()), pDTO);
+        mypageService.updateEmployments(Long.valueOf(jwt.getSubject()), pDTO);
 
         log.info("{}.updateEmployments End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @GetMapping("/target-jobs")
+    public ResponseEntity<ApiResponse<List<TargetJobInfoResponseDTO>>> getTargetJobs(
+            @AuthenticationPrincipal Jwt jwt
+    ) throws Exception {
+        log.info("{}.getTargetJobs Start!", this.getClass().getName());
+
+        Long userId = Long.valueOf(jwt.getSubject());
+        List<TargetJobInfoResponseDTO> rList = mypageService.getTargetJobs(userId);
+
+        log.info("{}.getTargetJobs End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rList));
     }
 }
 

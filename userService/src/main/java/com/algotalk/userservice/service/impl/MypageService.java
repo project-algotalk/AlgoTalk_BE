@@ -4,12 +4,13 @@ import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.*;
+import com.algotalk.userservice.dto.response.EmploymentInfoResponseDTO;
 import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
-import com.algotalk.userservice.exception.UserErrorCode;
+import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IEmailService;
-import com.algotalk.userservice.service.IUserUpdateService;
+import com.algotalk.userservice.service.IMypageService;
 import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
@@ -28,7 +29,7 @@ import static com.algotalk.userservice.exception.UserErrorCode.INVALID_DATE_FORM
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserUpdateService implements IUserUpdateService {
+public class MypageService implements IMypageService {
 
     private final IUserUpdateMapper userUpdateMapper;
     private final PasswordEncoder passwordEncoder;
@@ -53,9 +54,9 @@ public class UserUpdateService implements IUserUpdateService {
                 .toList();
 
         // 3. 목표 직무 목록 조회
-        List<MyPageResponseDTO.TargetJobInfoDTO> targetJobs =
+        List<TargetJobInfoResponseDTO> targetJobs =
                 userUpdateMapper.getMyPageTargetJobsByUserId(userId).stream()
-                    .map(job -> MyPageResponseDTO.TargetJobInfoDTO.builder()
+                    .map(job -> TargetJobInfoResponseDTO.builder()
                             .categoryId(job.getCategoryId())
                             .categoryName(job.getCategoryName())
                             .startDate(job.getStartDate())
@@ -64,9 +65,9 @@ public class UserUpdateService implements IUserUpdateService {
                     .toList();
 
         // 4. 재직 이력 목록 조회
-        List<MyPageResponseDTO.EmploymentInfoDTO> employments =
+        List<EmploymentInfoResponseDTO> employments =
                 userUpdateMapper.getMyPageEmploymentsByUserId(userId).stream()
-                    .map(emp -> MyPageResponseDTO.EmploymentInfoDTO.builder()
+                    .map(emp -> EmploymentInfoResponseDTO.builder()
                             .companyName(emp.getCompanyName())
                             .categoryId(emp.getEmploymentCategoryId())
                             .categoryName(emp.getEmploymentCategoryName())
@@ -433,6 +434,23 @@ public class UserUpdateService implements IUserUpdateService {
 
         log.info("{}.updateEmployments End!", this.getClass().getName());
         return 1;
+    }
+
+    @Override
+    public List<TargetJobInfoResponseDTO> getTargetJobs(Long userId) throws Exception {
+        log.info("{}.getTargetJobs Start!", this.getClass().getName());
+
+        List<TargetJobInfoResponseDTO> rList = userUpdateMapper.getMyPageTargetJobsByUserId(userId).stream()
+                .map(job -> TargetJobInfoResponseDTO.builder()
+                        .categoryId(job.getCategoryId())
+                        .categoryName(job.getCategoryName())
+                        .startDate(job.getStartDate())
+                        .endDate(job.getEndDate())
+                        .build())
+                .toList();
+
+        log.info("{}.getTargetJobs End!", this.getClass().getName());
+        return rList;
     }
 
     private LocalDate parseDateOrThrow(String rawDate) {
