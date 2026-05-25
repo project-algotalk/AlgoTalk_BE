@@ -4,9 +4,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
+import java.util.List;
+import java.util.Map;
+
 @Builder
 public record InterviewAnswerRequestDTO(
-        @NotBlank(message = "답변 텍스트는 공백일 수 없습니다.")
+
+        @NotNull(message = "답변 텍스트는 필수입니다.")
         String answerText,
 
         @NotNull(message = "발화 시간은 필수입니다.")
@@ -25,5 +29,9 @@ public record InterviewAnswerRequestDTO(
         Integer fillerCount,
 
         @NotNull(message = "추임새 비율은 필수입니다.")
-        Double fillerRatio
+        Double fillerRatio,
+
+        Double gazeRatio,           // 시선 응시 비율 (0.0 ~ 1.0)
+
+        List<Map<String, Object>> gestureDeductions  // 제스처 감점 목록
 ) {}
