@@ -19,5 +19,5 @@ public class SessionCreateCommand {
     private List<CategoryItemRequestDTO> selectedCategories; // 선택한 카테고리 목록 (최대 3개) COMMON_CS: 직무 공통 / JOB: 직무 특화
     private int questionCount; // 생성할 질문 수 (1~5개)
     private List<ManualQuestionItemRequestDTO> manualQuestions; // 직접입력 질문 목록
-
+    private List<String> categoryNames;  // 카테고리명 목록 (세션 카테고리 저장용)
 }

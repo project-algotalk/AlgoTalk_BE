@@ -3,6 +3,7 @@ package com.algotalk.interviewservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.domain.enums.CsCategoryType;
+import com.algotalk.interviewservice.dto.command.RecentQuestionSearchCommand;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
 import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
@@ -12,6 +13,7 @@ import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
 import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
+import com.algotalk.interviewservice.repository.ISessionQuestionMapper;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import com.algotalk.interviewservice.service.ISessionSaveService;
@@ -32,6 +34,7 @@ public class InterviewSessionService implements IInterviewSessionService {
     private final AiFeignClient aiFeignClient;
     private final ISessionSaveService sessionSaveService;
     private final ICsCategoryService csCategoryService;
+    private final ISessionQuestionMapper sessionQuestionMapper;
 
     @Override
     public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) {
@@ -54,13 +57,29 @@ public class InterviewSessionService implements IInterviewSessionService {
                 .map(c -> csCategoryService.getCategoryById(c.categoryId()).categoryName())
                 .toList();
 
-        // 세션 제목 생성 (카테고리명 기반)
         String sessionTitle = String.join(" · ", categoryNames) + " 모의면접";
+
+        // 3. 유저별 최근 출제 질문 조회 (재출제 방지)
+        List<Long> categoryIds = pCommand.getSelectedCategories().stream()
+                .map(CategoryItemRequestDTO::categoryId)
+                .toList();
+
+        List<String> previousQuestions = sessionQuestionMapper
+                .findRecentQuestionsByUserAndCategories(
+                        RecentQuestionSearchCommand.builder()
+                                .userId(pCommand.getUserId())
+                                .categoryIds(categoryIds)
+                                .limit(30)
+                                .build()
+                );
+
+        log.info("previousQuestions 조회 결과: {}개 - {}", previousQuestions.size(), previousQuestions);
 
         // 3. aiService 호출하여 LLM 질문 생성 (트랜잭션 밖에서 수행)
         AiQuestionRequestDTO aiRequest = AiQuestionRequestDTO.builder()
                 .categories(categoryNames)
                 .questionCount(pCommand.getQuestionCount())
+                .previousQuestions(previousQuestions)
                 .build();
 
         AiQuestionResponseDTO aiResponse;
@@ -96,7 +115,13 @@ public class InterviewSessionService implements IInterviewSessionService {
         }
 
         // 5. DB 저장 (별도 빈의 @Transactional 적용)
-        SessionCreateResponseDTO rDTO = sessionSaveService.saveSession(pCommand.toBuilder().sessionTitle(sessionTitle).build(), aiResponse.questions());
+        SessionCreateResponseDTO rDTO = sessionSaveService.saveSession(
+                pCommand.toBuilder()
+                        .sessionTitle(sessionTitle)
+                        .categoryNames(categoryNames)
+                        .build(),
+                aiResponse.questions()
+        );
 
         log.info("{}.createSession End!", this.getClass().getName());
 

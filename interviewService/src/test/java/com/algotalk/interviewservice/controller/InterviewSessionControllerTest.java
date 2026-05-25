@@ -87,6 +87,9 @@ class InterviewSessionControllerTest {
     private ApiResponse<List<CsCategoryResponseDTO>> mockCategoryList() {
         return ApiResponse.ok(List.of(
                 mockCategory(10L, "COMMON_CS", "자료구조/알고리즘"),
+                mockCategory(11L, "COMMON_CS", "데이터베이스"),
+                mockCategory(12L, "COMMON_CS", "운영체제"),  // ← 추가
+                mockCategory(13L, "COMMON_CS", "네트워크"),  // ← 추가
                 mockCategory(101L, "JOB", "백엔드 개발자"),
                 mockCategory(102L, "JOB", "풀스택 개발자"),
                 mockCategory(110L, "JOB", "AI/머신러닝 엔지니어")
