@@ -15,6 +15,7 @@ public class SessionQuestionCommand {
     private Long sessionQuestionId;         // 세션 질문 ID (INSERT 후 채워짐)
     private Long sessionId;                 // 세션 ID (FK -> INTERVIEW_SESSION)
     private Long userId;                   // 사용자 ID (CREATED_BY, UPDATED_BY 용)
+    private Long categoryId;                // 카테고리 ID
     private Long refId;                     // 원본 질문 ID(SCRAP_REFERENCE 전용, LLM_GENERATED과 USER_INPUT은 null)
     private String questionText;            // 질문 텍스트
     private String sourceType;              // 질문 출처 (LLM_GENERATED / USER_INPUT / SCRAP_REFERENCE)

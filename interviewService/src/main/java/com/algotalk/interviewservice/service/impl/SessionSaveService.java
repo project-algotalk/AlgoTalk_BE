@@ -49,9 +49,17 @@ public class SessionSaveService implements ISessionSaveService {
 
         // 2. 생성된 질문 INSERT
         for (AiQuestionItemDTO aiQuestion : aiQuestions) {
+            // aiQuestion.category()로 categoryId 매핑
+            Long categoryId = pCommand.getCategoryNames().indexOf(aiQuestion.category()) >= 0
+                    ? pCommand.getSelectedCategories()
+                    .get(pCommand.getCategoryNames().indexOf(aiQuestion.category()))
+                    .categoryId()
+                    : null;
+
             SessionQuestionCommand questionCommand = SessionQuestionCommand.builder()
                     .sessionId(sessionId)
                     .userId(pCommand.getUserId())
+                    .categoryId(categoryId)             // ← 추가
                     .questionText(aiQuestion.content())
                     .sourceType(SourceType.LLM_GENERATED.getType())
                     .questionOrder(aiQuestion.order())
