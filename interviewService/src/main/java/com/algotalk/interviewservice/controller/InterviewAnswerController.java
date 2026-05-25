@@ -38,6 +38,8 @@ public class InterviewAnswerController {
                 .asrConfidence(pDTO.asrConfidence())
                 .fillerCount(pDTO.fillerCount())
                 .fillerRatio(pDTO.fillerRatio())
+                .gazeRatio(pDTO.gazeRatio())
+                .gestureDeductions(pDTO.gestureDeductions())
                 .build();
 
         interviewAnswerService.saveAnswer(pCommand);
