@@ -5,7 +5,7 @@ import com.algotalk.interviewservice.domain.enums.SourceType;
 import com.algotalk.interviewservice.dto.command.InterviewSessionCommand;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
 import com.algotalk.interviewservice.dto.command.SessionQuestionCommand;
-import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
+import com.algotalk.interviewservice.dto.response.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
 import com.algotalk.interviewservice.dto.response.QuestionItemResponseDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;

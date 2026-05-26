@@ -5,7 +5,7 @@ import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.domain.enums.CsCategoryType;
 import com.algotalk.interviewservice.dto.command.RecentQuestionSearchCommand;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
-import com.algotalk.interviewservice.dto.feign.CsValidationItemDTO;
+import com.algotalk.interviewservice.dto.response.CsValidationItemDTO;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.request.CsValidationRequestDTO;

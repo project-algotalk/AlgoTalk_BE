@@ -31,6 +31,8 @@ public class InterviewAnswerController {
                 .userId(userId)
                 .sessionId(sessionId)
                 .sessionQuestionId(sessionQuestionId)
+                .questionText(pDTO.questionText())
+                .keywords(pDTO.keywords())
                 .answerText(pDTO.answerText())
                 .answerDuration(pDTO.answerDuration())
                 .wpm(pDTO.wpm())

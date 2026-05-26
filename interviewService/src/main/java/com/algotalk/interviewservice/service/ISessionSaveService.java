@@ -1,7 +1,7 @@
 package com.algotalk.interviewservice.service;
 
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
-import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
+import com.algotalk.interviewservice.dto.response.AiQuestionItemDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
 
 import java.util.List;

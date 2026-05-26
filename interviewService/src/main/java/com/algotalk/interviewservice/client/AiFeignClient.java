@@ -1,8 +1,10 @@
 package com.algotalk.interviewservice.client;
 
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
+import com.algotalk.interviewservice.dto.request.AnswerEvaluationRequestDTO;
 import com.algotalk.interviewservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
+import com.algotalk.interviewservice.dto.response.AnswerEvaluationResponseDTO;
 import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,4 +21,7 @@ public interface AiFeignClient {
     @PostMapping("/ai/v1/validate/cs-questions")
     CsValidationResponseDTO validateCsQuestions(@RequestBody CsValidationRequestDTO request);
 
+    // aiService 답변 내용 평가 요청
+    @PostMapping("/ai/v1/interview/evaluate")
+    AnswerEvaluationResponseDTO evaluateAnswer(@RequestBody AnswerEvaluationRequestDTO request);
 }

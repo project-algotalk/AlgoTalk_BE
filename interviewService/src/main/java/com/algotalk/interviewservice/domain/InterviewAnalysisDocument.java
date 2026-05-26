@@ -35,6 +35,15 @@ public class InterviewAnalysisDocument {
     // 점수 (추후 업데이트)
     private Scores scores;
 
+    // LLM 평가 결과
+    private Integer contentScore;           // 답변 논리성 점수 (0~25)
+    private String feedbackGood;            // 피드백 - 잘한 점
+    private String feedbackImprove;         // 피드백 - 부족한 점
+    private String feedbackAddition;        // 피드백 - 추가할 내용
+    private String modelAnswer;             // 모범 답변
+    private String studyTip;               // 학습 Tip
+    private List<String> followUpQuestions; // 꼬리 질문 예상 목록
+
     private LocalDateTime createdAt;  // 저장 일시
 
     // Command -> Document 변환 팩토리 메서드
@@ -66,6 +75,13 @@ public class InterviewAnalysisDocument {
                 .gazeRatio(pCommand.getGazeRatio())
                 .gestureDeductions(gestureDeductions)
                 .scores(pCommand.getScores())
+                .contentScore(null)
+                .feedbackGood(null)
+                .feedbackImprove(null)
+                .feedbackAddition(null)
+                .modelAnswer(null)
+                .studyTip(null)
+                .followUpQuestions(null)
                 .createdAt(LocalDateTime.now())
                 .build();
     }

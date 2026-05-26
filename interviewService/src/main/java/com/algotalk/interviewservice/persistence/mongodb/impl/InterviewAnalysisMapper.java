@@ -1,6 +1,7 @@
 package com.algotalk.interviewservice.persistence.mongodb.impl;
 
 import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
+import com.algotalk.interviewservice.dto.command.EvaluationResultCommand;
 import com.algotalk.interviewservice.persistence.mongodb.IInterviewAnalysisMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -79,5 +80,28 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
 
         log.info("{}.findBySessionId End!", this.getClass().getName());
         return rList;
+    }
+
+    @Override
+    public void updateEvaluationResult(EvaluationResultCommand pCommand) {
+        log.info("{}.updateEvaluationResult Start!", this.getClass().getName());
+
+        Document query = new Document("sessionQuestionId", pCommand.getSessionQuestionId());
+
+        Document update = new Document("$set", new Document()
+                .append("contentScore", pCommand.getContentScore())
+                .append("feedbackGood", pCommand.getFeedbackGood())
+                .append("feedbackImprove", pCommand.getFeedbackImprove())
+                .append("feedbackAddition", pCommand.getFeedbackAddition())
+                .append("modelAnswer", pCommand.getModelAnswer())
+                .append("studyTip", pCommand.getStudyTip())
+                .append("followUpQuestions", pCommand.getFollowUpQuestions())
+                .append("scores.content", pCommand.getContentScore())
+                .append("scores.total", pCommand.getTotal())
+        );
+
+        mongodb.getCollection(COL_NM).updateOne(query, update);
+
+        log.info("{}.updateEvaluationResult End!", this.getClass().getName());
     }
 }
