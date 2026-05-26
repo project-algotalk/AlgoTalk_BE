@@ -40,6 +40,7 @@ public class InterviewAnswerController {
                 .fillerRatio(pDTO.fillerRatio())
                 .gazeRatio(pDTO.gazeRatio())
                 .gestureDeductions(pDTO.gestureDeductions())
+                .scores(pDTO.scores())
                 .build();
 
         interviewAnswerService.saveAnswer(pCommand);
