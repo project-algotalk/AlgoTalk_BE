@@ -8,11 +8,15 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class InterviewAnswerCommand {
     private Long userId;            // 사용자 ID
     private Long sessionId;         // 면접 세션 ID
     private Long sessionQuestionId; // 세션 질문 ID
+
+    // 질문 정보 (LLM 평가용)
+    private String questionText;        // 질문 텍스트
+    private List<String> keywords;      // 핵심 키워드 목록
 
     // STT 분석 결과
     private String answerText;      // 답변 텍스트 (STT 변환 결과)

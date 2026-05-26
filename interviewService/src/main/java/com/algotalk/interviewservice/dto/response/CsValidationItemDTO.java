@@ -1,4 +1,4 @@
-package com.algotalk.interviewservice.dto.feign;
+package com.algotalk.interviewservice.dto.response;
 
 import lombok.Builder;
 

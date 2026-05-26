@@ -1,6 +1,5 @@
 package com.algotalk.interviewservice.dto.response;
 
-import com.algotalk.interviewservice.dto.feign.AiQuestionItemDTO;
 import lombok.Builder;
 
 import java.util.List;

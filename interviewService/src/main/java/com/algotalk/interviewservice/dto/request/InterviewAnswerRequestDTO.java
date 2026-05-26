@@ -36,5 +36,8 @@ public record InterviewAnswerRequestDTO(
 
         List<Map<String, Object>> gestureDeductions,  // 제스처 감점 목록
 
-        Scores scores
+        Scores scores,
+
+        String questionText,        // 질문 텍스트 (LLM 평가용)
+        List<String> keywords       // 핵심 키워드 목록 (LLM 평가용)
 ) {}
