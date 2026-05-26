@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.dto.request;
 
+import com.algotalk.interviewservice.domain.Scores;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -33,5 +34,7 @@ public record InterviewAnswerRequestDTO(
 
         Double gazeRatio,           // 시선 응시 비율 (0.0 ~ 1.0)
 
-        List<Map<String, Object>> gestureDeductions  // 제스처 감점 목록
+        List<Map<String, Object>> gestureDeductions,  // 제스처 감점 목록
+
+        Scores scores
 ) {}

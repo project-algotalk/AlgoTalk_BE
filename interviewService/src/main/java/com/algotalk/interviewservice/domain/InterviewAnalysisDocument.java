@@ -65,7 +65,7 @@ public class InterviewAnalysisDocument {
                 .fillerRatio(pCommand.getFillerRatio())
                 .gazeRatio(pCommand.getGazeRatio())
                 .gestureDeductions(gestureDeductions)
-                .scores(null)
+                .scores(pCommand.getScores())
                 .createdAt(LocalDateTime.now())
                 .build();
     }

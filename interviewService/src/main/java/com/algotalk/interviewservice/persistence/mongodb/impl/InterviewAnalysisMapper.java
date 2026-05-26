@@ -29,8 +29,12 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
         log.info("{}.insertData Start!", this.getClass().getName());
 
         // Spring ObjectMapper는 JavaTimeModule이 등록되어 있어서 LocalDateTime 처리 가능
+        Map<String, Object> docMap = objectMapper.convertValue(pDoc, Map.class);
+
+        log.info("저장할 Document Map: {}", docMap);
+
         mongodb.getCollection(COL_NM)
-                .insertOne(new Document(objectMapper.convertValue(pDoc, Map.class)));
+                .insertOne(new Document(docMap));
 
         log.info("{}.insertData End!", this.getClass().getName());
         return 1;

@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.dto.command;
 
+import com.algotalk.interviewservice.domain.Scores;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -25,4 +26,5 @@ public class InterviewAnswerCommand {
     // MediaPipe 분석 결과
     private Double gazeRatio;                          // 시선 응시 비율 (0.0 ~ 1.0, 화면을 바라본 비율)
     private List<Map<String, Object>> gestureDeductions; // 제스처 감점 목록 (type, count, deduction)
+    private Scores scores;
 }
