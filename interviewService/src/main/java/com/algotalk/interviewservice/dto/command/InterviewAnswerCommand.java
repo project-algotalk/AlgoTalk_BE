@@ -1,6 +1,7 @@
 package com.algotalk.interviewservice.dto.command;
 
 import com.algotalk.interviewservice.domain.Scores;
+import com.algotalk.interviewservice.domain.enums.AnswerStatus;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -13,6 +14,9 @@ public class InterviewAnswerCommand {
     private Long userId;            // 사용자 ID
     private Long sessionId;         // 면접 세션 ID
     private Long sessionQuestionId; // 세션 질문 ID
+
+    // 답변 상태
+    private AnswerStatus answerStatus;  // 답변 상태 (ANSWERED, SKIPPED, QUALITY_FAIL)
 
     // 질문 정보 (LLM 평가용)
     private String questionText;        // 질문 텍스트
