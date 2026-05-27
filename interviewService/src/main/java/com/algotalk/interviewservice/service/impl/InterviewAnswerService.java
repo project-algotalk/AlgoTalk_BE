@@ -47,21 +47,21 @@ public class InterviewAnswerService implements IInterviewAnswerService {
                     .build();
         } else if(answerStatus == AnswerStatus.QUALITY_FAIL) { // 품질 미달
             // gaze, gesture만 정상 계산
-            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : null;
-            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : null;
+            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : 0;
+            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : 0;
 
             updatedScores = Scores.builder()
                     .gaze(gaze)
                     .gesture(gesture)
                     .content(0)
-                    .total(gaze + gesture)
+                    .total(calcScore(gaze, gesture))
                     .build();
 
         } else { // 정상 답변
             // gaze
-            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : null;
+            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : 0;
             // gesture
-            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : null;
+            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : 0;
             // speed 점수 계산 (WPM 기반, 0~15점)
             Integer speedScore = calcSpeedScore(pCommand.getWpm());
             // voice 점수 계산 (추임새 비율 + 무음 비율 기반, 0~15점)
@@ -93,6 +93,18 @@ public class InterviewAnswerService implements IInterviewAnswerService {
                 answerText = "";
             }
 
+            if (pCommand.getQuestionText() == null || pCommand.getQuestionText().isBlank()) {
+                log.warn("[EVAL_SKIP] 질문이 비어있습니다. - sessionQuestionId={}, answerStatus={}",
+                        pCommand.getSessionQuestionId(), answerStatus);
+                return;
+            }
+
+            if (answerStatus == AnswerStatus.ANSWERED && (answerText == null || answerText.isBlank())) {
+                log.warn("[EVAL_SKIP] 답변 내용이 비어있습니다.(ANSWERED) - sessionQuestionId={}",
+                        pCommand.getSessionQuestionId());
+                return;
+            }
+
             AnswerEvaluationResponseDTO evalResponse = aiFeignClient.evaluateAnswer(
                     AnswerEvaluationRequestDTO.builder()
                             .questionText(pCommand.getQuestionText())
@@ -105,18 +117,20 @@ public class InterviewAnswerService implements IInterviewAnswerService {
 
             // total 점수 계산(ANSWERED에만 content 반영)
             Integer total;
+            Integer contentScore = 0;
 
             String feedbackGood = null;
             String feedbackImprove = null;
             String feedbackAddition = null;
 
             if(answerStatus == AnswerStatus.ANSWERED) {
+                contentScore = evalResponse.contentScore();
                 total = calcScore(
                         updatedScores.gaze(),
                         updatedScores.gesture(),
                         updatedScores.speed(),
                         updatedScores.voice(),
-                        evalResponse.contentScore()
+                        contentScore
                 );
 
                 feedbackGood = evalResponse.feedback().good();
@@ -135,7 +149,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
             interviewAnalysisMapper.updateEvaluationResult(
                     EvaluationResultCommand.builder()
                             .sessionQuestionId(pCommand.getSessionQuestionId())
-                            .contentScore(evalResponse.contentScore())
+                            .contentScore(contentScore)
                             .feedbackGood(feedbackGood)
                             .feedbackImprove(feedbackImprove)
                             .feedbackAddition(feedbackAddition)
