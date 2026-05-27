@@ -3,6 +3,7 @@ package com.algotalk.interviewservice.service.impl;
 import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
 import com.algotalk.interviewservice.domain.Scores;
+import com.algotalk.interviewservice.domain.enums.AnswerStatus;
 import com.algotalk.interviewservice.dto.command.EvaluationResultCommand;
 import com.algotalk.interviewservice.dto.command.InterviewAnswerCommand;
 import com.algotalk.interviewservice.dto.request.AnswerEvaluationRequestDTO;
@@ -31,65 +32,122 @@ public class InterviewAnswerService implements IInterviewAnswerService {
     public void saveAnswer(InterviewAnswerCommand pCommand) {
         log.info("{}.saveAnswer Start!", this.getClass().getName());
 
-        // 1. speed 점수 계산 (WPM 기반, 0~15점)
-        Integer speedScore = calcSpeedScore(pCommand.getWpm());
+        // 답변 상태
+        AnswerStatus answerStatus = pCommand.getAnswerStatus();
+        log.info("answerStatus: {}", answerStatus);
 
-        // 2. voice 점수 계산 (추임새 비율 + 무음 비율 기반, 0~15점)
-        Integer voiceScore = calcVoiceScore(pCommand.getFillerRatio(), pCommand.getSilenceRatio());
+        // 1. answerStatus 기준으로 scores계산
+        Scores updatedScores = null;
 
-        // 3. scores 업데이트 (gaze, gesture는 FE에서 이미 계산되어 전달됨)
-        Scores updatedScores = Scores.builder()
-                .gaze(pCommand.getScores() != null ? pCommand.getScores().getGaze() : null)
-                .gesture(pCommand.getScores() != null ? pCommand.getScores().getGesture() : null)
-                .speed(speedScore)
-                .voice(voiceScore)
-                .content(null)   // LLM 평가 후 업데이트
-                .total(null)     // LLM 평가 후 업데이트
-                .build();
+        if(answerStatus == AnswerStatus.SKIPPED) { // 건너뛰기
+            // 모든 score 0점 처리
+            updatedScores = Scores.builder()
+                    .content(0)
+                    .total(0)
+                    .build();
+        } else if(answerStatus == AnswerStatus.QUALITY_FAIL) { // 품질 미달
+            // gaze, gesture만 정상 계산
+            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : null;
+            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : null;
 
-        // 4. MongoDB 저장
+            updatedScores = Scores.builder()
+                    .gaze(gaze)
+                    .gesture(gesture)
+                    .content(0)
+                    .total(gaze + gesture)
+                    .build();
+
+        } else { // 정상 답변
+            // gaze
+            Integer gaze = pCommand.getScores() != null ? pCommand.getScores().gaze() : null;
+            // gesture
+            Integer gesture = pCommand.getScores() != null ? pCommand.getScores().gesture() : null;
+            // speed 점수 계산 (WPM 기반, 0~15점)
+            Integer speedScore = calcSpeedScore(pCommand.getWpm());
+            // voice 점수 계산 (추임새 비율 + 무음 비율 기반, 0~15점)
+            Integer voiceScore = calcVoiceScore(pCommand.getFillerRatio(), pCommand.getSilenceRatio());
+
+            // scores 업데이트 (gaze, gesture는 FE에서 이미 계산되어 전달됨)
+            updatedScores = Scores.builder()
+                    .gaze(gaze)
+                    .gesture(gesture)
+                    .speed(speedScore)
+                    .voice(voiceScore)
+                    .content(null)   // LLM 평가 후 업데이트
+                    .total(null)     // LLM 평가 후 업데이트
+                    .build();
+        }
+
+        // MongoDB 저장
         InterviewAnalysisDocument rDoc = InterviewAnalysisDocument.from(
                 pCommand.toBuilder().scores(updatedScores).build()
         );
         interviewAnalysisMapper.insertData(rDoc);
 
-        // 5. aiService LLM 평가 요청 (비동기적으로 처리, 실패해도 저장은 정상 처리)
+        // aiService LLM 평가 요청 (비동기적으로 처리, 실패해도 저장은 정상 처리)
         try {
-            if (pCommand.getAnswerText() != null && !pCommand.getAnswerText().isBlank()
-                    && pCommand.getQuestionText() != null) {
+            // SKIPPED/QUALITY_FAIL이면 answerText 빈 문자열(모범 답변만 요청)
+            String answerText = pCommand.getAnswerText();
 
-                AnswerEvaluationResponseDTO evalResponse = aiFeignClient.evaluateAnswer(
-                        AnswerEvaluationRequestDTO.builder()
-                                .questionText(pCommand.getQuestionText())
-                                .keywords(pCommand.getKeywords())
-                                .answerText(pCommand.getAnswerText())
-                                .build()
-                );
-
-                // 6. total 점수 계산
-                Integer gaze = updatedScores.getGaze();
-                Integer gesture = updatedScores.getGesture();
-                Integer content = evalResponse.contentScore();
-                Integer total = calcTotalScore(gaze, gesture, speedScore, voiceScore, content);
-
-                // 7. MongoDB 업데이트 (content, feedback, modelAnswer, studyTip, followUpQuestions, total)
-                interviewAnalysisMapper.updateEvaluationResult(
-                        EvaluationResultCommand.builder()
-                                .sessionQuestionId(pCommand.getSessionQuestionId())
-                                .contentScore(evalResponse.contentScore())
-                                .feedbackGood(evalResponse.feedback().good())
-                                .feedbackImprove(evalResponse.feedback().improve())
-                                .feedbackAddition(evalResponse.feedback().addition())
-                                .modelAnswer(evalResponse.modelAnswer())
-                                .studyTip(evalResponse.studyTip())
-                                .followUpQuestions(evalResponse.followUpQuestions())
-                                .total(total)
-                                .build()
-                );
-
-                log.info("[EVAL_SUCCESS] sessionQuestionId={}, contentScore={}, total={}",
-                        pCommand.getSessionQuestionId(), content, total);
+            if(answerStatus == AnswerStatus.SKIPPED || answerStatus == AnswerStatus.QUALITY_FAIL) {
+                answerText = "";
             }
+
+            AnswerEvaluationResponseDTO evalResponse = aiFeignClient.evaluateAnswer(
+                    AnswerEvaluationRequestDTO.builder()
+                            .questionText(pCommand.getQuestionText())
+                            .keywords(pCommand.getKeywords())
+                            .answerText(answerText)
+                            .build()
+            );
+
+            log.info("evalResponse : {}", evalResponse.modelAnswer());
+
+            // total 점수 계산(ANSWERED에만 content 반영)
+            Integer total;
+
+            String feedbackGood = null;
+            String feedbackImprove = null;
+            String feedbackAddition = null;
+
+            if(answerStatus == AnswerStatus.ANSWERED) {
+                total = calcScore(
+                        updatedScores.gaze(),
+                        updatedScores.gesture(),
+                        updatedScores.speed(),
+                        updatedScores.voice(),
+                        evalResponse.contentScore()
+                );
+
+                feedbackGood = evalResponse.feedback().good();
+                feedbackImprove = evalResponse.feedback().improve();
+                feedbackAddition = evalResponse.feedback().addition();
+            } else if(answerStatus == AnswerStatus.QUALITY_FAIL) {
+                total = calcScore(
+                        updatedScores.gaze(),
+                        updatedScores.gesture()
+                );
+            } else {
+                total = 0; // SKIPPED는 content 점수 0점 처리
+            }
+
+            // MongoDB 업데이트 (content, feedback, modelAnswer, studyTip, followUpQuestions, total)
+            interviewAnalysisMapper.updateEvaluationResult(
+                    EvaluationResultCommand.builder()
+                            .sessionQuestionId(pCommand.getSessionQuestionId())
+                            .contentScore(evalResponse.contentScore())
+                            .feedbackGood(feedbackGood)
+                            .feedbackImprove(feedbackImprove)
+                            .feedbackAddition(feedbackAddition)
+                            .modelAnswer(evalResponse.modelAnswer())
+                            .studyTip(evalResponse.studyTip())
+                            .followUpQuestions(evalResponse.followUpQuestions())
+                            .total(total)
+                            .build()
+            );
+
+            log.info("[EVAL_SUCCESS] sessionQuestionId={}, answerStatus={}, total={}",
+                    pCommand.getSessionQuestionId(), answerStatus, total);
         } catch (FeignException e) {
             log.error("[{}] LLM 평가 실패 - sessionQuestionId={}, status={}",
                     InterviewErrorCode.AI_EVAL_FAILED.getCode(),
@@ -109,7 +167,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
         if (wpm == null || wpm == 0) return 0;
 
         if (wpm >= TARGET_WPM_MIN && wpm <= TARGET_WPM_MAX) {
-            return 15; // 목표 범위 내 → 만점
+            return 15; // 목표 범위 내 -> 만점
         } else if (wpm < TARGET_WPM_MIN) {
             // 너무 느림: 목표 최솟값 대비 비율로 감점
             return Math.max(0, (int) (15 * ((double) wpm / TARGET_WPM_MIN)));
@@ -135,14 +193,21 @@ public class InterviewAnswerService implements IInterviewAnswerService {
     }
 
     // 전체 점수 계산 (0~100점)
-    private Integer calcTotalScore(Integer gaze, Integer gesture,
-                                   Integer speed, Integer voice, Integer content) {
+    private Integer calcScore(Integer gaze, Integer gesture,
+                              Integer speed, Integer voice, Integer content) {
         int total = 0;
         if (gaze != null) total += gaze;
         if (gesture != null) total += gesture;
         if (speed != null) total += speed;
         if (voice != null) total += voice;
         if (content != null) total += content;
+        return total;
+    }
+
+    private Integer calcScore(Integer gaze, Integer gesture) {
+        int total = 0;
+        if (gaze != null) total += gaze;
+        if (gesture != null) total += gesture;
         return total;
     }
 }

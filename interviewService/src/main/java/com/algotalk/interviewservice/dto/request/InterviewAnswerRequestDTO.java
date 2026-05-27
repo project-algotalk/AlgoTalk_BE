@@ -1,6 +1,7 @@
 package com.algotalk.interviewservice.dto.request;
 
 import com.algotalk.interviewservice.domain.Scores;
+import com.algotalk.interviewservice.domain.enums.AnswerStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
@@ -10,6 +11,9 @@ import java.util.Map;
 
 @Builder
 public record InterviewAnswerRequestDTO(
+
+        @NotNull(message = "답변 상태는 필수입니다.")
+        AnswerStatus answerStatus,
 
         @NotNull(message = "답변 텍스트는 필수입니다.")
         String answerText,

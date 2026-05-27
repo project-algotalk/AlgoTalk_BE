@@ -31,6 +31,7 @@ public class InterviewAnswerController {
                 .userId(userId)
                 .sessionId(sessionId)
                 .sessionQuestionId(sessionQuestionId)
+                .answerStatus(pDTO.answerStatus())
                 .questionText(pDTO.questionText())
                 .keywords(pDTO.keywords())
                 .answerText(pDTO.answerText())

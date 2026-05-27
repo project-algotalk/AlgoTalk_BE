@@ -85,8 +85,8 @@ class InterviewAnswerServiceTest {
         assertThat(rDoc.get().getWpm()).isEqualTo(135);
         assertThat(rDoc.get().getFillerCount()).isEqualTo(2);
         assertThat(rDoc.get().getScores()).isNotNull();
-        assertThat(rDoc.get().getScores().getSpeed()).isNotNull();
-        assertThat(rDoc.get().getScores().getVoice()).isNotNull();
+        assertThat(rDoc.get().getScores().speed()).isNotNull();
+        assertThat(rDoc.get().getScores().voice()).isNotNull();
 
         log.info("저장된 Document: {}", rDoc.get());
     }

@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.domain;
 
+import com.algotalk.interviewservice.domain.enums.AnswerStatus;
 import com.algotalk.interviewservice.dto.command.InterviewAnswerCommand;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,18 +16,21 @@ import java.util.Map;
 @Document(collection = "interview_analysis_report")
 public class InterviewAnalysisDocument {
 
-    private Long sessionId;           // 면접 세션 ID
-    private Long sessionQuestionId;   // 세션 질문 ID
-    private Long userId;              // 사용자 ID
+    private Long sessionId;             // 면접 세션 ID
+    private Long sessionQuestionId;     // 세션 질문 ID
+    private Long userId;                // 사용자 ID
+
+    // 답변 상태
+    private AnswerStatus answerStatus;  // 답변 상태 (ANSWERED, SKIPPED, QUALITY_FAIL)
 
     // STT 분석 결과
-    private String answerText;        // 답변 텍스트 (STT 변환 결과)
-    private Integer answerDuration;   // 발화 시간 (초)
-    private Integer wpm;              // 분당 발화 단어 수 (Words Per Minute)
-    private Double silenceRatio;      // 무음 비율 (0.0 ~ 1.0)
-    private Double asrConfidence;     // ASR 신뢰도 (0.0 ~ 1.0)
-    private Integer fillerCount;      // 추임새 횟수 (예: "음", "어")
-    private Double fillerRatio;       // 추임새 비율 (추임새 수 / 전체 단어 수)
+    private String answerText;          // 답변 텍스트 (STT 변환 결과)
+    private Integer answerDuration;     // 발화 시간 (초)
+    private Integer wpm;                // 분당 발화 단어 수 (Words Per Minute)
+    private Double silenceRatio;        // 무음 비율 (0.0 ~ 1.0)
+    private Double asrConfidence;       // ASR 신뢰도 (0.0 ~ 1.0)
+    private Integer fillerCount;        // 추임새 횟수 (예: "음", "어")
+    private Double fillerRatio;         // 추임새 비율 (추임새 수 / 전체 단어 수)
 
     // MediaPipe 분석 결과
     private Double gazeRatio;                      // 시선 응시 비율 (0.0 ~ 1.0, 화면을 바라본 비율)
@@ -65,6 +69,7 @@ public class InterviewAnalysisDocument {
                 .sessionId(pCommand.getSessionId())
                 .sessionQuestionId(pCommand.getSessionQuestionId())
                 .userId(pCommand.getUserId())
+                .answerStatus(pCommand.getAnswerStatus())
                 .answerText(pCommand.getAnswerText())
                 .answerDuration(pCommand.getAnswerDuration())
                 .wpm(pCommand.getWpm())
