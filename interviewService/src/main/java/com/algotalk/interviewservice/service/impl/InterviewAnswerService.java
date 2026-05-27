@@ -54,7 +54,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
                     .gaze(gaze)
                     .gesture(gesture)
                     .content(0)
-                    .total(calcScore(gaze, gesture))
+                    .total(calcQualityFailTotalScore(gaze, gesture))
                     .build();
 
         } else { // 정상 답변
@@ -125,7 +125,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
 
             if(answerStatus == AnswerStatus.ANSWERED) {
                 contentScore = evalResponse.contentScore();
-                total = calcScore(
+                total = calcAnsweredTotalScore(
                         updatedScores.gaze(),
                         updatedScores.gesture(),
                         updatedScores.speed(),
@@ -137,7 +137,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
                 feedbackImprove = evalResponse.feedback().improve();
                 feedbackAddition = evalResponse.feedback().addition();
             } else if(answerStatus == AnswerStatus.QUALITY_FAIL) {
-                total = calcScore(
+                total = calcQualityFailTotalScore(
                         updatedScores.gaze(),
                         updatedScores.gesture()
                 );
@@ -207,21 +207,26 @@ public class InterviewAnswerService implements IInterviewAnswerService {
     }
 
     // 전체 점수 계산 (0~100점)
-    private Integer calcScore(Integer gaze, Integer gesture,
-                              Integer speed, Integer voice, Integer content) {
-        int total = 0;
-        if (gaze != null) total += gaze;
-        if (gesture != null) total += gesture;
-        if (speed != null) total += speed;
-        if (voice != null) total += voice;
-        if (content != null) total += content;
-        return total;
+    private Integer calcAnsweredTotalScore(Integer gaze, Integer gesture,
+                                           Integer speed, Integer voice, Integer content) {
+        return sumScores(gaze, gesture, speed, voice, content);
     }
 
-    private Integer calcScore(Integer gaze, Integer gesture) {
+    // 품질 미달 점수 계산
+    private Integer calcQualityFailTotalScore(Integer gaze, Integer gesture) {
+        return sumScores(gaze, gesture);
+    }
+
+    // 합계
+    private Integer sumScores(Integer... scores) {
         int total = 0;
-        if (gaze != null) total += gaze;
-        if (gesture != null) total += gesture;
+
+        for (Integer score : scores) {
+            if (score != null) {
+                total += score;
+            }
+        }
+
         return total;
     }
 }
