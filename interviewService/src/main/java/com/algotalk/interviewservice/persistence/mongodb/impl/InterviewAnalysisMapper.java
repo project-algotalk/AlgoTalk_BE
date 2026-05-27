@@ -2,6 +2,7 @@ package com.algotalk.interviewservice.persistence.mongodb.impl;
 
 import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
 import com.algotalk.interviewservice.dto.command.EvaluationResultCommand;
+import com.algotalk.interviewservice.dto.command.SessionResultCommand;
 import com.algotalk.interviewservice.persistence.mongodb.IInterviewAnalysisMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -66,10 +67,10 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
     }
 
     @Override
-    public List<InterviewAnalysisDocument> findBySessionId(Long sessionId) {
+    public List<InterviewAnalysisDocument> findBySessionId(SessionResultCommand pCommand) {
         log.info("{}.findBySessionId Start!", this.getClass().getName());
 
-        Document query = new Document("sessionId", sessionId);
+        Document query = new Document("sessionId", pCommand.getSessionId());
         Document projection = new Document("_id", 0);
 
         List<InterviewAnalysisDocument> rList = mongodb.getCollection(COL_NM)
