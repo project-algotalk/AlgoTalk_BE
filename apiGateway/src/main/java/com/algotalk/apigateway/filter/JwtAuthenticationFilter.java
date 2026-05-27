@@ -140,8 +140,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        // 인증 필터가 가장 먼저 실행되어야 해서 낮은 순자로 반환
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 2; // -2147483646
     }
 
     // permitAll 확인

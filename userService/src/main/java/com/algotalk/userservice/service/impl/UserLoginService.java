@@ -166,7 +166,7 @@ public class UserLoginService implements IUserLoginService {
                 .secure(cookieSecure)
                 .path("/")
                 .sameSite(sameSite)
-                .maxAge(accessTokenExpiration / 1000)
+//                .maxAge(accessTokenExpiration / 1000)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

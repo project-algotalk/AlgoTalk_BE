@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.factory.rewrite.CachedBodyOutputMessage;
 import org.springframework.cloud.gateway.support.BodyInserterContext;
-import org.springframework.core.annotation.Order;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.*;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -16,28 +18,40 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.HandlerStrategies;
 import org.springframework.web.reactive.function.server.ServerRequest;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
+/**
+ * AT 만료 시 RT로 자동 재발급 후 원래 요청을 재시도하는 필터
+ *
+ * 동작 방식:
+ * [401 감지 재시도] 다운스트림에서 401이 응답으로 내려오면 → RT로 재발급 후 원래 요청 재시도 (1회)
+ *
+ * 실행 순서 (request 처리):
+ * CookieToAuthHeaderFilter (HIGHEST_PRECEDENCE)     ← AT 쿠키 → Authorization 헤더 변환
+ * AutoRefreshOn401Filter   (HIGHEST_PRECEDENCE + 1) ← response 데코레이터 등록
+ * JwtAuthenticationFilter  (HIGHEST_PRECEDENCE + 2) ← JWT 검증
+ *
+ * 실행 순서 (response 처리 - 역순):
+ * JwtAuthenticationFilter  ← 401 writeWith() 호출
+ * AutoRefreshOn401Filter   ← 401 가로챔 → RT 재발급 → 원래 요청 재시도 ✅
+ * CookieToAuthHeaderFilter ← 통과
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Component
-@Order(-102)
-public class AutoRefreshOn401Filter implements WebFilter {
+public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
 
     @Value("${jwt.token.access.name}")
     private String accessCookieName;
@@ -53,9 +67,11 @@ public class AutoRefreshOn401Filter implements WebFilter {
 
     private final WebClient webClient;
 
+    // 동일 요청에서 재시도 여부를 표시하는 exchange attribute 키 (무한 루프 방지)
     private static final String ATTR_RETRIED = "X-RT-RETRIED";
 
-    private static final Set<String> SKIP_PATHS = Set.of(
+    // 토큰 재발급/인증 관련 경로 - AutoRefresh 대상에서 제외
+    private static final Set<String> SKIP_PATHS = java.util.Set.of(
             "/api/user/v1/login",
             "/api/user/v1/reg/**",
             "/api/user/v1/signup",
@@ -68,74 +84,90 @@ public class AutoRefreshOn401Filter implements WebFilter {
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
+    // 토큰 재발급 결과 (새 AT 값 + Set-Cookie 헤더 목록)
     private record RefreshOutcome(String at, List<String> setCookies) {}
 
-    private boolean isSelfRefreshCall(String path) {
-        return CmmUtil.nvl(path).startsWith(CmmUtil.nvl(refreshPath, "/user/v1/token/reissue"));
-    }
+    // GlobalFilter 진입점
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        String path = exchange.getRequest().getPath().value();
+        HttpMethod method = exchange.getRequest().getMethod();
 
-
-    private boolean shouldSkip(String path, HttpMethod method) {
-        if (method == HttpMethod.OPTIONS) return true;
-        return SKIP_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
-    }
-
-    private String extractAuthOrAtCookie(ServerWebExchange exchange) {
-        String auth = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
-        if (!auth.isBlank()) return auth;
-        var atCookie = exchange.getRequest().getCookies().getFirst(accessCookieName);
-        return (atCookie == null) ? "" : "Bearer " + CmmUtil.nvl(atCookie.getValue());
-    }
-
-    private boolean needPreRefresh(ServerWebExchange exchange) {
-        boolean hasRt = exchange.getRequest().getCookies().containsKey(refreshCookieName);
-        if (!hasRt) return false;
-        return extractAuthOrAtCookie(exchange).isBlank();
-    }
-
-    private void applySetCookies(ServerHttpResponse resp, List<String> setCookies) {
-        if (setCookies == null || setCookies.isEmpty()) return;
-        setCookies.forEach(sc -> resp.getHeaders().add(HttpHeaders.SET_COOKIE, sc));
-    }
-
-    private ServerWebExchange mutateWithNewAT(ServerWebExchange exchange, String at) {
-        String newAt = CmmUtil.nvl(at);
-        ServerHttpRequest.Builder rb = exchange.getRequest().mutate()
-                .headers(h -> h.set(HttpHeaders.AUTHORIZATION, "Bearer " + newAt));
-
-        String cookieHeader = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.COOKIE));
-        String atPair = accessCookieName + "=" + newAt;
-        if (!cookieHeader.contains(accessCookieName + "=")) {
-            String merged = cookieHeader.isBlank() ? atPair : cookieHeader + "; " + atPair;
-            rb.headers(h -> h.set(HttpHeaders.COOKIE, merged));
+        // 스킵 대상 경로는 그대로 통과
+        if (shouldSkip(path, method)) {
+            return chain.filter(exchange);
         }
-        return exchange.mutate().request(rb.build()).build();
+
+        // 401 감지 후 재시도 데코레이터 등록
+        return on401RetryOnce(exchange, chain);
     }
 
-    private String extractAt(List<String> setCookies) {
-        if (setCookies == null) return null;
-        String prefix = accessCookieName + "=";
-        for (String sc : setCookies) {
-            int i = sc.indexOf(prefix);
-            if (i >= 0) {
-                String sub = sc.substring(i + prefix.length());
-                int semi = sub.indexOf(';');
-                return (semi >= 0) ? sub.substring(0, semi) : sub;
-            }
-        }
-        return null;
+    @Override
+    public int getOrder() {
+        // CookieToAuthHeaderFilter(HIGHEST_PRECEDENCE) 다음,
+        // JwtAuthenticationFilter(HIGHEST_PRECEDENCE + 2) 이전에 실행
+        // response 처리는 역순이므로 JwtFilter가 401을 내보내면 이 필터가 가로챔
+        return Ordered.HIGHEST_PRECEDENCE + 1; // -2147483647
     }
 
-    private String extractAtFromAuthHeader(String authorization) {
-        String auth = CmmUtil.nvl(authorization).strip();
-        if (auth.isBlank()) return null;
-        if (auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
-            String token = auth.substring(7).strip();
-            return token.isBlank() ? null : token;
-        }
-        return auth;
+
+    // 401 감지 후 재시도 로직
+    /**
+     * 응답이 401이면 RT로 재발급 후 동일 요청을 1회 재시도한다.
+     * POST/PUT/PATCH의 경우 body를 캐싱하여 재시도 시 재사용한다.
+     */
+    private Mono<Void> on401RetryOnce(ServerWebExchange exchange, GatewayFilterChain chain) {
+        return cacheBodyIfNeeded(exchange).flatMap(ex -> {
+            ServerHttpResponse original = ex.getResponse();
+
+            // 응답을 가로채는 데코레이터
+            ServerHttpResponseDecorator decorated = new ServerHttpResponseDecorator(original) {
+                @Override
+                public @NonNull Mono<Void> writeWith(@NonNull Publisher<? extends DataBuffer> body) {
+                    HttpStatusCode status = getStatusCode();
+                    if (status == null) return super.writeWith(body);
+
+                    // refresh 경로 자체는 재시도 대상에서 제외 (무한 루프 방지)
+                    String path = ex.getRequest().getPath().value();
+                    if (isSelfRefreshCall(path)) return super.writeWith(body);
+
+                    boolean unauthorized = (status.value() == HttpStatus.UNAUTHORIZED.value());
+                    boolean notRetried   = ex.getAttributeOrDefault(ATTR_RETRIED, Boolean.FALSE) == Boolean.FALSE;
+                    boolean hasRt        = ex.getRequest().getCookies().containsKey(refreshCookieName);
+
+                    // 401이 아니거나, 이미 재시도했거나, RT가 없으면 그대로 응답
+                    if (!(unauthorized && notRetried && hasRt)) return super.writeWith(body);
+
+                    // 재시도 플래그 설정 (무한 루프 방지)
+                    ex.getAttributes().put(ATTR_RETRIED, true);
+                    log.debug("[AutoRefresh] 401 감지 → RT로 재발급 시도: path={}", path);
+
+                    return callRefresh(ex)
+                            .flatMap(outcome -> {
+                                if (outcome == null || CmmUtil.nvl(outcome.at()).isBlank()) {
+                                    // 재발급 실패 → 원래 401 응답 그대로 반환
+                                    log.debug("[AutoRefresh] 재발급 실패 → 401 그대로 반환");
+                                    return Mono.defer(() -> super.writeWith(body));
+                                }
+                                // 재발급 성공 → 새 AT로 요청 재시도
+                                log.debug("[AutoRefresh] 재발급 성공 → 원래 요청 재시도");
+                                applySetCookies(original, outcome.setCookies());
+                                ServerWebExchange retryEx = mutateWithNewAT(ex, outcome.at());
+                                return chain.filter(retryEx);
+                            })
+                            .switchIfEmpty(Mono.defer(() -> super.writeWith(body)));
+                }
+            };
+
+            return chain.filter(ex.mutate().response(decorated).build());
+        });
     }
 
+    // 토큰 재발급 호출
+    /**
+     * userService의 토큰 재발급 엔드포인트를 직접 호출한다.
+     * RT는 쿠키 헤더에 포함되어 전달된다.
+     */
     private Mono<RefreshOutcome> callRefresh(ServerWebExchange exchange) {
         String cookieHeader = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.COOKIE));
         String ua = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT));
@@ -152,7 +184,7 @@ public class AutoRefreshOn401Filter implements WebFilter {
                 .toEntity(byte[].class)
                 .timeout(Duration.ofSeconds(3))
                 .onErrorResume(e -> {
-                    log.debug("[AutoRefresh] refresh error: {}", e.toString());
+                    log.debug("[AutoRefresh] 재발급 요청 실패: {}", e.toString());
                     return Mono.empty();
                 })
                 .flatMap(res -> {
@@ -166,6 +198,11 @@ public class AutoRefreshOn401Filter implements WebFilter {
                 });
     }
 
+    // 요청 body 캐싱 (POST/PUT/PATCH 재시도 시 body 재사용)
+    /**
+     * POST/PUT/PATCH 요청의 body를 캐싱하여 재시도 시 재사용 가능하게 한다.
+     * GET/DELETE 등은 body가 없으므로 캐싱하지 않는다.
+     */
     private Mono<ServerWebExchange> cacheBodyIfNeeded(ServerWebExchange exchange) {
         HttpMethod m = exchange.getRequest().getMethod();
         boolean needsBody = (m == HttpMethod.POST || m == HttpMethod.PUT || m == HttpMethod.PATCH);
@@ -181,7 +218,8 @@ public class AutoRefreshOn401Filter implements WebFilter {
                 .bodyToMono(byte[].class)
                 .defaultIfEmpty(new byte[0])
                 .flatMap(bytes -> {
-                    BodyInserter<byte[], org.springframework.http.ReactiveHttpOutputMessage> inserter = BodyInserters.fromValue(bytes);
+                    BodyInserter<byte[], org.springframework.http.ReactiveHttpOutputMessage> inserter =
+                            BodyInserters.fromValue(bytes);
 
                     HttpHeaders headers = new HttpHeaders();
                     headers.putAll(exchange.getRequest().getHeaders());
@@ -191,82 +229,88 @@ public class AutoRefreshOn401Filter implements WebFilter {
                     var cached = new CachedBodyOutputMessage(exchange, headers);
                     return inserter.insert(cached, new BodyInserterContext())
                             .then(Mono.defer(() -> {
-                                ServerHttpRequestDecorator decorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
-                                    @Override
-                                    public @NonNull HttpHeaders getHeaders() {
-                                        return headers;
-                                    }
+                                ServerHttpRequestDecorator decorator =
+                                        new ServerHttpRequestDecorator(exchange.getRequest()) {
+                                            @Override
+                                            public @NonNull HttpHeaders getHeaders() { return headers; }
 
-                                    @Override
-                                    public @NonNull Flux<DataBuffer> getBody() {
-                                        return cached.getBody();
-                                    }
-                                };
+                                            @Override
+                                            public @NonNull Flux<DataBuffer> getBody() { return cached.getBody(); }
+                                        };
                                 return Mono.just(exchange.mutate().request(decorator).build());
                             }));
                 });
     }
 
-    private Mono<Void> on401RetryOnce(ServerWebExchange exchange, WebFilterChain chain) {
-        return cacheBodyIfNeeded(exchange).flatMap(ex -> {
-            ServerHttpResponse original = ex.getResponse();
-
-            ServerHttpResponseDecorator decorated = new ServerHttpResponseDecorator(original) {
-                @Override
-                public @NonNull Mono<Void> writeWith(@NonNull Publisher<? extends DataBuffer> body) {
-                    HttpStatusCode status = getStatusCode();
-                    if (status == null) return super.writeWith(body);
-
-                    String path = ex.getRequest().getPath().value();
-                    if (isSelfRefreshCall(path)) return super.writeWith(body);
-
-                    boolean unauthorized = (status.value() == HttpStatus.UNAUTHORIZED.value());
-                    boolean notRetried = ex.getAttributeOrDefault(ATTR_RETRIED, Boolean.FALSE) == Boolean.FALSE;
-                    boolean hasRt = ex.getRequest().getCookies().containsKey(refreshCookieName);
-
-                    if (!(unauthorized && notRetried && hasRt)) return super.writeWith(body);
-
-                    ex.getAttributes().put(ATTR_RETRIED, true);
-
-                    return callRefresh(ex)
-                            .flatMap(outcome -> {
-                                if (outcome == null || CmmUtil.nvl(outcome.at()).isBlank()) {
-                                    return Mono.defer(() -> super.writeWith(body));
-                                }
-                                applySetCookies(original, outcome.setCookies());
-                                ServerWebExchange retryEx = mutateWithNewAT(ex, outcome.at());
-                                return chain.filter(retryEx);
-                            })
-                            .switchIfEmpty(Mono.defer(() -> super.writeWith(body)));
-                }
-            };
-
-            return chain.filter(ex.mutate().response(decorated).build());
-        });
+    // 헬퍼 메서드
+    // refresh 엔드포인트 자체 호출인지 확인 (무한 루프 방지)
+    private boolean isSelfRefreshCall(String path) {
+        return CmmUtil.nvl(path).startsWith(CmmUtil.nvl(refreshPath, "/user/v1/token/reissue"));
     }
 
-    @Override
-    public @NonNull Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
-        String path = exchange.getRequest().getPath().value();
-        HttpMethod method = exchange.getRequest().getMethod();
+    //  AutoRefresh 대상에서 제외할 경로인지 확인
+    private boolean shouldSkip(String path, HttpMethod method) {
+        if (method == HttpMethod.OPTIONS) return true;
+        return SKIP_PATHS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
 
-        if (shouldSkip(path, method)) {
-            return chain.filter(exchange);
+    // 응답의 Set-Cookie 헤더를 현재 응답에 추가
+    private void applySetCookies(ServerHttpResponse resp, List<String> setCookies) {
+        if (setCookies == null || setCookies.isEmpty()) return;
+        setCookies.forEach(sc -> resp.getHeaders().add(HttpHeaders.SET_COOKIE, sc));
+    }
+
+    // 새 AT로 요청의 Authorization 헤더와 AT 쿠키를 교체
+    private ServerWebExchange mutateWithNewAT(ServerWebExchange exchange, String at) {
+        String newAt = CmmUtil.nvl(at);
+        ServerHttpRequest.Builder rb = exchange.getRequest().mutate()
+                .headers(h -> h.set(HttpHeaders.AUTHORIZATION, "Bearer " + newAt));
+
+        // Cookie 헤더의 AT 쿠키도 새 값으로 교체
+        String cookieHeader = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.COOKIE));
+        String atPair = accessCookieName + "=" + newAt;
+
+        if (cookieHeader.isBlank()) {
+            rb.headers(h -> h.set(HttpHeaders.COOKIE, atPair));
+        } else {
+            String[] parts = cookieHeader.split(";\\s*");
+            boolean replaced = false;
+            for (int i = 0; i < parts.length; i++) {
+                if (parts[i].startsWith(accessCookieName + "=")) {
+                    parts[i] = atPair;
+                    replaced = true;
+                    break;
+                }
+            }
+            String merged = replaced ? String.join("; ", parts) : cookieHeader + "; " + atPair;
+            rb.headers(h -> h.set(HttpHeaders.COOKIE, merged));
         }
+        return exchange.mutate().request(rb.build()).build();
+    }
 
-        if (!isSelfRefreshCall(path) && needPreRefresh(exchange)) {
-            return callRefresh(exchange)
-                    .flatMap(outcome -> {
-                        if (outcome != null && !CmmUtil.nvl(outcome.at()).isBlank()) {
-                            applySetCookies(exchange.getResponse(), outcome.setCookies());
-                            ServerWebExchange resumed = mutateWithNewAT(exchange, outcome.at());
-                            return chain.filter(resumed);
-                        }
-                        return on401RetryOnce(exchange, chain);
-                    })
-                    .switchIfEmpty(on401RetryOnce(exchange, chain));
+    // Set-Cookie 헤더 목록에서 AT 값 추출
+    private String extractAt(List<String> setCookies) {
+        if (setCookies == null) return null;
+        String prefix = accessCookieName + "=";
+        for (String sc : setCookies) {
+            int i = sc.indexOf(prefix);
+            if (i >= 0) {
+                String sub = sc.substring(i + prefix.length());
+                int semi = sub.indexOf(';');
+                return (semi >= 0) ? sub.substring(0, semi) : sub;
+            }
         }
+        return null;
+    }
 
-        return on401RetryOnce(exchange, chain);
+    // Authorization 헤더에서 Bearer 토큰 값만 추출
+    private String extractAtFromAuthHeader(String authorization) {
+        String auth = CmmUtil.nvl(authorization).strip();
+        if (auth.isBlank()) return null;
+        if (auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            String token = auth.substring(7).strip();
+            return token.isBlank() ? null : token;
+        }
+        return auth;
     }
 }
