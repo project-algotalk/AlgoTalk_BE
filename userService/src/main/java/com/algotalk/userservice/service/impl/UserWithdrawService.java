@@ -104,14 +104,21 @@ public class UserWithdrawService implements IUserWithdrawService {
             throw new BusinessException(WITHDRAW_FAIL);
         }
 
-        // 4.연결된 소셜 계정 전부 삭제
+        // 4. USER_CREDENTIAL 로그인 ID 변경
+        res = userWithdrawMapper.withdrawUserCredential(UserInfoCommand.builder().userId(userId).build());
+        if (res != 1) {
+            log.error("회원 탈퇴 USER_CREDENTIAL 처리 실패 userId: {}", userId);
+            throw new BusinessException(WITHDRAW_FAIL);
+        }
+
+        // 5.연결된 소셜 계정 전부 삭제
         res = userWithdrawMapper.deleteAllSocialAccountsByUserId(UserInfoCommand.builder().userId(userId).build());
         if (res < 0) {
             log.error("회원 탈퇴 처리 실패 userId: {}", userId);
             throw new BusinessException(WITHDRAW_FAIL);
         }
 
-        // 5. Redis에서 RT 삭제
+        // 6. Redis에서 RT 삭제
         refreshTokenService.deleteRefreshToken(userId);
 
         log.info("{}.withdraw End!", this.getClass().getName());
