@@ -8,10 +8,21 @@
             parameterType="UserInfoCommand">
         UPDATE USERS
         SET DELETED_YN = 'Y',
+            NICKNAME = CONCAT('탈퇴회원_', USER_ID),
+            EMAIL = CONCAT('withdrawn_', USER_ID, '_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')),
             UPDATED_AT = NOW(),
             UPDATED_BY = #{userId}
         WHERE USER_ID = #{userId}
-            AND DELETED_YN = 'N'
+          AND DELETED_YN = 'N'
+    </update>
+
+    <update id="withdrawUserCredential"
+            parameterType="UserInfoCommand">
+        UPDATE USER_CREDENTIAL
+        SET LOGIN_ID = CONCAT('withdrawn_', USER_ID, '_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')),
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
     </update>
 
     <!--  회원 소셜 계정 연동 삭제  -->

@@ -20,6 +20,7 @@ public enum InterviewErrorCode implements ErrorCode {
     MANUAL_QUESTION_REQUIRED("INTERVIEW_008", "직접입력 질문을 최소 1개 입력해주세요.", HttpStatus.BAD_REQUEST),
     CS_CATEGORY_FETCH_FAILED("INTERVIEW_009", "카테고리 정보를 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.", HttpStatus.BAD_GATEWAY),
     AI_EVAL_FAILED("INTERVIEW_010", "답변 평가 중 오류가 발생했습니다. 평가 결과는 나중에 확인해주세요.", HttpStatus.BAD_GATEWAY),
+    SESSION_NOT_FOUND("INTERVIEW_011", "면접 세션을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
     // 권한
     UNAUTHORIZED                ("INTERVIEW_900", "로그인이 필요합니다.", HttpStatus.UNAUTHORIZED),

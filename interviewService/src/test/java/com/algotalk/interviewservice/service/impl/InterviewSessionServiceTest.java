@@ -4,15 +4,15 @@ import com.algotalk.common.exception.BusinessException;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.interviewservice.client.AiFeignClient;
 import com.algotalk.interviewservice.client.UserFeignClient;
+import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
+import com.algotalk.interviewservice.domain.Scores;
+import com.algotalk.interviewservice.domain.enums.AnswerStatus;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
-import com.algotalk.interviewservice.dto.response.AiQuestionItemDTO;
-import com.algotalk.interviewservice.dto.response.CsValidationItemDTO;
+import com.algotalk.interviewservice.dto.command.SessionResultCommand;
+import com.algotalk.interviewservice.dto.response.*;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
-import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
-import com.algotalk.interviewservice.dto.response.CsCategoryResponseDTO;
-import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
-import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
+import com.algotalk.interviewservice.persistence.mongodb.IInterviewAnalysisMapper;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -48,6 +48,9 @@ class InterviewSessionServiceTest {
     @MockBean
     private UserFeignClient userFeignClient;
 
+    @Autowired
+    private IInterviewAnalysisMapper interviewAnalysisMapper;
+
     // aiService LLM 질문 생성 Mock 응답 생성 헬퍼
     private AiQuestionResponseDTO mockAiResponse(int questionCount) {
         List<AiQuestionItemDTO> questions = IntStream.rangeClosed(1, questionCount)
@@ -62,6 +65,32 @@ class InterviewSessionServiceTest {
                 .toList();
         return AiQuestionResponseDTO.builder()
                 .questions(questions)
+                .build();
+    }
+
+    // MongoDB 분석 결과 Mock 생성 헬퍼
+    private InterviewAnalysisDocument mockAnalysisDocument(Long sessionId, Long sessionQuestionId, AnswerStatus answerStatus) {
+        return InterviewAnalysisDocument.builder()
+                .sessionId(sessionId)
+                .sessionQuestionId(sessionQuestionId)
+                .userId(1L)
+                .answerStatus(answerStatus)
+                .answerText(answerStatus == AnswerStatus.ANSWERED ? "테스트 답변입니다." : "")
+                .answerDuration(30)
+                .wpm(120)
+                .silenceRatio(10.0)
+                .asrConfidence(0.9)
+                .fillerCount(1)
+                .fillerRatio(2.0)
+                .gazeRatio(0.95)
+                .gestureDeductions(List.of())
+                .scores(Scores.builder()
+                        .gaze(24)
+                        .gesture(18)
+                        .speed(15)
+                        .voice(13)
+                        .build())
+                .createdAt(java.time.LocalDateTime.now())
                 .build();
     }
 
@@ -500,5 +529,118 @@ class InterviewSessionServiceTest {
         BusinessException ex = assertThrows(BusinessException.class, () ->
                 interviewSessionService.createManualSession(pCommand));
         assertThat(ex.getErrorCode()).isEqualTo(INVALID_CS_QUESTION);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("세션 결과 조회 성공 - 전체 답변 완료")
+    void getSessionResult_success_allAnswered() throws Exception {
+        // given
+        // 1. 세션 생성
+        int questionCount = 2;
+        when(userFeignClient.getCsCategories()).thenReturn(mockCategoryList());
+        when(aiFeignClient.generateQuestions(any())).thenReturn(mockAiResponse(questionCount));
+
+        SessionCreateResponseDTO createdSession = interviewSessionService.createSession(
+                SessionCreateCommand.builder()
+                        .userId(1L)
+                        .selectedCategories(List.of(
+                                CategoryItemRequestDTO.builder()
+                                        .categoryId(101L)
+                                        .categoryType("JOB")
+                                        .build()
+                        ))
+                        .questionCount(questionCount)
+                        .build()
+        );
+
+        Long sessionId = createdSession.sessionId();
+        Long q1Id = createdSession.questions().get(0).sessionQuestionId();
+        Long q2Id = createdSession.questions().get(1).sessionQuestionId();
+
+        // 2. MongoDB에 분석 결과 저장
+        interviewAnalysisMapper.insertData(mockAnalysisDocument(sessionId, q1Id, AnswerStatus.ANSWERED));
+        interviewAnalysisMapper.insertData(mockAnalysisDocument(sessionId, q2Id, AnswerStatus.ANSWERED));
+
+        // when
+        SessionResultResponseDTO rDTO = interviewSessionService.getSessionResult(
+                SessionResultCommand.builder()
+                        .sessionId(sessionId)
+                        .userId(1L)
+                        .build()
+        );
+
+        log.info("세션 결과 조회 결과: {}", rDTO);
+
+        // then
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.sessionId()).isEqualTo(sessionId);
+        assertThat(rDTO.sessionTitle()).contains("모의면접");
+        assertThat(rDTO.totalQuestions()).isEqualTo(questionCount);
+        assertThat(rDTO.questions()).hasSize(questionCount);
+        assertThat(rDTO.questions()).allSatisfy(q -> {
+            assertThat(q.answerStatus()).isEqualTo(AnswerStatus.ANSWERED);
+            assertThat(q.answerText()).isNotBlank();
+            assertThat(q.scores()).isNotNull();
+        });
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("세션 결과 조회 성공 - 일부 답변 없음 (SKIPPED 포함)")
+    void getSessionResult_success_withSkipped() throws Exception {
+        // given
+        int questionCount = 2;
+        when(userFeignClient.getCsCategories()).thenReturn(mockCategoryList());
+        when(aiFeignClient.generateQuestions(any())).thenReturn(mockAiResponse(questionCount));
+
+        SessionCreateResponseDTO createdSession = interviewSessionService.createSession(
+                SessionCreateCommand.builder()
+                        .userId(1L)
+                        .selectedCategories(List.of(
+                                CategoryItemRequestDTO.builder()
+                                        .categoryId(101L)
+                                        .categoryType("JOB")
+                                        .build()
+                        ))
+                        .questionCount(questionCount)
+                        .build()
+        );
+
+        Long sessionId = createdSession.sessionId();
+        Long q1Id = createdSession.questions().get(0).sessionQuestionId();
+
+        // 1번 질문만 답변, 2번 질문은 MongoDB에 저장 안 함 (건너뛰기)
+        interviewAnalysisMapper.insertData(mockAnalysisDocument(sessionId, q1Id, AnswerStatus.ANSWERED));
+
+        // when
+        SessionResultResponseDTO rDTO = interviewSessionService.getSessionResult(
+                SessionResultCommand.builder()
+                        .sessionId(sessionId)
+                        .userId(1L)
+                        .build()
+        );
+
+        // then
+        assertThat(rDTO.questions()).hasSize(questionCount);
+        assertThat(rDTO.questions().get(0).answerStatus()).isEqualTo(AnswerStatus.ANSWERED);
+        assertThat(rDTO.questions().get(1).answerStatus()).isNull(); // 답변 없음
+    }
+
+    @Test
+    @DisplayName("세션 결과 조회 실패 - 존재하지 않는 sessionId")
+    void getSessionResult_fail_sessionNotFound() {
+        // given
+        Long invalidSessionId = 999999L;
+
+        // when, then
+        BusinessException ex = assertThrows(BusinessException.class, () ->
+                interviewSessionService.getSessionResult(
+                        SessionResultCommand.builder()
+                                .sessionId(invalidSessionId)
+                                .userId(1L)
+                                .build()
+                ));
+        assertThat(ex.getErrorCode()).isEqualTo(SESSION_NOT_FOUND);
     }
 }

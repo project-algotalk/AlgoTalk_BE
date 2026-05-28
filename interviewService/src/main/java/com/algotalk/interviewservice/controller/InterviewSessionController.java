@@ -2,9 +2,11 @@ package com.algotalk.interviewservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
+import com.algotalk.interviewservice.dto.command.SessionResultCommand;
 import com.algotalk.interviewservice.dto.request.ManualSessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.request.SessionCreateRequestDTO;
 import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
+import com.algotalk.interviewservice.dto.response.SessionResultResponseDTO;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +58,25 @@ public class InterviewSessionController {
         SessionCreateResponseDTO rDTO = interviewSessionService.createManualSession(pCommand);
 
         log.info("{}.createManualSession End!", this.getClass().getName());
+
+        return ResponseEntity.ok(ApiResponse.ok(rDTO));
+    }
+
+    @GetMapping("/sessions/{sessionId}/result")
+    public ResponseEntity<ApiResponse<SessionResultResponseDTO>> getSessionResult(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long sessionId
+    ) {
+        log.info("{}.getSessionResult Start!", this.getClass().getName());
+
+        SessionResultCommand pCommand = SessionResultCommand.builder()
+                .sessionId(sessionId)
+                .userId(userId)
+                .build();
+
+        SessionResultResponseDTO rDTO = interviewSessionService.getSessionResult(pCommand);
+
+        log.info("{}.getSessionResult End!", this.getClass().getName());
 
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }

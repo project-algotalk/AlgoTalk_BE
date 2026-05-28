@@ -19,4 +19,21 @@
        )
     </insert>
 
+    <select id="getSessionResult" parameterType="SessionResultCommand" resultType="SessionResultRowDTO">
+        SELECT
+            S.SESSION_ID,
+            S.SESSION_TITLE,
+            S.TOTAL_QUESTIONS,
+            Q.SESSION_QUESTION_ID,
+            Q.QUESTION_ORDER,
+            Q.QUESTION_TEXT
+        FROM
+            INTERVIEW_SESSION S
+                INNER JOIN SESSION_QUESTION Q ON S.SESSION_ID = Q.SESSION_ID
+        WHERE
+            S.SESSION_ID = #{sessionId}
+        ORDER BY
+            Q.QUESTION_ORDER ASC
+    </select>
+
 </mapper>

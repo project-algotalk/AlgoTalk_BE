@@ -2,17 +2,19 @@ package com.algotalk.interviewservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.interviewservice.client.AiFeignClient;
+import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
 import com.algotalk.interviewservice.domain.enums.CsCategoryType;
 import com.algotalk.interviewservice.dto.command.RecentQuestionSearchCommand;
 import com.algotalk.interviewservice.dto.command.SessionCreateCommand;
-import com.algotalk.interviewservice.dto.response.CsValidationItemDTO;
+import com.algotalk.interviewservice.dto.command.SessionResultCommand;
+import com.algotalk.interviewservice.dto.response.*;
 import com.algotalk.interviewservice.dto.request.AiQuestionRequestDTO;
 import com.algotalk.interviewservice.dto.request.CategoryItemRequestDTO;
 import com.algotalk.interviewservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.interviewservice.dto.request.ManualQuestionItemRequestDTO;
-import com.algotalk.interviewservice.dto.response.AiQuestionResponseDTO;
-import com.algotalk.interviewservice.dto.response.CsValidationResponseDTO;
-import com.algotalk.interviewservice.dto.response.SessionCreateResponseDTO;
+import com.algotalk.interviewservice.dto.row.SessionResultRowDTO;
+import com.algotalk.interviewservice.persistence.mongodb.IInterviewAnalysisMapper;
+import com.algotalk.interviewservice.repository.IInterviewSessionMapper;
 import com.algotalk.interviewservice.repository.ISessionQuestionMapper;
 import com.algotalk.interviewservice.service.ICsCategoryService;
 import com.algotalk.interviewservice.service.IInterviewSessionService;
@@ -23,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.algotalk.interviewservice.exception.InterviewErrorCode.*;
 
@@ -35,6 +39,8 @@ public class InterviewSessionService implements IInterviewSessionService {
     private final ISessionSaveService sessionSaveService;
     private final ICsCategoryService csCategoryService;
     private final ISessionQuestionMapper sessionQuestionMapper;
+    private final IInterviewSessionMapper interviewSessionMapper;
+    private final IInterviewAnalysisMapper interviewAnalysisMapper;
 
     @Override
     public SessionCreateResponseDTO createSession(SessionCreateCommand pCommand) {
@@ -207,6 +213,52 @@ public class InterviewSessionService implements IInterviewSessionService {
 
         log.info("{}.createManualSession End!", this.getClass().getName());
 
+        return rDTO;
+    }
+
+    @Override
+    public SessionResultResponseDTO getSessionResult(SessionResultCommand pCommand) {
+        log.info("{}.getSessionResult Start!", this.getClass().getName());
+
+        // 1. SESSION_QUESTION 기준 질문 목록 조회
+        List<SessionResultRowDTO> rows = interviewSessionMapper.getSessionResult(pCommand);
+
+        if (rows == null || rows.isEmpty()) {
+            throw new BusinessException(SESSION_NOT_FOUND);
+        }
+
+        SessionResultRowDTO first = rows.get(0);
+
+        // 2. MongoDB에서 분석 결과 조회
+        List<InterviewAnalysisDocument> analysisList =
+                interviewAnalysisMapper.findBySessionId(pCommand);
+
+        // 3. sessionQuestionId 기준으로 Map 변환 (빠른 조회)
+        Map<Long, InterviewAnalysisDocument> analysisMap = analysisList.stream()
+                .collect(Collectors.toMap(
+                        InterviewAnalysisDocument::getSessionQuestionId,
+                        doc -> doc
+                ));
+
+        // 4. 질문별 분석 결과 매핑
+        List<QuestionResultDTO> questions = rows.stream()
+                .map(q -> {
+                    InterviewAnalysisDocument doc = analysisMap.get(q.sessionQuestionId());
+
+                    return doc == null
+                            ? QuestionResultDTO.empty(q.sessionQuestionId(), q.questionOrder(), q.questionText())
+                            : QuestionResultDTO.from(doc, q.questionOrder(), q.questionText());
+                })
+                .toList();
+
+        SessionResultResponseDTO rDTO = SessionResultResponseDTO.builder()
+                .sessionId(first.sessionId())
+                .sessionTitle(first.sessionTitle())
+                .totalQuestions(first.totalQuestions())
+                .questions(questions)
+                .build();
+
+        log.info("{}.getSessionResult End!", this.getClass().getName());
         return rDTO;
     }
 }
