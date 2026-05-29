@@ -1,8 +1,10 @@
 package com.algotalk.interviewservice.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CsCategoryResponseDTO(
         Long categoryId,     // 카테고리 ID
         String categoryType, // 카테고리 유형 (COMMON_CS / JOB)
