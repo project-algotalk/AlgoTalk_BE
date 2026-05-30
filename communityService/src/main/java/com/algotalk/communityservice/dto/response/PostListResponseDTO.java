@@ -24,7 +24,11 @@ public record PostListResponseDTO(
     Integer scrapCount,
     LocalDateTime createdAt,
 
-    List<Long> csCategoryIds,
+    // CS 카테고리 (Service 레이어에서 캐시 매핑)
+    Long csCategoryId,
+    String csCategoryName,
+    String csCategoryType, // (COMMON_CS / JOB)
+
     List<String> hashtags,
 
     // 페이징

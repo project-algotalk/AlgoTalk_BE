@@ -27,7 +27,11 @@ public record PostDetailResponseDTO(
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
 
-    List<Long> csCategoryIds,
+    // CS 카테고리
+    Long csCategoryId,
+    String csCategoryName,
+    String csCategoryType,
+
     List<String> hashtags,
     List<CommentResponseDTO> comments
 ) {}

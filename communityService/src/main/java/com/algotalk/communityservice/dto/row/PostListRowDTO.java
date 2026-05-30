@@ -27,5 +27,6 @@ public class PostListRowDTO {
     private Integer scrapCount;
     private String deletedYn;
     private LocalDateTime createdAt;
+    private Long csCategoryId;
     private Integer totalCount;     // COUNT(*) OVER() 페이징용
 }

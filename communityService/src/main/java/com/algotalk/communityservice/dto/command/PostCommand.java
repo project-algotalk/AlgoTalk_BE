@@ -1,11 +1,9 @@
 package com.algotalk.communityservice.dto.command;
 
 import lombok.Builder;
-import lombok.Getter;
 
 import java.util.List;
 
-@Getter
 @Builder
 public class PostCommand {
 
@@ -15,6 +13,6 @@ public class PostCommand {
     private String nickname;        // 작성 시 사용 (userService Feign 조회)
     private String title;
     private String content;
-    private List<Long> csCategoryIds;
+    private Long csCategoryId;
     private List<String> hashtags;
 }
