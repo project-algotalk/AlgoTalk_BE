@@ -75,4 +75,29 @@
         WHERE ph.POST_ID = #{postId}
         ORDER BY ph.CREATED_AT ASC
     </select>
+
+    <!-- 게시글 해시태그 ID 목록 조회 -->
+    <select id="getPostHashTagIds" parameterType="HashTagCommand" resultType="HashTagCommand">
+        SELECT HASHTAG_ID AS hashtagId
+        FROM COMMUNITY_POST_HASHTAG
+        WHERE POST_ID = #{postId}
+    </select>
+
+    <!-- 해시태그 사용 횟수 감소 -->
+    <update id="decrementUseCount" parameterType="HashTagCommand">
+        UPDATE COMMUNITY_HASHTAG
+        SET
+            USE_COUNT  = USE_COUNT - 1,
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE HASHTAG_ID = #{hashtagId}
+          AND USE_COUNT > 0
+    </update>
+
+    <!-- USE_COUNT = 0인 해시태그 삭제 -->
+    <delete id="deleteUnusedHashTag" parameterType="HashTagCommand">
+        DELETE FROM COMMUNITY_HASHTAG
+        WHERE HASHTAG_ID = #{hashtagId}
+          AND USE_COUNT = 0
+    </delete>
 </mapper>

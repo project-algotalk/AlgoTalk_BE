@@ -24,4 +24,13 @@ public interface ICommunityHashTagMapper {
 
     // 게시글 해시태그 목록 조회
     List<HashTagCommand> getPostHashTags(HashTagCommand pCommand);
+
+    // 게시글 해시태그 ID 목록 조회 (감소 처리용)
+    List<HashTagCommand> getPostHashTagIds(HashTagCommand pCommand);
+
+    // 해시태그 사용 횟수 감소
+    int decrementUseCount(HashTagCommand pCommand);
+
+    // USE_COUNT = 0인 해시태그 삭제
+    int deleteUnusedHashTag(HashTagCommand pCommand);
 }

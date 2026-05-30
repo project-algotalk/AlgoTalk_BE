@@ -67,7 +67,7 @@
     </select>
 
     <!-- 게시글 상세 조회 -->
-    <select id="getPostDetail" parameterType="PostCommand" resultType="PostDetailResponseDTO">
+    <select id="getPostDetail" parameterType="PostCommand" resultType="PostDetailRowDTO">
         SELECT
             p.POST_ID           AS postId,
             p.CATEGORY_ID       AS categoryId,

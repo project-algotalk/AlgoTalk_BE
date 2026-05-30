@@ -1,10 +1,16 @@
 package com.algotalk.communityservice.dto.command;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+@Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PostCommand {
 
     private Long postId;            // 수정/삭제 시 사용

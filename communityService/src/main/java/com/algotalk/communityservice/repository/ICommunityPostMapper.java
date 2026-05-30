@@ -3,6 +3,7 @@ package com.algotalk.communityservice.repository;
 import com.algotalk.communityservice.dto.command.PostCommand;
 import com.algotalk.communityservice.dto.command.PostListCommand;
 import com.algotalk.communityservice.dto.response.PostDetailResponseDTO;
+import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -16,7 +17,7 @@ public interface ICommunityPostMapper {
     List<PostListRowDTO> getPostList(PostListCommand pCommand);
 
     // 게시글 상세
-    PostDetailResponseDTO getPostDetail(PostCommand pCommand);
+    PostDetailRowDTO getPostDetail(PostCommand pCommand);
 
     // 게시글 작성
     int insertPost(PostCommand pCommand);
