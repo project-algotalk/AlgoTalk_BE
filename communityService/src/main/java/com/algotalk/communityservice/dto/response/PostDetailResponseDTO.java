@@ -22,6 +22,7 @@ public record PostDetailResponseDTO(
     Integer viewCount,
     Integer likeCount,
     Integer scrapCount,
+    Integer commentCount,
     Boolean liked,              // 현재 사용자 좋아요 여부
     Boolean scrapped,           // 현재 사용자 스크랩 여부
     LocalDateTime createdAt,

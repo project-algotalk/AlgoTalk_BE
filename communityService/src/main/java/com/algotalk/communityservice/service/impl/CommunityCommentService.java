@@ -32,6 +32,7 @@ public class CommunityCommentService implements ICommunityCommentService {
                         .commentId(row.getCommentId())
                         .postId(row.getPostId())
                         .userId(row.getUserId())
+                        .nickname(row.getNickname())
                         .content(row.getContent())
                         .parentId(row.getParentId())
                         .groupId(row.getGroupId())
@@ -74,6 +75,7 @@ public class CommunityCommentService implements ICommunityCommentService {
         CommentCommand insertCommand = CommentCommand.builder()
                 .postId(pCommand.getPostId())
                 .userId(pCommand.getUserId())
+                .nickname(pCommand.getNickname())
                 .parentId(pCommand.getParentId())
                 .groupId(pCommand.getParentId() == null ? Long.valueOf(0) : groupId)  // 최상위 댓글 임시값 0 (insert 후 자신의 ID로 업데이트)
                 .depth(depth)
@@ -128,7 +130,16 @@ public class CommunityCommentService implements ICommunityCommentService {
             throw new BusinessException(COMMENT_UNAUTHORIZED);
         }
 
-        communityCommentMapper.deleteComment(pCommand);
+        // 하위 댓글 존재 여부 확인
+        boolean hasChildren = communityCommentMapper.hasChildComments(pCommand) > 0;
+
+        if (hasChildren) {
+            // 하위 댓글 있으면 소프트딜리트 (내용만 변경)
+            communityCommentMapper.deleteComment(pCommand);
+        } else {
+            // 하위 댓글 없으면 하드딜리트
+            communityCommentMapper.hardDeleteComment(pCommand);
+        }
 
         log.info("{}.deleteComment End!", this.getClass().getName());
     }

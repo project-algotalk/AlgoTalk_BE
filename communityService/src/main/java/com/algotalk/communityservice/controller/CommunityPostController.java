@@ -42,6 +42,7 @@ public class CommunityPostController {
                 .categoryId(rDTO.categoryId())
                 .categoryCd(rDTO.categoryCd())
                 .csCategoryId(rDTO.csCategoryId())
+                .csCategoryIds(rDTO.csCategoryIds())
                 .keyword(rDTO.keyword())
                 .searchType(rDTO.searchType())
                 .hashtag(rDTO.hashtag())

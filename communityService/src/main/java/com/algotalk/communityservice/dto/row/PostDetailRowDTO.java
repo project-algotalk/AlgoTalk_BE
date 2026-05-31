@@ -25,6 +25,7 @@ public class PostDetailRowDTO {
     private Integer viewCount;
     private Integer likeCount;
     private Integer scrapCount;
+    private Integer commentCount;
     private Long csCategoryId;
     private String isScrapable;
     private String deletedYn;

@@ -1,9 +1,14 @@
 package com.algotalk.communityservice.controller;
 
+import com.algotalk.common.exception.BusinessException;
 import com.algotalk.common.response.ApiResponse;
+import com.algotalk.communityservice.client.UserFeignClient;
 import com.algotalk.communityservice.dto.command.CommentCommand;
 import com.algotalk.communityservice.dto.request.CommentRequestDTO;
+import com.algotalk.communityservice.dto.request.UserInfoRequestDTO;
 import com.algotalk.communityservice.dto.response.CommentResponseDTO;
+import com.algotalk.communityservice.dto.response.UserInfoResponseDTO;
+import com.algotalk.communityservice.exception.CommunityErrorCode;
 import com.algotalk.communityservice.service.ICommunityCommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,7 @@ import java.util.List;
 public class CommunityCommentController {
 
     private final ICommunityCommentService communityCommentService;
+    private final UserFeignClient userFeignClient;
 
     // 댓글 목록 조회
     @GetMapping
@@ -45,10 +51,13 @@ public class CommunityCommentController {
             @RequestBody @Valid CommentRequestDTO rDTO
     ) {
         log.info("{}.insertComment Start!", this.getClass().getName());
+        // userService에서 닉네임 조회
+        String nickname = getNickname(userId);
 
         CommentCommand pCommand = CommentCommand.builder()
                 .postId(postId)
                 .userId(userId)
+                .nickname(nickname)
                 .parentId(rDTO.parentId())
                 .content(rDTO.content())
                 .build();
@@ -101,5 +110,15 @@ public class CommunityCommentController {
 
         log.info("{}.deleteComment End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    private String getNickname(Long userId) {
+        ApiResponse<UserInfoResponseDTO> response = userFeignClient.getNicknameByUserId(
+                UserInfoRequestDTO.builder().userId(userId).build()
+        );
+        if (response == null || response.getData() == null) {
+            throw new BusinessException(CommunityErrorCode.UNAUTHORIZED);
+        }
+        return response.getData().nickname();
     }
 }

@@ -25,6 +25,7 @@ public class PostListRowDTO {
     private Integer viewCount;
     private Integer likeCount;
     private Integer scrapCount;
+    private Integer commentCount;
     private String deletedYn;
     private LocalDateTime createdAt;
     private Long csCategoryId;

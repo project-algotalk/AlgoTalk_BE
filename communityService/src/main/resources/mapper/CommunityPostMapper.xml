@@ -22,19 +22,24 @@
         p.DELETED_YN        AS deletedYn,
         p.CREATED_AT        AS createdAt,
         p.CS_CATEGORY_ID    AS csCategoryId,
+        (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+        WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
         COUNT(*) OVER()     AS totalCount
         FROM COMMUNITY_POST p
         JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
         WHERE p.DELETED_YN = 'N'
         AND c.DELETED_YN = 'N'
-        <if test="categoryId != null">
-            AND p.CATEGORY_ID = #{categoryId}
-        </if>
         <if test="categoryCd != null and categoryCd != ''">
             AND c.CATEGORY_CD = #{categoryCd}
         </if>
-        <if test="csCategoryId != null">
+        <if test="csCategoryId != null and (csCategoryIds == null or csCategoryIds.isEmpty())">
             AND p.CS_CATEGORY_ID = #{csCategoryId}
+        </if>
+        <if test="csCategoryIds != null and !csCategoryIds.isEmpty()">
+            AND p.CS_CATEGORY_ID IN
+            <foreach collection="csCategoryIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
         </if>
         <if test="keyword != null and keyword != ''">
             <choose>
@@ -85,7 +90,9 @@
             c.IS_SCRAPABLE      AS isScrapable,
             p.DELETED_YN        AS deletedYn,
             p.CREATED_AT        AS createdAt,
-            p.UPDATED_AT        AS updatedAt
+            p.UPDATED_AT        AS updatedAt,
+            (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+             WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount
         FROM COMMUNITY_POST p
                  JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
         WHERE p.POST_ID = #{postId}

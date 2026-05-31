@@ -9,6 +9,7 @@
             COMMENT_ID  AS commentId,
             POST_ID     AS postId,
             USER_ID     AS userId,
+            NICKNAME    AS nickname,
             PARENT_ID   AS parentId,
             GROUP_ID    AS groupId,
             DEPTH       AS depth,
@@ -55,6 +56,7 @@
         INSERT INTO COMMUNITY_COMMENT (
             POST_ID,
             USER_ID,
+            NICKNAME,
             PARENT_ID,
             GROUP_ID,
             DEPTH,
@@ -67,6 +69,7 @@
         ) VALUES (
                      #{postId},
                      #{userId},
+                     #{nickname},
                      #{parentId},
                      #{groupId},
                      #{depth},
@@ -113,4 +116,19 @@
             UPDATED_BY = #{userId}
         WHERE COMMENT_ID = #{commentId}
     </update>
+
+    <!-- 하위 댓글 존재 여부 -->
+    <select id="hasChildComments" parameterType="CommentCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_COMMENT
+        WHERE PARENT_ID = #{commentId}
+          AND DELETED_YN = 'N'
+    </select>
+
+    <!-- 하드딜리트 -->
+    <delete id="hardDeleteComment" parameterType="CommentCommand">
+        DELETE FROM COMMUNITY_COMMENT
+        WHERE COMMENT_ID = #{commentId}
+          AND USER_ID    = #{userId}
+    </delete>
 </mapper>

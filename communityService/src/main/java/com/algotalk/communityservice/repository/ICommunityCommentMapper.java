@@ -28,4 +28,10 @@ public interface ICommunityCommentMapper {
 
     // 댓글 소프트딜리트
     int deleteComment(CommentCommand pCommand);
+
+    // 하위 댓글 수 조회
+    int hasChildComments(CommentCommand pCommand);
+
+    // 하드딜리트
+    int hardDeleteComment(CommentCommand pCommand);
 }

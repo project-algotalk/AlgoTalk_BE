@@ -2,11 +2,14 @@ package com.algotalk.communityservice.dto.request;
 
 import lombok.Builder;
 
+import java.util.List;
+
 @Builder
 public record PostListRequestDTO(
         Long categoryId,
         String categoryCd,
         Long csCategoryId,
+        List<Long> csCategoryIds,
         String keyword,
         String searchType,
         String hashtag,

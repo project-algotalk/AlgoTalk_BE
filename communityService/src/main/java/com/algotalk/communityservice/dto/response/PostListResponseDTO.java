@@ -22,6 +22,7 @@ public record PostListResponseDTO(
     Integer viewCount,
     Integer likeCount,
     Integer scrapCount,
+    Integer commentCount,
     LocalDateTime createdAt,
 
     // CS 카테고리 (Service 레이어에서 캐시 매핑)

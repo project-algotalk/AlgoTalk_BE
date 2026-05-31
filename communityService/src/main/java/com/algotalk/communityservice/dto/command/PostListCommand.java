@@ -3,6 +3,8 @@ package com.algotalk.communityservice.dto.command;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
+
 @Builder
 public class PostListCommand {
 
@@ -11,6 +13,7 @@ public class PostListCommand {
     private String keyword;         // 검색 키워드
     private String searchType;      // 검색 타입 (TITLE / CONTENT / TITLE_CONTENT / AUTHOR)
     private Long csCategoryId;      // CS 카테고리 태그 필터
+    private List<Long> csCategoryIds;       // CS 카테고리 태그 필터 (복수)
     private String hashtag;         // 해시태그 필터
     private int page;
     private int size;
