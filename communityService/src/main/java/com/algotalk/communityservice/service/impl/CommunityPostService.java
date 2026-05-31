@@ -1,19 +1,24 @@
 package com.algotalk.communityservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.communityservice.client.AiFeignClient;
 import com.algotalk.communityservice.dto.command.HashTagCommand;
 import com.algotalk.communityservice.dto.command.PostCommand;
 import com.algotalk.communityservice.dto.command.PostListCommand;
+import com.algotalk.communityservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.communityservice.dto.response.CsCategoryResponseDTO;
+import com.algotalk.communityservice.dto.response.CsValidationResponseDTO;
 import com.algotalk.communityservice.dto.response.PostDetailResponseDTO;
 import com.algotalk.communityservice.dto.response.PostListResponseDTO;
 import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
+import com.algotalk.communityservice.exception.CommunityErrorCode;
 import com.algotalk.communityservice.persistance.IRedisMapper;
 import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
 import com.algotalk.communityservice.repository.ICommunityPostMapper;
 import com.algotalk.communityservice.service.ICommunityPostService;
 import com.algotalk.communityservice.service.ICsCategoryFeignService;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +38,7 @@ public class CommunityPostService implements ICommunityPostService {
     private final ICommunityHashTagMapper communityHashTagMapper;
     private final ICsCategoryFeignService csCategoryFeignService;
     private final IRedisMapper redisMapper;
+    private final AiFeignClient aiFeignClient;
 
     @Override
     public List<PostListResponseDTO> getPostList(PostListCommand pCommand) {
@@ -167,10 +173,43 @@ public class CommunityPostService implements ICommunityPostService {
     public Long insertPost(PostCommand pCommand) {
         log.info("{}.insertPost Start!", this.getClass().getName());
 
+        // 질문공유(categoryId=1) 카테고리일 때만 CS 검증
+        if (pCommand.getCategoryId() != null && pCommand.getCategoryId() == 1L) {
+
+            CsValidationResponseDTO validation;
+            try {
+                validation = aiFeignClient.validateCsQuestions(
+                        CsValidationRequestDTO.builder()
+                                .questions(List.of(pCommand.getTitle()))
+                                .build()
+                );
+            } catch (FeignException.GatewayTimeout e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] 타임아웃. title={}", pCommand.getTitle(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            } catch (FeignException e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] HTTP 오류. status={}, title={}", e.status(), pCommand.getTitle(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            } catch (Exception e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] type={}, title={}, message={}",
+                        e.getClass().getSimpleName(), pCommand.getTitle(), e.getMessage(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            }
+
+            // 응답 검증
+            if (validation == null || validation.results() == null || validation.results().isEmpty()) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] 응답 payload 이상. title={}", pCommand.getTitle());
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            }
+
+            boolean isValid = validation.results().get(0).isValid();
+            if (!isValid) {
+                log.warn("[NOT_CS_QUESTION] CS 관련 질문 아님. title={}", pCommand.getTitle());
+                throw new BusinessException(CommunityErrorCode.NOT_CS_QUESTION);
+            }
+        }
+
         communityPostMapper.insertPost(pCommand);
         Long postId = pCommand.getPostId();
-
-        // 해시태그 처리
         saveHashTags(postId, pCommand.getHashtags(), pCommand.getUserId());
 
         log.info("{}.insertPost End!", this.getClass().getName());
@@ -187,15 +226,45 @@ public class CommunityPostService implements ICommunityPostService {
         if (existing == null) {
             throw new BusinessException(POST_NOT_FOUND);
         }
-        if (!existing.getUserId().equals(pCommand.getUserId())) {  // .userId() → .getUserId()
+        if (!existing.getUserId().equals(pCommand.getUserId())) {
             throw new BusinessException(POST_UNAUTHORIZED);
         }
 
+        // 질문공유(categoryId=1) 카테고리일 때만 CS 검증
+        if (pCommand.getCategoryId() != null && pCommand.getCategoryId() == 1L) {
+            CsValidationResponseDTO validation;
+            try {
+                validation = aiFeignClient.validateCsQuestions(
+                        CsValidationRequestDTO.builder()
+                                .questions(List.of(pCommand.getTitle()))
+                                .build()
+                );
+            } catch (FeignException.GatewayTimeout e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] 타임아웃. title={}", pCommand.getTitle(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            } catch (FeignException e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] HTTP 오류. status={}, title={}", e.status(), pCommand.getTitle(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            } catch (Exception e) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] type={}, title={}, message={}",
+                        e.getClass().getSimpleName(), pCommand.getTitle(), e.getMessage(), e);
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            }
+
+            if (validation == null || validation.results() == null || validation.results().isEmpty()) {
+                log.error("[AI_CALL_FAILED][validateCsQuestions] 응답 payload 이상. title={}", pCommand.getTitle());
+                throw new BusinessException(CommunityErrorCode.AI_CALL_FAILED);
+            }
+
+            boolean isValid = validation.results().get(0).isValid();
+            if (!isValid) {
+                log.warn("[NOT_CS_QUESTION] CS 관련 질문 아님. title={}", pCommand.getTitle());
+                throw new BusinessException(CommunityErrorCode.NOT_CS_QUESTION);
+            }
+        }
+
         communityPostMapper.updatePost(pCommand);
-
-        // 해시태그 재등록
         removeHashTags(pCommand.getPostId(), pCommand.getUserId());
-
         saveHashTags(pCommand.getPostId(), pCommand.getHashtags(), pCommand.getUserId());
 
         log.info("{}.updatePost End!", this.getClass().getName());
