@@ -59,12 +59,16 @@ public class CommunityPostController {
     // 게시글 상세 조회
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostDetailResponseDTO>> getPostDetail(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable Long postId
     ) {
         log.info("{}.getPostDetail Start!", this.getClass().getName());
 
         PostDetailResponseDTO rDTO = communityPostService.getPostDetail(
-                PostCommand.builder().postId(postId).build()
+                PostCommand.builder()
+                        .userId(userId)
+                        .postId(postId)
+                        .build()
         );
 
         log.info("{}.getPostDetail End!", this.getClass().getName());

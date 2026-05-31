@@ -125,6 +125,14 @@ public class CommunityPostService implements ICommunityPostService {
         Long scrapCount = redisMapper.getScrapCount(pCommand.getPostId());
         Long viewCount = redisMapper.getViewCount(pCommand.getPostId());
 
+        // liked/scrapped 가능 여부 (비로그인 시 userId null -> false)
+        Boolean liked = pCommand.getUserId() != null
+                ? redisMapper.isUserLiked(pCommand.getPostId(), pCommand.getUserId())
+                : false;
+        Boolean scrapped = pCommand.getUserId() != null
+                ? redisMapper.isUserScrapped(pCommand.getPostId(), pCommand.getUserId())
+                : false;
+
         PostDetailResponseDTO rDTO = PostDetailResponseDTO.builder()
                 .postId(row.getPostId())
                 .categoryId(row.getCategoryId())
@@ -138,6 +146,8 @@ public class CommunityPostService implements ICommunityPostService {
                 .viewCount(viewCount != null ? viewCount.intValue() : row.getViewCount())
                 .likeCount(likeCount != null ? likeCount.intValue() : row.getLikeCount())
                 .scrapCount(scrapCount != null ? scrapCount.intValue() : row.getScrapCount())
+                .liked(liked)
+                .scrapped(scrapped)
                 .createdAt(row.getCreatedAt())
                 .updatedAt(row.getUpdatedAt())
                 .csCategoryId(row.getCsCategoryId())
