@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.communityservice.repository.ICommunityActivityMapper">
+
+    <!-- 내가 작성한 게시글 목록 -->
+    <select id="getMyPosts" parameterType="ActivityCommand" resultType="MyPostRowDTO">
+        SELECT
+            p.POST_ID       AS postId,
+            c.CATEGORY_NAME AS categoryName,
+            p.TITLE         AS title,
+            p.NICKNAME      AS nickname,
+            (SELECT COUNT(*) FROM COMMUNITY_LIKE  WHERE POST_ID = p.POST_ID) AS likeCount,
+            (SELECT COUNT(*) FROM COMMUNITY_SCRAP WHERE POST_ID = p.POST_ID) AS scrapCount,
+            (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+             WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
+            p.CREATED_AT    AS createdAt,
+            COUNT(*) OVER() AS totalCount
+        FROM COMMUNITY_POST p
+                 JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
+        WHERE p.USER_ID    = #{userId}
+          AND p.DELETED_YN = 'N'
+        ORDER BY p.CREATED_AT DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+
+    <!-- 내가 작성한 게시글 소프트딜리트 -->
+    <update id="deleteMyPosts" parameterType="ActivityCommand">
+        UPDATE COMMUNITY_POST
+        SET
+        TITLE      = '[삭제된 게시글]',
+        CONTENT    = '[삭제된 게시글]',
+        DELETED_YN = 'Y',
+        UPDATED_AT = NOW(),
+        UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+        AND POST_ID IN
+        <foreach collection="postIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND DELETED_YN = 'N'
+    </update>
+
+    <!-- 내가 작성한 댓글 목록 -->
+    <select id="getMyComments" parameterType="ActivityCommand" resultType="MyCommentRowDTO">
+        SELECT
+            cm.COMMENT_ID   AS commentId,
+            cm.POST_ID      AS postId,
+            c.CATEGORY_NAME AS categoryName,
+            cm.NICKNAME     AS nickname,
+            cm.CONTENT      AS content,
+            p.TITLE         AS postTitle,
+            p.SCRAP_COUNT   AS scrapCount,
+            (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+             WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
+            cm.CREATED_AT   AS createdAt,
+            COUNT(*) OVER() AS totalCount
+        FROM COMMUNITY_COMMENT cm
+                 JOIN COMMUNITY_POST p ON cm.POST_ID = p.POST_ID
+                 JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
+        WHERE cm.USER_ID    = #{userId}
+          AND cm.DELETED_YN = 'N'
+          AND p.DELETED_YN  = 'N'
+        ORDER BY cm.CREATED_AT DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 내가 작성한 댓글 삭제 -->
+    <update id="deleteMyComments" parameterType="ActivityCommand">
+        UPDATE COMMUNITY_COMMENT
+        SET
+        CONTENT    = '삭제된 댓글입니다.',
+        DELETED_YN = 'Y',
+        UPDATED_AT = NOW(),
+        UPDATED_BY = #{userId}
+        WHERE USER_ID    = #{userId}
+        AND COMMENT_ID IN
+        <foreach collection="commentIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        AND DELETED_YN = 'N'
+    </update>
+
+    <!-- 내가 스크랩한 게시글 목록 -->
+    <select id="getMyScraps" parameterType="ActivityCommand" resultType="MyScrapRowDTO">
+        SELECT
+            p.POST_ID       AS postId,
+            c.CATEGORY_NAME AS categoryName,
+            p.TITLE         AS title,
+            p.NICKNAME      AS nickname,
+            (SELECT COUNT(*) FROM COMMUNITY_LIKE  WHERE POST_ID = p.POST_ID) AS likeCount,
+            (SELECT COUNT(*) FROM COMMUNITY_SCRAP WHERE POST_ID = p.POST_ID) AS scrapCount,
+            (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+             WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
+            p.CREATED_AT    AS createdAt,
+            COUNT(*) OVER() AS totalCount
+        FROM COMMUNITY_POST p
+                 JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
+        WHERE p.DELETED_YN = 'N'
+          AND EXISTS (
+            SELECT 1 FROM COMMUNITY_SCRAP cs
+            WHERE cs.POST_ID = p.POST_ID
+              AND cs.USER_ID = #{userId}
+        )
+        ORDER BY p.CREATED_AT DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 내가 좋아요한 게시글 목록 -->
+    <select id="getMyLikes" parameterType="ActivityCommand" resultType="MyLikeRowDTO">
+        SELECT
+            p.POST_ID       AS postId,
+            c.CATEGORY_NAME AS categoryName,
+            p.TITLE         AS title,
+            p.NICKNAME      AS nickname,
+            (SELECT COUNT(*) FROM COMMUNITY_LIKE  WHERE POST_ID = p.POST_ID) AS likeCount,
+            (SELECT COUNT(*) FROM COMMUNITY_SCRAP WHERE POST_ID = p.POST_ID) AS scrapCount,
+            (SELECT COUNT(*) FROM COMMUNITY_COMMENT
+             WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
+            p.CREATED_AT    AS createdAt,
+            COUNT(*) OVER() AS totalCount
+        FROM COMMUNITY_POST p
+                 JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
+        WHERE p.DELETED_YN = 'N'
+          AND EXISTS (
+            SELECT 1 FROM COMMUNITY_LIKE cl
+            WHERE cl.POST_ID = p.POST_ID
+              AND cl.USER_ID = #{userId}
+        )
+        ORDER BY p.CREATED_AT DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- 스크랩 취소 -->
+    <delete id="deleteMyScraps" parameterType="ActivityCommand">
+        DELETE FROM COMMUNITY_SCRAP
+        WHERE USER_ID = #{userId}
+        AND POST_ID IN
+        <foreach collection="postIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 좋아요 취소 -->
+    <delete id="deleteMyLikes" parameterType="ActivityCommand">
+        DELETE FROM COMMUNITY_LIKE
+        WHERE USER_ID = #{userId}
+        AND POST_ID IN
+        <foreach collection="postIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,19 +1,23 @@
 package com.algotalk.communityservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.communityservice.client.AiFeignClient;
 import com.algotalk.communityservice.dto.command.HashTagCommand;
 import com.algotalk.communityservice.dto.command.PostCommand;
 import com.algotalk.communityservice.dto.command.PostListCommand;
+import com.algotalk.communityservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.communityservice.dto.response.CsCategoryResponseDTO;
+import com.algotalk.communityservice.dto.response.CsValidationItemDTO;
+import com.algotalk.communityservice.dto.response.CsValidationResponseDTO;
 import com.algotalk.communityservice.dto.response.PostDetailResponseDTO;
 import com.algotalk.communityservice.dto.response.PostListResponseDTO;
 import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
 import com.algotalk.communityservice.exception.CommunityErrorCode;
+import com.algotalk.communityservice.persistance.IRedisMapper;
 import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
 import com.algotalk.communityservice.repository.ICommunityPostMapper;
 import com.algotalk.communityservice.service.ICsCategoryFeignService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,15 +50,30 @@ class CommunityPostServiceMockTest {
     @Mock
     private ICsCategoryFeignService csCategoryFeignService;
 
+    @Mock
+    private IRedisMapper redisMapper;
+
+    @Mock
+    private AiFeignClient aiFeignClient;
+
     private final Long userId = 1L;
     private final Long postId = 1L;
     private final Long categoryId = 1L;
     private final Long csCategoryId = 101L;
 
+    private CsValidationResponseDTO mockValidResponse(String title) {
+        return new CsValidationResponseDTO(
+                List.of(new CsValidationItemDTO(title, true, null))
+        );
+    }
+
     @Test
     @DisplayName("게시글 목록 조회 성공 - 해시태그 있음")
     void getPostList_success_withHashtags() {
         // given
+        given(redisMapper.getLikeCount(any())).willReturn(0L);
+        given(redisMapper.getScrapCount(any())).willReturn(0L);
+        given(redisMapper.getViewCount(any())).willReturn(0L);
         given(communityHashTagMapper.getPostHashTags(any())).willReturn(
                 List.of(HashTagCommand.builder().tagName("스프링").build())
         );
@@ -113,6 +132,11 @@ class CommunityPostServiceMockTest {
     @DisplayName("게시글 상세 조회 성공")
     void getPostDetail_success() {
         // given
+        given(redisMapper.getLikeCount(any())).willReturn(0L);
+        given(redisMapper.getScrapCount(any())).willReturn(0L);
+        given(redisMapper.getViewCount(any())).willReturn(0L);
+        given(redisMapper.isUserLiked(any(), any())).willReturn(false);
+        given(redisMapper.isUserScrapped(any(), any())).willReturn(false);
         given(communityHashTagMapper.getPostHashTags(any())).willReturn(List.of());
         given(csCategoryFeignService.getCategories()).willReturn(
                 List.of(new CsCategoryResponseDTO(101L, "JOB", "백엔드 개발자", null, 1, 1))
@@ -167,6 +191,10 @@ class CommunityPostServiceMockTest {
     @DisplayName("게시글 작성 성공 - 해시태그 있음")
     void insertPost_success_withHashtags() {
         // given
+        given(aiFeignClient.validateCsQuestions(any())).willReturn(
+                mockValidResponse("테스트 제목")
+        );
+
         PostCommand pCommand = PostCommand.builder()
                 .categoryId(categoryId)
                 .userId(userId)
@@ -203,6 +231,10 @@ class CommunityPostServiceMockTest {
     @DisplayName("게시글 작성 성공 - 해시태그 없음")
     void insertPost_success_noHashtags() {
         // given
+        given(aiFeignClient.validateCsQuestions(any())).willReturn(
+                mockValidResponse("테스트 제목")
+        );
+
         PostCommand pCommand = PostCommand.builder()
                 .categoryId(categoryId)
                 .userId(userId)
@@ -234,6 +266,9 @@ class CommunityPostServiceMockTest {
                 .postId(postId).userId(userId).build();
 
         given(communityPostMapper.getPostDetail(any())).willReturn(existing);
+        given(aiFeignClient.validateCsQuestions(any())).willReturn(
+                mockValidResponse("수정된 제목")
+        );
         given(communityHashTagMapper.getHashTagId(any())).willReturn(null);
         doAnswer(invocation -> {
             HashTagCommand cmd = invocation.getArgument(0);

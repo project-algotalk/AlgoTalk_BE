@@ -40,31 +40,18 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
         boolean liked;
 
         if (existing == null) {
-            // 최초 좋아요
+            // 좋아요 등록
             likeScrapMapper.insertLike(pCommand);
-            liked = true;
-        } else if ("Y".equals(existing.getDeletedYn())) {
-            // 좋아요 재등록
-            likeScrapMapper.toggleLike(LikeScrapCommand.builder()
-                    .postId(pCommand.getPostId())
-                    .userId(pCommand.getUserId())
-                    .deletedYn("N")
-                    .build());
             liked = true;
         } else {
             // 좋아요 취소
-            likeScrapMapper.toggleLike(LikeScrapCommand.builder()
-                    .postId(pCommand.getPostId())
-                    .userId(pCommand.getUserId())
-                    .deletedYn("Y")
-                    .build());
+            likeScrapMapper.deleteLike(pCommand);
             liked = false;
         }
 
         // Redis 좋아요 수 처리
         Long likeCount = redisMapper.getLikeCount(pCommand.getPostId());
         if (likeCount == null) {
-            // Redis 캐시 미스 -> DB에서 로드
             likeCount = likeScrapMapper.getLikeCountFromDB(pCommand);
             redisMapper.setLikeCount(pCommand.getPostId(), likeCount);
         } else {
@@ -93,9 +80,7 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
         PostDetailRowDTO post = communityPostMapper.getPostDetail(
                 PostCommand.builder().postId(pCommand.getPostId()).build()
         );
-        if (post == null) {
-            throw new BusinessException(CommunityErrorCode.POST_NOT_FOUND);
-        }
+        if (post == null) throw new BusinessException(CommunityErrorCode.POST_NOT_FOUND);
 
         // 스크랩 허용 여부 확인
         if (!"Y".equals(post.getIsScrapable())) {
@@ -107,21 +92,12 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
         boolean scrapped;
 
         if (existing == null) {
+            // 스크랩 등록
             likeScrapMapper.insertScrap(pCommand);
             scrapped = true;
-        } else if ("Y".equals(existing.getDeletedYn())) {
-            likeScrapMapper.toggleScrap(LikeScrapCommand.builder()
-                    .postId(pCommand.getPostId())
-                    .userId(pCommand.getUserId())
-                    .deletedYn("N")
-                    .build());
-            scrapped = true;
         } else {
-            likeScrapMapper.toggleScrap(LikeScrapCommand.builder()
-                    .postId(pCommand.getPostId())
-                    .userId(pCommand.getUserId())
-                    .deletedYn("Y")
-                    .build());
+            // 스크랩 취소
+            likeScrapMapper.deleteScrap(pCommand);
             scrapped = false;
         }
 

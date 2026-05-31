@@ -18,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -44,15 +43,17 @@ class CommunityLikeScrapServiceMockTest {
             .postId(postId).userId(userId).build();
 
     private final PostDetailRowDTO mockPost = PostDetailRowDTO.builder()
-            .postId(postId).userId(userId).build();
+            .postId(postId).userId(userId)
+            .isScrapable("Y")
+            .build();
 
     @Test
     @DisplayName("좋아요 성공 - 최초 좋아요 (Redis 캐시 미스)")
     void toggleLike_success_first_cacheMiss() {
         // given
         given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
-        given(likeScrapMapper.getLike(any())).willReturn(null);  // 최초
-        given(redisMapper.getLikeCount(postId)).willReturn(null); // 캐시 미스
+        given(likeScrapMapper.getLike(any())).willReturn(null);
+        given(redisMapper.getLikeCount(postId)).willReturn(null);
         given(likeScrapMapper.getLikeCountFromDB(any())).willReturn(1L);
 
         // when
@@ -72,8 +73,7 @@ class CommunityLikeScrapServiceMockTest {
         // given
         given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
         given(likeScrapMapper.getLike(any())).willReturn(null);
-        given(redisMapper.getLikeCount(postId)).willReturn(5L); // 캐시 히트
-        given(redisMapper.getLikeCount(postId)).willReturn(6L); // increment 후
+        given(redisMapper.getLikeCount(postId)).willReturn(5L).willReturn(6L);
 
         // when
         LikeScrapResponseDTO result = communityLikeScrapService.toggleLike(pCommand);
@@ -90,43 +90,20 @@ class CommunityLikeScrapServiceMockTest {
     void toggleLike_success_cancel() {
         // given
         LikeScrapCommand existing = LikeScrapCommand.builder()
-                .postId(postId).userId(userId).deletedYn("N").build();
+                .postId(postId).userId(userId).build();
 
         given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
         given(likeScrapMapper.getLike(any())).willReturn(existing);
-        given(redisMapper.getLikeCount(postId)).willReturn(3L);
-        given(redisMapper.getLikeCount(postId)).willReturn(2L);
+        given(redisMapper.getLikeCount(postId)).willReturn(3L).willReturn(2L);
 
         // when
         LikeScrapResponseDTO result = communityLikeScrapService.toggleLike(pCommand);
 
         // then
         assertThat(result.liked()).isFalse();
-        verify(likeScrapMapper).toggleLike(any());
+        verify(likeScrapMapper).deleteLike(any());
         verify(redisMapper).decrementLikeCount(postId);
         verify(redisMapper).removeUserLiked(postId, userId);
-    }
-
-    @Test
-    @DisplayName("좋아요 재등록 성공")
-    void toggleLike_success_relike() {
-        // given
-        LikeScrapCommand existing = LikeScrapCommand.builder()
-                .postId(postId).userId(userId).deletedYn("Y").build();
-
-        given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
-        given(likeScrapMapper.getLike(any())).willReturn(existing);
-        given(redisMapper.getLikeCount(postId)).willReturn(2L);
-        given(redisMapper.getLikeCount(postId)).willReturn(3L);
-
-        // when
-        LikeScrapResponseDTO result = communityLikeScrapService.toggleLike(pCommand);
-
-        // then
-        assertThat(result.liked()).isTrue();
-        verify(likeScrapMapper).toggleLike(any());
-        verify(redisMapper).incrementLikeCount(postId);
-        verify(redisMapper).setUserLiked(postId, userId);
     }
 
     @Test
@@ -167,8 +144,7 @@ class CommunityLikeScrapServiceMockTest {
         // given
         given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
         given(likeScrapMapper.getScrap(any())).willReturn(null);
-        given(redisMapper.getScrapCount(postId)).willReturn(5L);
-        given(redisMapper.getScrapCount(postId)).willReturn(6L);
+        given(redisMapper.getScrapCount(postId)).willReturn(5L).willReturn(6L);
 
         // when
         LikeScrapResponseDTO result = communityLikeScrapService.toggleScrap(pCommand);
@@ -185,43 +161,20 @@ class CommunityLikeScrapServiceMockTest {
     void toggleScrap_success_cancel() {
         // given
         LikeScrapCommand existing = LikeScrapCommand.builder()
-                .postId(postId).userId(userId).deletedYn("N").build();
+                .postId(postId).userId(userId).build();
 
         given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
         given(likeScrapMapper.getScrap(any())).willReturn(existing);
-        given(redisMapper.getScrapCount(postId)).willReturn(3L);
-        given(redisMapper.getScrapCount(postId)).willReturn(2L);
+        given(redisMapper.getScrapCount(postId)).willReturn(3L).willReturn(2L);
 
         // when
         LikeScrapResponseDTO result = communityLikeScrapService.toggleScrap(pCommand);
 
         // then
         assertThat(result.scrapped()).isFalse();
-        verify(likeScrapMapper).toggleScrap(any());
+        verify(likeScrapMapper).deleteScrap(any());
         verify(redisMapper).decrementScrapCount(postId);
         verify(redisMapper).removeUserScrapped(postId, userId);
-    }
-
-    @Test
-    @DisplayName("스크랩 재등록 성공")
-    void toggleScrap_success_rescrap() {
-        // given
-        LikeScrapCommand existing = LikeScrapCommand.builder()
-                .postId(postId).userId(userId).deletedYn("Y").build();
-
-        given(communityPostMapper.getPostDetail(any())).willReturn(mockPost);
-        given(likeScrapMapper.getScrap(any())).willReturn(existing);
-        given(redisMapper.getScrapCount(postId)).willReturn(2L);
-        given(redisMapper.getScrapCount(postId)).willReturn(3L);
-
-        // when
-        LikeScrapResponseDTO result = communityLikeScrapService.toggleScrap(pCommand);
-
-        // then
-        assertThat(result.scrapped()).isTrue();
-        verify(likeScrapMapper).toggleScrap(any());
-        verify(redisMapper).incrementScrapCount(postId);
-        verify(redisMapper).setUserScrapped(postId, userId);
     }
 
     @Test
@@ -234,5 +187,22 @@ class CommunityLikeScrapServiceMockTest {
         assertThatThrownBy(() -> communityLikeScrapService.toggleScrap(pCommand))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", CommunityErrorCode.POST_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("스크랩 실패 - 스크랩 불가 게시판")
+    void toggleScrap_fail_notAllowed() {
+        // given
+        PostDetailRowDTO notScrapablePost = PostDetailRowDTO.builder()
+                .postId(postId).userId(userId)
+                .isScrapable("N")
+                .build();
+
+        given(communityPostMapper.getPostDetail(any())).willReturn(notScrapablePost);
+
+        // when & then
+        assertThatThrownBy(() -> communityLikeScrapService.toggleScrap(pCommand))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", CommunityErrorCode.SCRAP_NOT_ALLOWED);
     }
 }

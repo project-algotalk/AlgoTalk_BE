@@ -73,7 +73,7 @@ class CommunityCommentServiceMockTest {
                 .postId(postId)
                 .userId(userId)
                 .content("최상위 댓글입니다.")
-                .build(); // parentId = null
+                .build();
 
         doAnswer(invocation -> {
             CommentCommand cmd = invocation.getArgument(0);
@@ -86,7 +86,7 @@ class CommunityCommentServiceMockTest {
 
         // then
         assertThat(result).isEqualTo(commentId);
-        verify(communityCommentMapper).updateGroupId(any()); // GROUP_ID 자기 자신으로 업데이트
+        verify(communityCommentMapper).updateGroupId(any());
     }
 
     @Test
@@ -111,7 +111,7 @@ class CommunityCommentServiceMockTest {
         CommentCommand pCommand = CommentCommand.builder()
                 .postId(postId)
                 .userId(userId)
-                .parentId(commentId) // 부모 댓글 있음
+                .parentId(commentId)
                 .content("대댓글입니다.")
                 .build();
 
@@ -149,7 +149,7 @@ class CommunityCommentServiceMockTest {
         CommentCommand parent = CommentCommand.builder()
                 .commentId(commentId)
                 .groupId(commentId)
-                .depth(2) // 이미 최대 depth
+                .depth(2)
                 .deletedYn("N")
                 .build();
 
@@ -236,7 +236,7 @@ class CommunityCommentServiceMockTest {
     }
 
     @Test
-    @DisplayName("댓글 삭제 성공")
+    @DisplayName("댓글 삭제 성공 - 하위 댓글 없음 (하드딜리트)")
     void deleteComment_success() {
         // given
         CommentCommand existing = CommentCommand.builder()
@@ -246,6 +246,32 @@ class CommunityCommentServiceMockTest {
                 .build();
 
         given(communityCommentMapper.getComment(any())).willReturn(existing);
+        given(communityCommentMapper.hasChildComments(any())).willReturn(0);
+
+        // when
+        communityCommentService.deleteComment(
+                CommentCommand.builder()
+                        .commentId(commentId)
+                        .userId(userId)
+                        .build()
+        );
+
+        // then
+        verify(communityCommentMapper).hardDeleteComment(any());
+    }
+
+    @Test
+    @DisplayName("댓글 삭제 성공 - 하위 댓글 있음 (소프트딜리트)")
+    void deleteComment_success_softDelete() {
+        // given
+        CommentCommand existing = CommentCommand.builder()
+                .commentId(commentId)
+                .userId(userId)
+                .deletedYn("N")
+                .build();
+
+        given(communityCommentMapper.getComment(any())).willReturn(existing);
+        given(communityCommentMapper.hasChildComments(any())).willReturn(1);
 
         // when
         communityCommentService.deleteComment(
