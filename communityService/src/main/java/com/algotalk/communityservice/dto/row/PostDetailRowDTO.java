@@ -26,6 +26,7 @@ public class PostDetailRowDTO {
     private Integer likeCount;
     private Integer scrapCount;
     private Long csCategoryId;
+    private String isScrapable;
     private String deletedYn;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

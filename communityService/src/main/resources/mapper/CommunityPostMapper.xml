@@ -82,6 +82,7 @@
             p.LIKE_COUNT        AS likeCount,
             p.SCRAP_COUNT       AS scrapCount,
             p.CS_CATEGORY_ID    AS csCategoryId,
+            c.IS_SCRAPABLE      AS isScrapable,
             p.DELETED_YN        AS deletedYn,
             p.CREATED_AT        AS createdAt,
             p.UPDATED_AT        AS updatedAt

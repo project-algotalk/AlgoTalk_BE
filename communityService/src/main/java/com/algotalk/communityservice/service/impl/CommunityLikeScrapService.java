@@ -93,11 +93,14 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
         PostDetailRowDTO post = communityPostMapper.getPostDetail(
                 PostCommand.builder().postId(pCommand.getPostId()).build()
         );
-        if (post == null) throw new BusinessException(CommunityErrorCode.POST_NOT_FOUND);
+        if (post == null) {
+            throw new BusinessException(CommunityErrorCode.POST_NOT_FOUND);
+        }
 
-        // 스크랩 허용 여부 확인 (IS_SCRAPABLE = Y인 게시판만 허용)
-        // -> 게시판 카테고리 정보는 post에서 categoryId로 확인 필요
-        // 일단 스크랩 허용으로 처리 (추후 카테고리 체크 추가)
+        // 스크랩 허용 여부 확인
+        if (!"Y".equals(post.getIsScrapable())) {
+            throw new BusinessException(CommunityErrorCode.SCRAP_NOT_ALLOWED);
+        }
 
         // DB 스크랩 처리
         LikeScrapCommand existing = likeScrapMapper.getScrap(pCommand);
