@@ -19,6 +19,9 @@ public class PostCommand {
     private String nickname;        // 작성 시 사용 (userService Feign 조회)
     private String title;
     private String content;
+    private Integer viewCount;        // 집계용
+    private Integer likeCount;        // 집계용
+    private Integer scrapCount;       // 집계용
     private Long csCategoryId;
     private List<String> hashtags;
 }

@@ -12,7 +12,6 @@ import java.util.List;
 @Mapper
 public interface ICommunityPostMapper {
 
-
     // 게시글 목록 조회 (카테고리별, 페이징)
     List<PostListRowDTO> getPostList(PostListCommand pCommand);
 

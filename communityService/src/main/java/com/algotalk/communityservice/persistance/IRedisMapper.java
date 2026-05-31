@@ -1,5 +1,7 @@
 package com.algotalk.communityservice.persistance;
 
+import java.util.Set;
+
 public interface IRedisMapper {
 
     // 좋아요 수 증가
@@ -52,4 +54,9 @@ public interface IRedisMapper {
 
     // 조회수 초기화 (DB에서 로드)
     void setViewCount(Long postId, long count);
+
+    // 동기화 대상 postId 목록 조회
+    Set<String> getViewCountKeys();
+    Set<String> getLikeCountKeys();
+    Set<String> getScrapCountKeys();
 }
