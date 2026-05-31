@@ -4,11 +4,13 @@ import com.algotalk.interviewservice.domain.GestureDeduction;
 import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
 import com.algotalk.interviewservice.domain.Scores;
 import com.algotalk.interviewservice.domain.enums.AnswerStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 import java.util.List;
 
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record QuestionResultDTO(
         Long sessionQuestionId,   // 세션 질문 ID
         Integer questionOrder,    // 질문 순서

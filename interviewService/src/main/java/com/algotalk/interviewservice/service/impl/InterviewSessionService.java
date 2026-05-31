@@ -237,7 +237,8 @@ public class InterviewSessionService implements IInterviewSessionService {
         Map<Long, InterviewAnalysisDocument> analysisMap = analysisList.stream()
                 .collect(Collectors.toMap(
                         InterviewAnalysisDocument::getSessionQuestionId,
-                        doc -> doc
+                        doc -> doc,
+                        (existing, replacement) -> replacement
                 ));
 
         // 4. 질문별 분석 결과 매핑

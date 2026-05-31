@@ -43,7 +43,7 @@ public class InterviewAnswerService implements IInterviewAnswerService {
             // 모든 score 0점 처리
             updatedScores = Scores.builder()
                     .content(0)
-                    .total(0)
+                    .total(null) // aiService 평가 후 0으로 업데이트
                     .build();
         } else if(answerStatus == AnswerStatus.QUALITY_FAIL) { // 품질 미달
             // gaze, gesture만 정상 계산

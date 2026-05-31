@@ -67,4 +67,12 @@ public class ArchitectureTest {
                     .should().haveSimpleNameEndingWith("DTO")
                     .allowEmptyShould(true)
                     .because("ResponseDTO 클래스는 DTO로 끝나야 합니다.");
+
+    @ArchTest
+    static final ArchRule command_dto_naming =
+            classes().that().resideInAPackage("..dto.command..")
+                    .and().haveSimpleNameNotEndingWith("Builder")
+                    .should().haveSimpleNameEndingWith("Command")
+                    .allowEmptyShould(true)
+                    .because("Command 클래스는 Command로 끝나야 합니다.");
 }

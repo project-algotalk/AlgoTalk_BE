@@ -1,10 +1,12 @@
 package com.algotalk.userservice.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 import java.io.Serializable;
 
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CsCategoryResponseDTO (
         Long categoryId, // 카테고리 ID
         String categoryType, // 카테고리 유형 (예: "COMMON_CS", "JOB")

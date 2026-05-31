@@ -71,9 +71,10 @@ public class ArchitectureTest {
                     .because("ResponseDTO 클래스는 DTO로 끝나야 합니다.");
 
     @ArchTest
-    static final ArchRule entity_naming =
-            classes().that().resideInAPackage("..domain.entity..")
-                    .should().haveSimpleNameEndingWith("Entity")
+    static final ArchRule command_dto_naming =
+            classes().that().resideInAPackage("..dto.command..")
+                    .and().haveSimpleNameNotEndingWith("Builder")
+                    .should().haveSimpleNameEndingWith("Command")
                     .allowEmptyShould(true)
-                    .because("Entity 클래스는 Entity로 끝나야 합니다.");
+                    .because("Command 클래스는 Command로 끝나야 합니다.");
 }

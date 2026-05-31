@@ -1,10 +1,12 @@
 package com.algotalk.interviewservice.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 import java.util.List;
 
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record QuestionItemResponseDTO(
         Long sessionQuestionId,        // 세션 질문 ID
         int questionOrder,             // 질문 순서 (1부터 시작)

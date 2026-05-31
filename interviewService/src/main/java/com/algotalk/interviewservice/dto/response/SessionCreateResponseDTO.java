@@ -1,11 +1,13 @@
 package com.algotalk.interviewservice.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record SessionCreateResponseDTO(
         Long sessionId,                        // 생성된 세션 ID
         String sessionTitle,                   // 세션 제목
