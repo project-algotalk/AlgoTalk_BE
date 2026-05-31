@@ -9,6 +9,7 @@ import com.algotalk.communityservice.dto.response.PostDetailResponseDTO;
 import com.algotalk.communityservice.dto.response.PostListResponseDTO;
 import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
+import com.algotalk.communityservice.persistance.IRedisMapper;
 import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
 import com.algotalk.communityservice.repository.ICommunityPostMapper;
 import com.algotalk.communityservice.service.ICommunityPostService;
@@ -31,6 +32,7 @@ public class CommunityPostService implements ICommunityPostService {
     private final ICommunityPostMapper communityPostMapper;
     private final ICommunityHashTagMapper communityHashTagMapper;
     private final ICsCategoryFeignService csCategoryFeignService;
+    private final IRedisMapper redisMapper;
 
     @Override
     public List<PostListResponseDTO> getPostList(PostListCommand pCommand) {
@@ -54,6 +56,10 @@ public class CommunityPostService implements ICommunityPostService {
                         }
                     }
 
+                    Long likeCount = redisMapper.getLikeCount(row.getPostId());
+                    Long scrapCount = redisMapper.getScrapCount(row.getPostId());
+                    Long viewCount = redisMapper.getViewCount(row.getPostId());
+
                     // content 앞 100자 추출
                     String content = row.getContent();
                     String contentPreview = content != null && content.length() > 100
@@ -70,9 +76,9 @@ public class CommunityPostService implements ICommunityPostService {
                             .title(row.getTitle())
                             .contentPreview(contentPreview)
                             .isNotice(row.getIsNotice())
-                            .viewCount(row.getViewCount())
-                            .likeCount(row.getLikeCount())
-                            .scrapCount(row.getScrapCount())
+                            .viewCount(viewCount != null ? viewCount.intValue() : row.getViewCount())
+                            .likeCount(likeCount != null ? likeCount.intValue() : row.getLikeCount())
+                            .scrapCount(scrapCount != null ? scrapCount.intValue() : row.getScrapCount())
                             .createdAt(row.getCreatedAt())
                             .csCategoryId(row.getCsCategoryId())
                             .csCategoryName(csCategoryName)
@@ -90,6 +96,9 @@ public class CommunityPostService implements ICommunityPostService {
     @Override
     public PostDetailResponseDTO getPostDetail(PostCommand pCommand) {
         log.info("{}.getPostDetail Start!", this.getClass().getName());
+
+        // 조회수 증가
+        redisMapper.incrementViewCount(pCommand.getPostId());
 
         PostDetailRowDTO row = communityPostMapper.getPostDetail(pCommand);
 
@@ -111,6 +120,11 @@ public class CommunityPostService implements ICommunityPostService {
             }
         }
 
+        // Redis에서 실시간 카운트 조회
+        Long likeCount = redisMapper.getLikeCount(pCommand.getPostId());
+        Long scrapCount = redisMapper.getScrapCount(pCommand.getPostId());
+        Long viewCount = redisMapper.getViewCount(pCommand.getPostId());
+
         PostDetailResponseDTO rDTO = PostDetailResponseDTO.builder()
                 .postId(row.getPostId())
                 .categoryId(row.getCategoryId())
@@ -121,9 +135,9 @@ public class CommunityPostService implements ICommunityPostService {
                 .title(row.getTitle())
                 .content(row.getContent())
                 .isNotice(row.getIsNotice())
-                .viewCount(row.getViewCount())
-                .likeCount(row.getLikeCount())
-                .scrapCount(row.getScrapCount())
+                .viewCount(viewCount != null ? viewCount.intValue() : row.getViewCount())
+                .likeCount(likeCount != null ? likeCount.intValue() : row.getLikeCount())
+                .scrapCount(scrapCount != null ? scrapCount.intValue() : row.getScrapCount())
                 .createdAt(row.getCreatedAt())
                 .updatedAt(row.getUpdatedAt())
                 .csCategoryId(row.getCsCategoryId())
