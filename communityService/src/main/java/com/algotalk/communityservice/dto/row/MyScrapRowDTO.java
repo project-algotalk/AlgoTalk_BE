@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 public class MyScrapRowDTO {
     private Long postId;
     private String categoryName;
+    private Long csCategoryId;
     private String title;
     private String nickname;
     private Integer likeCount;

@@ -87,17 +87,18 @@
     <!-- 내가 스크랩한 게시글 목록 -->
     <select id="getMyScraps" parameterType="ActivityCommand" resultType="MyScrapRowDTO">
         SELECT
-            p.POST_ID       AS postId,
-            c.CATEGORY_NAME AS categoryName,
-            p.TITLE         AS title,
-            p.NICKNAME      AS nickname,
+            p.POST_ID           AS postId,
+            c.CATEGORY_NAME     AS categoryName,
+            p.CS_CATEGORY_ID    AS csCategoryId,
+            p.TITLE             AS title,
+            p.NICKNAME          AS nickname,
             (SELECT COUNT(*) FROM COMMUNITY_LIKE  WHERE POST_ID = p.POST_ID) AS likeCount,
             (SELECT COUNT(*) FROM COMMUNITY_SCRAP WHERE POST_ID = p.POST_ID) AS scrapCount,
             (SELECT COUNT(*) FROM COMMUNITY_COMMENT
              WHERE POST_ID = p.POST_ID AND DELETED_YN = 'N') AS commentCount,
-            p.CREATED_AT    AS createdAt,
-            p.VIEW_COUNT    AS viewCount,
-            COUNT(*) OVER() AS totalCount
+            p.CREATED_AT        AS createdAt,
+            p.VIEW_COUNT        AS viewCount,
+            COUNT(*) OVER()     AS totalCount
         FROM COMMUNITY_POST p
                  JOIN COMMUNITY_CATEGORY c ON p.CATEGORY_ID = c.CATEGORY_ID
         WHERE p.DELETED_YN = 'N'
