@@ -25,6 +25,7 @@ public record PostDetailResponseDTO(
     Integer commentCount,
     Boolean liked,              // 현재 사용자 좋아요 여부
     Boolean scrapped,           // 현재 사용자 스크랩 여부
+    String isScrapable,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,
 

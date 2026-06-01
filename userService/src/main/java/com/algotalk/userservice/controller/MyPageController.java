@@ -1,9 +1,9 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
+import com.algotalk.userservice.client.CommunityFeignClient;
 import com.algotalk.userservice.dto.request.*;
-import com.algotalk.userservice.dto.response.MyPageResponseDTO;
-import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
+import com.algotalk.userservice.dto.response.*;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.ISocialLinkService;
 import com.algotalk.userservice.service.IMypageService;
@@ -26,6 +26,7 @@ public class MyPageController {
     private final IMypageService mypageService;
     private final IEmailService emailService;
     private final ISocialLinkService socialLinkService;
+    private final CommunityFeignClient communityFeignClient;
 
     @GetMapping
     public ResponseEntity<ApiResponse<MyPageResponseDTO>> getMyPage(
@@ -224,6 +225,114 @@ public class MyPageController {
 
         log.info("{}.getTargetJobs End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rList));
+    }
+
+    // 내가 작성한 게시글 목록
+    @GetMapping("/posts")
+    public ResponseEntity<ApiResponse<List<MyPostResponseDTO>>> getMyPosts(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        log.info("{}.getMyPosts Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        ApiResponse<List<MyPostResponseDTO>> rDTO = communityFeignClient.getMyPosts(userId, page, size);
+        log.info("{}.getMyPosts End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
+    }
+
+    // 내가 작성한 게시글 삭제
+    @DeleteMapping("/posts")
+    public ResponseEntity<ApiResponse<Void>> deleteMyPosts(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody List<Long> postIds
+    ) {
+        log.info("{}.deleteMyPosts Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        communityFeignClient.deleteMyPosts(userId, postIds);
+        log.info("{}.deleteMyPosts End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // 내가 작성한 댓글 목록
+    @GetMapping("/comments")
+    public ResponseEntity<ApiResponse<List<MyCommentResponseDTO>>> getMyComments(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        log.info("{}.getMyComments Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        ApiResponse<List<MyCommentResponseDTO>> rDTO = communityFeignClient.getMyComments(userId, page, size);
+        log.info("{}.getMyComments End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
+    }
+
+    // 내가 작성한 댓글 삭제
+    @DeleteMapping("/comments")
+    public ResponseEntity<ApiResponse<Void>> deleteMyComments(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody List<Long> commentIds
+    ) {
+        log.info("{}.deleteMyComments Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        communityFeignClient.deleteMyComments(userId, commentIds);
+        log.info("{}.deleteMyComments End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // 내가 스크랩한 게시글 목록
+    @GetMapping("/scraps")
+    public ResponseEntity<ApiResponse<List<MyScrapResponseDTO>>> getMyScraps(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        log.info("{}.getMyScraps Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        ApiResponse<List<MyScrapResponseDTO>> rDTO = communityFeignClient.getMyScraps(userId, page, size);
+        log.info("{}.getMyScraps End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
+    }
+
+    // 스크랩 취소
+    @DeleteMapping("/scraps")
+    public ResponseEntity<ApiResponse<Void>> deleteMyScraps(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody List<Long> postIds
+    ) {
+        log.info("{}.deleteMyScraps Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        communityFeignClient.deleteMyScraps(userId, postIds);
+        log.info("{}.deleteMyScraps End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    // 내가 좋아요한 게시글 목록
+    @GetMapping("/likes")
+    public ResponseEntity<ApiResponse<List<MyLikeResponseDTO>>> getMyLikes(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size
+    ) {
+        log.info("{}.getMyLikes Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        ApiResponse<List<MyLikeResponseDTO>> rDTO = communityFeignClient.getMyLikes(userId, page, size);
+        log.info("{}.getMyLikes End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
+    }
+
+    // 좋아요 취소
+    @DeleteMapping("/likes")
+    public ResponseEntity<ApiResponse<Void>> deleteMyLikes(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody List<Long> postIds
+    ) {
+        log.info("{}.deleteMyLikes Start!", this.getClass().getName());
+        Long userId = Long.valueOf(jwt.getSubject());
+        communityFeignClient.deleteMyLikes(userId, postIds);
+        log.info("{}.deleteMyLikes End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }
 

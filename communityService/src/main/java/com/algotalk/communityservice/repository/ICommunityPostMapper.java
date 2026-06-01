@@ -36,4 +36,5 @@ public interface ICommunityPostMapper {
     // 스크랩수 Redis -> DB 동기화
     int syncScrapCount(PostCommand pCommand);
 
+    Long getViewCount(Long postId);
 }

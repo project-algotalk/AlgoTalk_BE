@@ -3,9 +3,14 @@ package com.algotalk.communityservice.persistance.impl;
 import com.algotalk.communityservice.persistance.IRedisMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -166,5 +171,88 @@ public class RedisMapper implements IRedisMapper {
     @Override
     public Set<String> getScrapCountKeys() {
         return redisTemplate.keys(SCRAP_COUNT_KEY + "*");
+    }
+    @Override
+    public Map<Long, Long> getViewCounts(List<Long> postIds) {
+        List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            postIds.forEach(postId ->
+                    connection.stringCommands().get(
+                            (VIEW_COUNT_KEY + postId).getBytes(StandardCharsets.UTF_8)
+                    )
+            );
+            return null;
+        });
+
+        Map<Long, Long> countMap = new HashMap<>();
+        for (int i = 0; i < postIds.size(); i++) {
+            Object val = results.get(i);
+            if (val != null) {
+                String strVal = val instanceof byte[]
+                        ? new String((byte[]) val, StandardCharsets.UTF_8)
+                        : val.toString();
+                try {
+                    countMap.put(postIds.get(i), Long.parseLong(strVal));
+                } catch (NumberFormatException e) {
+                    log.warn("viewCount 파싱 실패: postId={}, val={}", postIds.get(i), strVal);
+                }
+            }
+        }
+        return countMap;
+    }
+
+    @Override
+    public Map<Long, Long> getLikeCounts(List<Long> postIds) {
+        List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            postIds.forEach(postId ->
+                    connection.stringCommands().get(
+                            (LIKE_COUNT_KEY + postId).getBytes(StandardCharsets.UTF_8)
+                    )
+            );
+            return null;
+        });
+
+        Map<Long, Long> countMap = new HashMap<>();
+        for (int i = 0; i < postIds.size(); i++) {
+            Object val = results.get(i);
+            if (val != null) {
+                String strVal = val instanceof byte[]
+                        ? new String((byte[]) val, StandardCharsets.UTF_8)
+                        : val.toString();
+                try {
+                    countMap.put(postIds.get(i), Long.parseLong(strVal));
+                } catch (NumberFormatException e) {
+                    log.warn("likeCount 파싱 실패: postId={}, val={}", postIds.get(i), strVal);
+                }
+            }
+        }
+        return countMap;
+    }
+
+    @Override
+    public Map<Long, Long> getScrapCounts(List<Long> postIds) {
+        List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            postIds.forEach(postId ->
+                    connection.stringCommands().get(
+                            (SCRAP_COUNT_KEY + postId).getBytes(StandardCharsets.UTF_8)
+                    )
+            );
+            return null;
+        });
+
+        Map<Long, Long> countMap = new HashMap<>();
+        for (int i = 0; i < postIds.size(); i++) {
+            Object val = results.get(i);
+            if (val != null) {
+                String strVal = val instanceof byte[]
+                        ? new String((byte[]) val, StandardCharsets.UTF_8)
+                        : val.toString();
+                try {
+                    countMap.put(postIds.get(i), Long.parseLong(strVal));
+                } catch (NumberFormatException e) {
+                    log.warn("scrapCount 파싱 실패: postId={}, val={}", postIds.get(i), strVal);
+                }
+            }
+        }
+        return countMap;
     }
 }

@@ -6,9 +6,8 @@
     <!-- 좋아요 조회 -->
     <select id="getLike" parameterType="LikeScrapCommand" resultType="LikeScrapCommand">
         SELECT
-            POST_ID    AS postId,
-            USER_ID    AS userId,
-            DELETED_YN AS deletedYn
+            POST_ID AS postId,
+            USER_ID AS userId
         FROM COMMUNITY_LIKE
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
@@ -17,41 +16,24 @@
     <!-- 좋아요 등록 -->
     <insert id="insertLike" parameterType="LikeScrapCommand">
         INSERT INTO COMMUNITY_LIKE (
-            POST_ID,
-            USER_ID,
-            DELETED_YN,
-            CREATED_AT,
-            CREATED_BY,
-            UPDATED_AT,
-            UPDATED_BY
+            POST_ID, USER_ID, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
         ) VALUES (
-                     #{postId},
-                     #{userId},
-                     'N',
-                     NOW(),
-                     #{userId},
-                     NOW(),
-                     #{userId}
+                     #{postId}, #{userId}, NOW(), #{userId}, NOW(), #{userId}
                  )
     </insert>
 
-    <!-- 좋아요 토글 -->
-    <update id="toggleLike" parameterType="LikeScrapCommand">
-        UPDATE COMMUNITY_LIKE
-        SET
-            DELETED_YN = #{deletedYn},
-            UPDATED_AT = NOW(),
-            UPDATED_BY = #{userId}
+    <!-- 좋아요 삭제 (하드딜리트) -->
+    <delete id="deleteLike" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_LIKE
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
-    </update>
+    </delete>
 
     <!-- 스크랩 조회 -->
     <select id="getScrap" parameterType="LikeScrapCommand" resultType="LikeScrapCommand">
         SELECT
-            POST_ID    AS postId,
-            USER_ID    AS userId,
-            DELETED_YN AS deletedYn
+            POST_ID AS postId,
+            USER_ID AS userId
         FROM COMMUNITY_SCRAP
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
@@ -60,49 +42,31 @@
     <!-- 스크랩 등록 -->
     <insert id="insertScrap" parameterType="LikeScrapCommand">
         INSERT INTO COMMUNITY_SCRAP (
-            POST_ID,
-            USER_ID,
-            DELETED_YN,
-            CREATED_AT,
-            CREATED_BY,
-            UPDATED_AT,
-            UPDATED_BY
+            POST_ID, USER_ID, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
         ) VALUES (
-                     #{postId},
-                     #{userId},
-                     'N',
-                     NOW(),
-                     #{userId},
-                     NOW(),
-                     #{userId}
+                     #{postId}, #{userId}, NOW(), #{userId}, NOW(), #{userId}
                  )
     </insert>
 
-    <!-- 스크랩 토글 -->
-    <update id="toggleScrap" parameterType="LikeScrapCommand">
-        UPDATE COMMUNITY_SCRAP
-        SET
-            DELETED_YN = #{deletedYn},
-            UPDATED_AT = NOW(),
-            UPDATED_BY = #{userId}
+    <!-- 스크랩 삭제 (하드딜리트) -->
+    <delete id="deleteScrap" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_SCRAP
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
-    </update>
+    </delete>
 
     <!-- 좋아요 수 조회 (DB) -->
     <select id="getLikeCountFromDB" parameterType="LikeScrapCommand" resultType="Long">
         SELECT COUNT(*)
         FROM COMMUNITY_LIKE
-        WHERE POST_ID  = #{postId}
-          AND DELETED_YN = 'N'
+        WHERE POST_ID = #{postId}
     </select>
 
     <!-- 스크랩 수 조회 (DB) -->
     <select id="getScrapCountFromDB" parameterType="LikeScrapCommand" resultType="Long">
         SELECT COUNT(*)
         FROM COMMUNITY_SCRAP
-        WHERE POST_ID  = #{postId}
-          AND DELETED_YN = 'N'
+        WHERE POST_ID = #{postId}
     </select>
 
 </mapper>
