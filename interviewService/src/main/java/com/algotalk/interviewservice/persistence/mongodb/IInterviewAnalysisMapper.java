@@ -20,4 +20,7 @@ public interface IInterviewAnalysisMapper {
 
     // LLM 평가 결과 업데이트
     void updateEvaluationResult(EvaluationResultCommand pCommand);
+
+    // userId로 전체 분석 결과 조회 (대시보드용)
+    List<InterviewAnalysisDocument> findByUserId(Long userId);
 }

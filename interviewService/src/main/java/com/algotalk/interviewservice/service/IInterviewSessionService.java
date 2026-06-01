@@ -15,4 +15,6 @@ public interface IInterviewSessionService {
 
     // 면접 세션 결과 조회
     SessionResultResponseDTO getSessionResult(SessionResultCommand pCommand);
+
+    void completeSession(Long userId, Long sessionId);
 }

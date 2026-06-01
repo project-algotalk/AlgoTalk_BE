@@ -262,4 +262,11 @@ public class InterviewSessionService implements IInterviewSessionService {
         log.info("{}.getSessionResult End!", this.getClass().getName());
         return rDTO;
     }
+
+    @Override
+    public void completeSession(Long userId, Long sessionId) {
+        log.info("{}.completeSession Start!", this.getClass().getName());
+        interviewSessionMapper.completeSession(sessionId);
+        log.info("{}.completeSession End!", this.getClass().getName());
+    }
 }

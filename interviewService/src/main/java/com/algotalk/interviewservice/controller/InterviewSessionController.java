@@ -80,4 +80,15 @@ public class InterviewSessionController {
 
         return ResponseEntity.ok(ApiResponse.ok(rDTO));
     }
+
+    @PatchMapping("/sessions/{sessionId}/complete")
+    public ResponseEntity<ApiResponse<Void>> completeSession(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long sessionId
+    ) {
+        log.info("{}.completeSession Start!", this.getClass().getName());
+        interviewSessionService.completeSession(userId, sessionId);
+        log.info("{}.completeSession End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
 }
