@@ -112,7 +112,9 @@ public class CommunityPostService implements ICommunityPostService {
                             .userId(row.getUserId())
                             .nickname(row.getNickname())
                             .title(row.getTitle())
-                            .contentPreview(row.getContent())
+                            .contentPreview(row.getContent() != null && row.getContent().length() > 100
+                                            ? row.getContent().substring(0, 100) + "..."
+                                            : row.getContent())
                             .isNotice(row.getIsNotice())
                             .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
                             .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())
