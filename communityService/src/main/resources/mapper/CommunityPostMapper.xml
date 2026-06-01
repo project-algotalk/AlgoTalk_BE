@@ -187,4 +187,8 @@
         WHERE POST_ID = #{postId}
     </update>
 
+    <select id="getViewCount" parameterType="Long" resultType="Long">
+        SELECT VIEW_COUNT FROM COMMUNITY_POST
+        WHERE POST_ID = #{postId} AND DELETED_YN = 'N'
+    </select>
 </mapper>

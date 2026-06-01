@@ -15,6 +15,7 @@ public record MyLikeResponseDTO(
         Integer likeCount,
         Integer scrapCount,
         Integer commentCount,
+        Integer viewCount,
         LocalDateTime createdAt,
         Integer totalCount
 ) {}

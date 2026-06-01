@@ -16,6 +16,7 @@ public record MyCommentResponseDTO(
         String postTitle,
         Integer scrapCount,
         Integer commentCount,
+        Integer viewCount,
         LocalDateTime createdAt,
         Integer totalCount
 ) {}

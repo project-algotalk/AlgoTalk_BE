@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 
+@Getter
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TargetJobInfoResponseDTO {

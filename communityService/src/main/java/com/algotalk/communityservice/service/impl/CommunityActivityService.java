@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -32,18 +33,25 @@ public class CommunityActivityService implements ICommunityActivityService {
         log.info("{}.getMyPosts Start!", this.getClass().getName());
 
         List<MyPostRowDTO> rows = communityActivityMapper.getMyPosts(pCommand);
+        if (rows.isEmpty()) return List.of();
+
+        List<Long> postIds = rows.stream().map(MyPostRowDTO::getPostId).toList();
+
+        Map<Long, Long> viewCountMap  = redisMapper.getViewCounts(postIds);
+        Map<Long, Long> likeCountMap  = redisMapper.getLikeCounts(postIds);
+        Map<Long, Long> scrapCountMap = redisMapper.getScrapCounts(postIds);
 
         List<MyPostResponseDTO> rList = rows.stream()
                 .map(row -> {
-                    Long likeCount = redisMapper.getLikeCount(row.getPostId());
-                    Long scrapCount = redisMapper.getScrapCount(row.getPostId());
+                    Long postId = row.getPostId();
                     return MyPostResponseDTO.builder()
-                            .postId(row.getPostId())
+                            .postId(postId)
                             .categoryName(row.getCategoryName())
                             .title(row.getTitle())
                             .nickname(row.getNickname())
-                            .likeCount(row.getLikeCount())
-                            .scrapCount(row.getScrapCount())
+                            .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
+                            .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())
+                            .scrapCount(scrapCountMap.getOrDefault(postId, (long) row.getScrapCount()).intValue())
                             .commentCount(row.getCommentCount())
                             .createdAt(row.getCreatedAt())
                             .totalCount(row.getTotalCount())
@@ -79,6 +87,7 @@ public class CommunityActivityService implements ICommunityActivityService {
                         .postTitle(row.getPostTitle())
                         .scrapCount(row.getScrapCount())
                         .commentCount(row.getCommentCount())
+                        .viewCount(row.getViewCount())
                         .createdAt(row.getCreatedAt())
                         .totalCount(row.getTotalCount())
                         .build())
@@ -101,18 +110,25 @@ public class CommunityActivityService implements ICommunityActivityService {
         log.info("{}.getMyScraps Start!", this.getClass().getName());
 
         List<MyScrapRowDTO> rows = communityActivityMapper.getMyScraps(pCommand);
+        if (rows.isEmpty()) return List.of();
+
+        List<Long> postIds = rows.stream().map(MyScrapRowDTO::getPostId).toList();
+
+        Map<Long, Long> viewCountMap  = redisMapper.getViewCounts(postIds);
+        Map<Long, Long> likeCountMap  = redisMapper.getLikeCounts(postIds);
+        Map<Long, Long> scrapCountMap = redisMapper.getScrapCounts(postIds);
 
         List<MyScrapResponseDTO> rList = rows.stream()
                 .map(row -> {
-                    Long likeCount = redisMapper.getLikeCount(row.getPostId());
-                    Long scrapCount = redisMapper.getScrapCount(row.getPostId());
+                    Long postId = row.getPostId();
                     return MyScrapResponseDTO.builder()
-                            .postId(row.getPostId())
+                            .postId(postId)
                             .categoryName(row.getCategoryName())
                             .title(row.getTitle())
                             .nickname(row.getNickname())
-                            .likeCount(row.getLikeCount())
-                            .scrapCount(row.getScrapCount())
+                            .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
+                            .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())
+                            .scrapCount(scrapCountMap.getOrDefault(postId, (long) row.getScrapCount()).intValue())
                             .commentCount(row.getCommentCount())
                             .createdAt(row.getCreatedAt())
                             .totalCount(row.getTotalCount())
@@ -129,18 +145,25 @@ public class CommunityActivityService implements ICommunityActivityService {
         log.info("{}.getMyLikes Start!", this.getClass().getName());
 
         List<MyLikeRowDTO> rows = communityActivityMapper.getMyLikes(pCommand);
+        if (rows.isEmpty()) return List.of();
+
+        List<Long> postIds = rows.stream().map(MyLikeRowDTO::getPostId).toList();
+
+        Map<Long, Long> viewCountMap  = redisMapper.getViewCounts(postIds);
+        Map<Long, Long> likeCountMap  = redisMapper.getLikeCounts(postIds);
+        Map<Long, Long> scrapCountMap = redisMapper.getScrapCounts(postIds);
 
         List<MyLikeResponseDTO> rList = rows.stream()
                 .map(row -> {
-                    Long likeCount = redisMapper.getLikeCount(row.getPostId());
-                    Long scrapCount = redisMapper.getScrapCount(row.getPostId());
+                    Long postId = row.getPostId();
                     return MyLikeResponseDTO.builder()
-                            .postId(row.getPostId())
+                            .postId(postId)
                             .categoryName(row.getCategoryName())
                             .title(row.getTitle())
                             .nickname(row.getNickname())
-                            .likeCount(row.getLikeCount())
-                            .scrapCount(row.getScrapCount())
+                            .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
+                            .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())
+                            .scrapCount(scrapCountMap.getOrDefault(postId, (long) row.getScrapCount()).intValue())
                             .commentCount(row.getCommentCount())
                             .createdAt(row.getCreatedAt())
                             .totalCount(row.getTotalCount())

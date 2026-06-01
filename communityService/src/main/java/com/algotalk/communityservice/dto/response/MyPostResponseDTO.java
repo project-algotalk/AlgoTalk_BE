@@ -15,6 +15,7 @@ public record MyPostResponseDTO(
         Integer likeCount,
         Integer scrapCount,
         Integer commentCount,
+        Integer viewCount,
         LocalDateTime createdAt,
         Integer totalCount
 ) {}

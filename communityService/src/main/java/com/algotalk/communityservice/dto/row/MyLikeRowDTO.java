@@ -19,6 +19,7 @@ public class MyLikeRowDTO {
     private Integer likeCount;
     private Integer scrapCount;
     private Integer commentCount;
+    private Integer viewCount;
     private LocalDateTime createdAt;
     private Integer totalCount;
 }

@@ -15,6 +15,7 @@ public record MyScrapResponseDTO(
         Integer likeCount,
         Integer scrapCount,
         Integer commentCount,
+        Integer viewCount,
         LocalDateTime createdAt,
         Integer totalCount
 ) {}

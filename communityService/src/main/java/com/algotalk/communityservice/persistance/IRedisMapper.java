@@ -1,5 +1,7 @@
 package com.algotalk.communityservice.persistance;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IRedisMapper {
@@ -59,4 +61,13 @@ public interface IRedisMapper {
     Set<String> getViewCountKeys();
     Set<String> getLikeCountKeys();
     Set<String> getScrapCountKeys();
+
+    // 조회수 멀티 조회
+    Map<Long, Long> getViewCounts(List<Long> postIds);
+
+    // 좋아요 수 멀티 조회
+    Map<Long, Long> getLikeCounts(List<Long> postIds);
+
+    // 스크랩 수 멀티 조회
+    Map<Long, Long> getScrapCounts(List<Long> postIds);
 }
