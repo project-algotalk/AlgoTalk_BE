@@ -105,4 +105,21 @@ public class InterviewAnalysisMapper implements IInterviewAnalysisMapper {
 
         log.info("{}.updateEvaluationResult End!", this.getClass().getName());
     }
+
+    @Override
+    public List<InterviewAnalysisDocument> findByUserId(Long userId) {
+        log.info("{}.findByUserId Start!", this.getClass().getName());
+
+        Document query = new Document("userId", userId);
+        Document projection = new Document("_id", 0);
+
+        List<InterviewAnalysisDocument> rList = mongodb.getCollection(COL_NM)
+                .find(query)
+                .projection(projection)
+                .map(doc -> objectMapper.convertValue(doc, InterviewAnalysisDocument.class))
+                .into(new ArrayList<>());
+
+        log.info("{}.findByUserId End!", this.getClass().getName());
+        return rList;
+    }
 }

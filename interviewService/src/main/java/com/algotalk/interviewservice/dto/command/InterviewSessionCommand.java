@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -15,4 +17,7 @@ public class InterviewSessionCommand {
     private String sessionTitle;  // 세션 제목
     private String sessionStatus; // 세션 상태 (기본값: READY)
     private int totalQuestions;   // 총 질문 수
+    private LocalDateTime completedAt;
+    private Integer size;
+    private Integer offset;
 }

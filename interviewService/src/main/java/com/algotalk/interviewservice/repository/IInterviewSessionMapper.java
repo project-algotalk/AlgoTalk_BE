@@ -15,4 +15,13 @@ public interface IInterviewSessionMapper {
 
     // 면접 세션 + 질문 목록 조회 (결과 페이지용)
     List<SessionResultRowDTO> getSessionResult(SessionResultCommand pCommand);
+
+    // 대시보드용 세션 목록 조회
+    List<InterviewSessionCommand> getDashboardSessions(InterviewSessionCommand pCommand);
+
+    // 대시보드용 총 세션 수
+    int getDashboardSessionCount(Long userId);
+
+    // 면접 세션 종료
+    void completeSession(Long sessionId);
 }
