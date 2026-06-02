@@ -31,6 +31,7 @@ import java.util.Map;
 
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_NOT_FOUND;
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_UNAUTHORIZED;
+import static java.util.stream.Collectors.*;
 
 @Slf4j
 @Service
@@ -89,18 +90,24 @@ public class CommunityPostService implements ICommunityPostService {
 
         List<CsCategoryResponseDTO> csCategories = csCategoryFeignService.getCategories();
         Map<Long, CsCategoryResponseDTO> csCategoryMap = csCategories.stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(toMap(
                         CsCategoryResponseDTO::categoryId,
                         c -> c,
                         (a, b) -> a
                 ));
 
+        // 해시태그 일괄 조회
+        List<HashTagCommand> allHashTags = communityHashTagMapper.getPostHashTagsByPostIds(postIds);
+        Map<Long, List<String>> hasTagMap = allHashTags.stream()
+                .collect(groupingBy(
+                        HashTagCommand::getPostId,
+                        mapping(HashTagCommand::getTagName, toList())
+                ));
+
         List<PostListResponseDTO> rList = rows.stream()
                 .map(row -> {
                     Long postId = row.getPostId();
-                    List<String> hashtags = communityHashTagMapper.getPostHashTags(
-                            HashTagCommand.builder().postId(postId).build()
-                    ).stream().map(HashTagCommand::getTagName).toList();
+                    List<String> hashtags = hasTagMap.getOrDefault(postId, List.of());
 
                     CsCategoryResponseDTO csCategory = csCategoryMap.get(row.getCsCategoryId());
 
@@ -113,8 +120,8 @@ public class CommunityPostService implements ICommunityPostService {
                             .nickname(row.getNickname())
                             .title(row.getTitle())
                             .contentPreview(row.getContent() != null && row.getContent().length() > 100
-                                            ? row.getContent().substring(0, 100) + "..."
-                                            : row.getContent())
+                                    ? row.getContent().substring(0, 100) + "..."
+                                    : row.getContent())
                             .isNotice(row.getIsNotice())
                             .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
                             .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())

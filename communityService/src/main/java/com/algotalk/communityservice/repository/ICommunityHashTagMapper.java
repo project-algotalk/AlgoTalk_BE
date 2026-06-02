@@ -33,4 +33,7 @@ public interface ICommunityHashTagMapper {
 
     // USE_COUNT = 0인 해시태그 삭제
     int deleteUnusedHashTag(HashTagCommand pCommand);
+
+    // 게시글 목록 해시태그 일괄 조회(N+1 문제 방지)
+    List<HashTagCommand> getPostHashTagsByPostIds(List<Long> postIds);
 }
