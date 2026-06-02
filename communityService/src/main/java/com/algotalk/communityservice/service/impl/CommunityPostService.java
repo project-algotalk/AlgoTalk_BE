@@ -137,14 +137,15 @@ public class CommunityPostService implements ICommunityPostService {
     public PostDetailResponseDTO getPostDetail(PostCommand pCommand) {
         log.info("{}.getPostDetail Start!", this.getClass().getName());
 
-        // 조회수 증가
-        redisMapper.incrementViewCount(pCommand.getPostId());
 
         PostDetailRowDTO row = communityPostMapper.getPostDetail(pCommand);
 
         if (row == null) {
             throw new BusinessException(POST_NOT_FOUND);
         }
+
+        // 조회수 증가
+        redisMapper.incrementViewCount(pCommand.getPostId());
 
         // 해시태그 조회
         List<String> hashTagNames = getHashTagNames(pCommand.getPostId());

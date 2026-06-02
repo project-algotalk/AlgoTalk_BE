@@ -1,6 +1,8 @@
 package com.algotalk.communityservice.service.impl;
 
+import com.algotalk.common.exception.BusinessException;
 import com.algotalk.communityservice.dto.command.ActivityCommand;
+import com.algotalk.communityservice.dto.command.LikeScrapCommand;
 import com.algotalk.communityservice.dto.response.MyCommentResponseDTO;
 import com.algotalk.communityservice.dto.response.MyLikeResponseDTO;
 import com.algotalk.communityservice.dto.response.MyPostResponseDTO;
@@ -11,6 +13,7 @@ import com.algotalk.communityservice.dto.row.MyPostRowDTO;
 import com.algotalk.communityservice.dto.row.MyScrapRowDTO;
 import com.algotalk.communityservice.persistance.IRedisMapper;
 import com.algotalk.communityservice.repository.ICommunityActivityMapper;
+import com.algotalk.communityservice.repository.ICommunityLikeScrapMapper;
 import com.algotalk.communityservice.service.ICommunityActivityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,12 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
+import static com.algotalk.communityservice.exception.CommunityErrorCode.INVALID_REQUEST;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommunityActivityService implements ICommunityActivityService {
 
     private final ICommunityActivityMapper communityActivityMapper;
+    private final ICommunityLikeScrapMapper communityLikeScrapMapper;
     private final IRedisMapper redisMapper;
 
     @Override
@@ -67,7 +73,13 @@ public class CommunityActivityService implements ICommunityActivityService {
     @Transactional
     public void deleteMyPosts(ActivityCommand pCommand) {
         log.info("{}.deleteMyPosts Start!", this.getClass().getName());
+
+        if (pCommand.getPostIds() == null || pCommand.getPostIds().isEmpty()) {
+            throw new BusinessException(INVALID_REQUEST);
+        }
+
         communityActivityMapper.deleteMyPosts(pCommand);
+
         log.info("{}.deleteMyPosts End!", this.getClass().getName());
     }
 
@@ -101,7 +113,13 @@ public class CommunityActivityService implements ICommunityActivityService {
     @Transactional
     public void deleteMyComments(ActivityCommand pCommand) {
         log.info("{}.deleteMyComments Start!", this.getClass().getName());
+
+        if (pCommand.getPostIds() == null || pCommand.getPostIds().isEmpty()) {
+            throw new BusinessException(INVALID_REQUEST);
+        }
+
         communityActivityMapper.deleteMyComments(pCommand);
+
         log.info("{}.deleteMyComments End!", this.getClass().getName());
     }
 
@@ -180,10 +198,30 @@ public class CommunityActivityService implements ICommunityActivityService {
     @Transactional
     public void deleteMyLikes(ActivityCommand pCommand) {
         log.info("{}.deleteMyLikes Start!", this.getClass().getName());
+
+        if (pCommand.getPostIds() == null || pCommand.getPostIds().isEmpty()) {
+            throw new BusinessException(INVALID_REQUEST);
+        }
+
         pCommand.getPostIds().forEach(postId ->
                 redisMapper.removeUserLiked(postId, pCommand.getUserId())
         );
+
         communityActivityMapper.deleteMyLikes(pCommand);
+
+        // Redis count 맞추기(DB에서 다시 로드)
+        pCommand.getPostIds().forEach(postId -> {
+            Long likeCount = communityLikeScrapMapper.getLikeCountFromDB(
+                    LikeScrapCommand.builder()
+                            .postId(postId)
+                            .build()
+            );
+
+            likeCount = likeCount != null ? likeCount : 0L;
+
+            redisMapper.setLikeCount(postId, likeCount);
+        });
+
         log.info("{}.deleteMyLikes End!", this.getClass().getName());
     }
 
@@ -191,10 +229,30 @@ public class CommunityActivityService implements ICommunityActivityService {
     @Transactional
     public void deleteMyScraps(ActivityCommand pCommand) {
         log.info("{}.deleteMyScraps Start!", this.getClass().getName());
+
+        if (pCommand.getPostIds() == null || pCommand.getPostIds().isEmpty()) {
+            throw new BusinessException(INVALID_REQUEST);
+        }
+
+        // Redis 사용자 키 제거
         pCommand.getPostIds().forEach(postId ->
                 redisMapper.removeUserScrapped(postId, pCommand.getUserId())
         );
+
+        // DB에서 스크랩 삭제
         communityActivityMapper.deleteMyScraps(pCommand);
+
+        // Redis count 맞추기(DB에서 다시 로드)
+        pCommand.getPostIds().forEach(postId -> {
+            Long scrapCount = communityLikeScrapMapper.getScrapCountFromDB(
+                    LikeScrapCommand.builder()
+                            .postId(postId)
+                            .build()
+            );
+            scrapCount = scrapCount != null ? scrapCount : 0L;
+
+            redisMapper.setScrapCount(postId, scrapCount);
+        });
         log.info("{}.deleteMyScraps End!", this.getClass().getName());
     }
 }

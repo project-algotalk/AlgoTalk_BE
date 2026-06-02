@@ -13,10 +13,11 @@ public enum CommunityErrorCode implements ErrorCode {
     POST_NOT_FOUND          ("COMMUNITY_001", "게시글을 찾을 수 없습니다.",                  HttpStatus.NOT_FOUND),
     POST_ALREADY_DELETED    ("COMMUNITY_002", "이미 삭제된 게시글입니다.",                   HttpStatus.BAD_REQUEST),
     POST_UNAUTHORIZED       ("COMMUNITY_003", "게시글 작성자만 수정/삭제할 수 있습니다.",      HttpStatus.FORBIDDEN),
-    NOT_CS_QUESTION         ("COMMUNITY_004", "CS 기술면접 관련 질문이 아닙니다.",                    HttpStatus.BAD_REQUEST),
+    NOT_CS_QUESTION         ("COMMUNITY_004", "CS 기술면접 관련 질문이 아닙니다.",           HttpStatus.BAD_REQUEST),
     AI_CALL_FAILED          ("COMMUNITY_005", "AI 서비스 호출에 실패했습니다.",               HttpStatus.BAD_GATEWAY),
+    INVALID_REQUEST         ("COMMUNITY_006", "요청이 올바르지 않습니다.",                     HttpStatus.BAD_REQUEST),
 
-            // 댓글
+    // 댓글
     COMMENT_NOT_FOUND       ("COMMUNITY_011", "댓글을 찾을 수 없습니다.",                    HttpStatus.NOT_FOUND),
     COMMENT_ALREADY_DELETED ("COMMUNITY_012", "이미 삭제된 댓글입니다.",                     HttpStatus.BAD_REQUEST),
     COMMENT_UNAUTHORIZED    ("COMMUNITY_013", "댓글 작성자만 수정/삭제할 수 있습니다.",        HttpStatus.FORBIDDEN),
