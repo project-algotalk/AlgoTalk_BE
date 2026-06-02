@@ -124,6 +124,7 @@ public class CommunityActivityService implements ICommunityActivityService {
                     return MyScrapResponseDTO.builder()
                             .postId(postId)
                             .categoryName(row.getCategoryName())
+                            .csCategoryId(row.getCsCategoryId())
                             .title(row.getTitle())
                             .nickname(row.getNickname())
                             .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())

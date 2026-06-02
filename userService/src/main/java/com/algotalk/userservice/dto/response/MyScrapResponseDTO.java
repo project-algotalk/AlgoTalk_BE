@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 public record MyScrapResponseDTO(
         Long postId,
         String categoryName,
+        Long csCategoryId,
         String title,
         String nickname,
         Integer likeCount,
