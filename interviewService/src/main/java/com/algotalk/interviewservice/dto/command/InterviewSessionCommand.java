@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.dto.command;
 
+import com.algotalk.common.pagination.Pagination;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,6 +19,5 @@ public class InterviewSessionCommand {
     private String sessionStatus; // 세션 상태 (기본값: READY)
     private int totalQuestions;   // 총 질문 수
     private LocalDateTime completedAt;
-    private Integer size;
-    private Integer offset;
+    private Pagination pagination;
 }

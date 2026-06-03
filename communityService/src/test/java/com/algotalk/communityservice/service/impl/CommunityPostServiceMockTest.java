@@ -1,6 +1,7 @@
 package com.algotalk.communityservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.common.pagination.Pagination;
 import com.algotalk.communityservice.client.AiFeignClient;
 import com.algotalk.communityservice.dto.command.HashTagCommand;
 import com.algotalk.communityservice.dto.command.PostCommand;
@@ -103,7 +104,7 @@ class CommunityPostServiceMockTest {
 
         // when
         List<PostListResponseDTO> result = communityPostService.getPostList(
-                PostListCommand.builder().categoryId(categoryId).page(1).size(10).offset(0).build()
+                PostListCommand.builder().categoryId(categoryId).pagination(Pagination.of(1, 10)).build()
         );
 
         // then
@@ -121,7 +122,7 @@ class CommunityPostServiceMockTest {
 
         // when
         List<PostListResponseDTO> result = communityPostService.getPostList(
-                PostListCommand.builder().categoryId(categoryId).page(1).size(10).offset(0).build()
+                PostListCommand.builder().categoryId(categoryId).pagination(Pagination.of(1, 10)).build()
         );
 
         // then

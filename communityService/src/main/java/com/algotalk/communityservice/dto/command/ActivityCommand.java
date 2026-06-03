@@ -1,5 +1,6 @@
 package com.algotalk.communityservice.dto.command;
 
+import com.algotalk.common.pagination.Pagination;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -11,7 +12,5 @@ public class ActivityCommand {
     private Long userId;
     private List<Long> postIds;
     private List<Long> commentIds;
-    private Integer page;
-    private Integer size;
-    private Integer offset;
+    private Pagination pagination;    // 페이지네이션 정보 (page, size, offset)
 }

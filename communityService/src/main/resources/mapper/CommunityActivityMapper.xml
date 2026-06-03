@@ -22,7 +22,7 @@
         WHERE p.USER_ID    = #{userId}
           AND p.DELETED_YN = 'N'
         ORDER BY p.CREATED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
 
@@ -65,7 +65,7 @@
           AND cm.DELETED_YN = 'N'
           AND p.DELETED_YN  = 'N'
         ORDER BY cm.CREATED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
     <!-- 내가 작성한 댓글 삭제 -->
@@ -108,7 +108,7 @@
               AND cs.USER_ID = #{userId}
         )
         ORDER BY p.CREATED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
     <!-- 내가 좋아요한 게시글 목록 -->
@@ -134,7 +134,7 @@
               AND cl.USER_ID = #{userId}
         )
         ORDER BY p.CREATED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
     <!-- 스크랩 취소 -->
