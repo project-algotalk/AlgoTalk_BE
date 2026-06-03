@@ -100,4 +100,18 @@
         WHERE HASHTAG_ID = #{hashtagId}
           AND USE_COUNT = 0
     </delete>
+
+    <!--  게시글 목록 해시태그 일괄 조회(N+1 방지)  -->
+    <select id="getPostHashTagsByPostIds" resultType="HashTagCommand">
+        SELECT
+        ph.POST_ID AS postId,
+        h.TAG_NAME AS tagName
+        FROM COMMUNITY_POST_HASHTAG ph
+        JOIN COMMUNITY_HASHTAG h ON ph.HASHTAG_ID = h.HASHTAG_ID
+        WHERE ph.POST_ID IN
+        <foreach item="postId" collection="list" open="(" separator="," close=")">
+            #{postId}
+        </foreach>
+        ORDER BY ph.CREATED_AT ASC
+    </select>
 </mapper>

@@ -1,12 +1,15 @@
 package com.algotalk.communityservice.controller;
 
+import com.algotalk.common.pagination.Pagination;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.communityservice.dto.command.ActivityCommand;
+import com.algotalk.common.pagination.PaginationRequestDTO;
 import com.algotalk.communityservice.dto.response.MyCommentResponseDTO;
 import com.algotalk.communityservice.dto.response.MyLikeResponseDTO;
 import com.algotalk.communityservice.dto.response.MyPostResponseDTO;
 import com.algotalk.communityservice.dto.response.MyScrapResponseDTO;
 import com.algotalk.communityservice.service.ICommunityActivityService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -26,17 +29,16 @@ public class CommunityActivityController {
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<List<MyPostResponseDTO>>> getMyPosts(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyPosts Start!", this.getClass().getName());
+
+        Pagination pagination = paginationRequest.toPagination();
 
         List<MyPostResponseDTO> rList = communityActivityService.getMyPosts(
                 ActivityCommand.builder()
                         .userId(userId)
-                        .page(page)
-                        .size(size)
-                        .offset((page - 1) * size)
+                        .pagination(pagination)
                         .build()
         );
 
@@ -67,17 +69,16 @@ public class CommunityActivityController {
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<List<MyCommentResponseDTO>>> getMyComments(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyComments Start!", this.getClass().getName());
+
+        Pagination pagination = paginationRequest.toPagination();
 
         List<MyCommentResponseDTO> rList = communityActivityService.getMyComments(
                 ActivityCommand.builder()
                         .userId(userId)
-                        .page(page)
-                        .size(size)
-                        .offset((page - 1) * size)
+                        .pagination(pagination)
                         .build()
         );
 
@@ -108,17 +109,16 @@ public class CommunityActivityController {
     @GetMapping("/scraps")
     public ResponseEntity<ApiResponse<List<MyScrapResponseDTO>>> getMyScraps(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyScraps Start!", this.getClass().getName());
+
+        Pagination pagination = paginationRequest.toPagination();
 
         List<MyScrapResponseDTO> rList = communityActivityService.getMyScraps(
                 ActivityCommand.builder()
                         .userId(userId)
-                        .page(page)
-                        .size(size)
-                        .offset((page - 1) * size)
+                        .pagination(pagination)
                         .build()
         );
 
@@ -149,17 +149,16 @@ public class CommunityActivityController {
     @GetMapping("/likes")
     public ResponseEntity<ApiResponse<List<MyLikeResponseDTO>>> getMyLikes(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyLikes Start!", this.getClass().getName());
+
+        Pagination pagination = paginationRequest.toPagination();
 
         List<MyLikeResponseDTO> rList = communityActivityService.getMyLikes(
                 ActivityCommand.builder()
                         .userId(userId)
-                        .page(page)
-                        .size(size)
-                        .offset((page - 1) * size)
+                        .pagination(pagination)
                         .build()
         );
 

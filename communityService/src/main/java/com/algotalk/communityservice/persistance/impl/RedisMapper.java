@@ -156,22 +156,46 @@ public class RedisMapper implements IRedisMapper {
     }
 
     // ====================================================
-    //                 동기화 대상 키 조회
+    //                 동기화 대상 키 조회 (SCAN 방식)
     // ====================================================
     @Override
     public Set<String> getViewCountKeys() {
-        return redisTemplate.keys(VIEW_COUNT_KEY + "*");
+        return scanKeys(VIEW_COUNT_KEY + "*");
     }
 
     @Override
     public Set<String> getLikeCountKeys() {
-        return redisTemplate.keys(LIKE_COUNT_KEY + "*");
+        return scanKeys(LIKE_COUNT_KEY + "*");
     }
 
     @Override
     public Set<String> getScrapCountKeys() {
-        return redisTemplate.keys(SCRAP_COUNT_KEY + "*");
+        return scanKeys(SCRAP_COUNT_KEY + "*");
     }
+
+    private Set<String> scanKeys(String pattern) {
+        Set<String> keys = new java.util.HashSet<>();
+        org.springframework.data.redis.core.Cursor<String> cursor =
+                redisTemplate.scan(
+                        org.springframework.data.redis.core.ScanOptions.scanOptions()
+                                .match(pattern)
+                                .count(100)
+                                .build()
+                );
+        try {
+            while (cursor.hasNext()) {
+                keys.add(cursor.next());
+            }
+        } finally {
+            try {
+                cursor.close();
+            } catch (Exception e) {
+                log.warn("Redis SCAN cursor 닫기 실패: {}", e.getMessage());
+            }
+        }
+        return keys;
+    }
+
     @Override
     public Map<Long, Long> getViewCounts(List<Long> postIds) {
         List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {

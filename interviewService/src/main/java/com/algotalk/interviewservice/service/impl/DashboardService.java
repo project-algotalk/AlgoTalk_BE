@@ -1,5 +1,6 @@
 package com.algotalk.interviewservice.service.impl;
 
+import com.algotalk.common.pagination.Pagination;
 import com.algotalk.interviewservice.domain.InterviewAnalysisDocument;
 import com.algotalk.interviewservice.dto.command.InterviewSessionCommand;
 import com.algotalk.interviewservice.dto.response.DashboardResponseDTO;
@@ -25,19 +26,17 @@ public class DashboardService implements IDashboardService {
     private final IInterviewSessionMapper interviewSessionMapper;
 
     @Override
-    public DashboardResponseDTO getDashboard(Long userId, Integer page, Integer size) {
+    public DashboardResponseDTO getDashboard(Long userId, Pagination pagination) {
         log.info("{}.getDashboard Start!", this.getClass().getName());
 
         // 1. 총 세션 수
         int totalCount = interviewSessionMapper.getDashboardSessionCount(userId);
 
         // 2. 페이징된 세션 목록
-        int offset = (page - 1) * size;
         List<InterviewSessionCommand> sessions = interviewSessionMapper.getDashboardSessions(
                 InterviewSessionCommand.builder()
                         .userId(userId)
-                        .size(size)
-                        .offset(offset)
+                        .pagination(pagination)
                         .build()
         );
 
@@ -45,8 +44,7 @@ public class DashboardService implements IDashboardService {
         List<InterviewSessionCommand> allSessions = interviewSessionMapper.getDashboardSessions(
                 InterviewSessionCommand.builder()
                         .userId(userId)
-                        .size(1000)
-                        .offset(0)
+                        .pagination(Pagination.of(1, 1000, 1000))
                         .build()
         );
 
@@ -121,7 +119,7 @@ public class DashboardService implements IDashboardService {
                 .scoreDetails(scoreDetails)
                 .scoreHistory(scoreHistory)
                 .recentSessions(recentSessions)
-                .page(page)
+                .page(pagination.getPage())
                 .totalCount(totalCount)
                 .build();
 

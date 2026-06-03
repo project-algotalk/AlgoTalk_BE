@@ -1,5 +1,6 @@
 package com.algotalk.userservice.controller;
 
+import com.algotalk.common.pagination.PaginationRequestDTO;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.client.CommunityFeignClient;
 import com.algotalk.userservice.dto.request.*;
@@ -231,12 +232,11 @@ public class MyPageController {
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<List<MyPostResponseDTO>>> getMyPosts(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyPosts Start!", this.getClass().getName());
         Long userId = Long.valueOf(jwt.getSubject());
-        ApiResponse<List<MyPostResponseDTO>> rDTO = communityFeignClient.getMyPosts(userId, page, size);
+        ApiResponse<List<MyPostResponseDTO>> rDTO = communityFeignClient.getMyPosts(userId, paginationRequest);
         log.info("{}.getMyPosts End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
     }
@@ -258,12 +258,11 @@ public class MyPageController {
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<List<MyCommentResponseDTO>>> getMyComments(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyComments Start!", this.getClass().getName());
         Long userId = Long.valueOf(jwt.getSubject());
-        ApiResponse<List<MyCommentResponseDTO>> rDTO = communityFeignClient.getMyComments(userId, page, size);
+        ApiResponse<List<MyCommentResponseDTO>> rDTO = communityFeignClient.getMyComments(userId, paginationRequest);
         log.info("{}.getMyComments End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
     }
@@ -285,12 +284,11 @@ public class MyPageController {
     @GetMapping("/scraps")
     public ResponseEntity<ApiResponse<List<MyScrapResponseDTO>>> getMyScraps(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyScraps Start!", this.getClass().getName());
         Long userId = Long.valueOf(jwt.getSubject());
-        ApiResponse<List<MyScrapResponseDTO>> rDTO = communityFeignClient.getMyScraps(userId, page, size);
+        ApiResponse<List<MyScrapResponseDTO>> rDTO = communityFeignClient.getMyScraps(userId, paginationRequest);
         log.info("{}.getMyScraps End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
     }
@@ -312,12 +310,11 @@ public class MyPageController {
     @GetMapping("/likes")
     public ResponseEntity<ApiResponse<List<MyLikeResponseDTO>>> getMyLikes(
             @AuthenticationPrincipal Jwt jwt,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @Valid @ModelAttribute PaginationRequestDTO paginationRequest
     ) {
         log.info("{}.getMyLikes Start!", this.getClass().getName());
         Long userId = Long.valueOf(jwt.getSubject());
-        ApiResponse<List<MyLikeResponseDTO>> rDTO = communityFeignClient.getMyLikes(userId, page, size);
+        ApiResponse<List<MyLikeResponseDTO>> rDTO = communityFeignClient.getMyLikes(userId, paginationRequest);
         log.info("{}.getMyLikes End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok(rDTO.getData()));
     }

@@ -31,6 +31,7 @@ import java.util.Map;
 
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_NOT_FOUND;
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_UNAUTHORIZED;
+import static java.util.stream.Collectors.*;
 
 @Slf4j
 @Service
@@ -61,7 +62,7 @@ public class CommunityPostService implements ICommunityPostService {
         Map<Long, Long> likeCountMap  = redisMapper.getLikeCounts(postIds);
         Map<Long, Long> scrapCountMap = redisMapper.getScrapCounts(postIds);
 
-        // Redis miss → DB fallback + Redis set
+        // Redis miss -> DB fallback + Redis set
         postIds.forEach(postId -> {
             if (!viewCountMap.containsKey(postId)) {
                 Long dbCount = communityPostMapper.getViewCount(postId);
@@ -89,18 +90,24 @@ public class CommunityPostService implements ICommunityPostService {
 
         List<CsCategoryResponseDTO> csCategories = csCategoryFeignService.getCategories();
         Map<Long, CsCategoryResponseDTO> csCategoryMap = csCategories.stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(toMap(
                         CsCategoryResponseDTO::categoryId,
                         c -> c,
                         (a, b) -> a
                 ));
 
+        // 해시태그 일괄 조회
+        List<HashTagCommand> allHashTags = communityHashTagMapper.getPostHashTagsByPostIds(postIds);
+        Map<Long, List<String>> hasTagMap = allHashTags.stream()
+                .collect(groupingBy(
+                        HashTagCommand::getPostId,
+                        mapping(HashTagCommand::getTagName, toList())
+                ));
+
         List<PostListResponseDTO> rList = rows.stream()
                 .map(row -> {
                     Long postId = row.getPostId();
-                    List<String> hashtags = communityHashTagMapper.getPostHashTags(
-                            HashTagCommand.builder().postId(postId).build()
-                    ).stream().map(HashTagCommand::getTagName).toList();
+                    List<String> hashtags = hasTagMap.getOrDefault(postId, List.of());
 
                     CsCategoryResponseDTO csCategory = csCategoryMap.get(row.getCsCategoryId());
 
@@ -113,8 +120,8 @@ public class CommunityPostService implements ICommunityPostService {
                             .nickname(row.getNickname())
                             .title(row.getTitle())
                             .contentPreview(row.getContent() != null && row.getContent().length() > 100
-                                            ? row.getContent().substring(0, 100) + "..."
-                                            : row.getContent())
+                                    ? row.getContent().substring(0, 100) + "..."
+                                    : row.getContent())
                             .isNotice(row.getIsNotice())
                             .viewCount(viewCountMap.getOrDefault(postId, (long) row.getViewCount()).intValue())
                             .likeCount(likeCountMap.getOrDefault(postId, (long) row.getLikeCount()).intValue())
@@ -137,14 +144,15 @@ public class CommunityPostService implements ICommunityPostService {
     public PostDetailResponseDTO getPostDetail(PostCommand pCommand) {
         log.info("{}.getPostDetail Start!", this.getClass().getName());
 
-        // 조회수 증가
-        redisMapper.incrementViewCount(pCommand.getPostId());
 
         PostDetailRowDTO row = communityPostMapper.getPostDetail(pCommand);
 
         if (row == null) {
             throw new BusinessException(POST_NOT_FOUND);
         }
+
+        // 조회수 증가
+        redisMapper.incrementViewCount(pCommand.getPostId());
 
         // 해시태그 조회
         List<String> hashTagNames = getHashTagNames(pCommand.getPostId());
@@ -166,12 +174,39 @@ public class CommunityPostService implements ICommunityPostService {
         Long viewCount = redisMapper.getViewCount(pCommand.getPostId());
 
         // liked/scrapped 가능 여부 (비로그인 시 userId null -> false)
-        Boolean liked = pCommand.getUserId() != null
-                ? redisMapper.isUserLiked(pCommand.getPostId(), pCommand.getUserId())
-                : false;
-        Boolean scrapped = pCommand.getUserId() != null
-                ? redisMapper.isUserScrapped(pCommand.getPostId(), pCommand.getUserId())
-                : false;
+        boolean liked = false;
+        boolean scrapped = false;
+
+        if(pCommand.getUserId() != null) {
+            // Redis에서 먼저 좋아요/스크랩 여부 조회
+            liked = redisMapper.isUserLiked(pCommand.getPostId(), pCommand.getUserId());
+            scrapped = redisMapper.isUserScrapped(pCommand.getPostId(), pCommand.getUserId());
+
+            // Redis에 없으면 DB에서 조회 후 Redis에 저장
+            if (!liked) {
+                LikeScrapCommand likeCommand = LikeScrapCommand.builder()
+                        .postId(pCommand.getPostId())
+                        .userId(pCommand.getUserId())
+                        .build();
+
+                liked = likeScrapMapper.getLike(likeCommand) != null;
+                if (liked) {
+                    redisMapper.setUserLiked(pCommand.getPostId(), pCommand.getUserId());
+                }
+            }
+
+            if (!scrapped) {
+                LikeScrapCommand scrapCommand = LikeScrapCommand.builder()
+                        .postId(pCommand.getPostId())
+                        .userId(pCommand.getUserId())
+                        .build();
+
+                scrapped = likeScrapMapper.getScrap(scrapCommand) != null;
+                if (scrapped) {
+                    redisMapper.setUserScrapped(pCommand.getPostId(), pCommand.getUserId());
+                }
+            }
+        }
 
         PostDetailResponseDTO rDTO = PostDetailResponseDTO.builder()
                 .postId(row.getPostId())

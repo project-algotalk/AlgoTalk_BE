@@ -48,7 +48,7 @@
         WHERE USER_ID        = #{userId}
           AND SESSION_STATUS = 'COMPLETED'
         ORDER BY COMPLETED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
     <!-- 대시보드용 총 세션 수 -->

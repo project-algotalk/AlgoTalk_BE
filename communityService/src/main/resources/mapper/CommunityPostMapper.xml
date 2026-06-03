@@ -68,7 +68,7 @@
             )
         </if>
         ORDER BY p.IS_NOTICE DESC, p.CREATED_AT DESC
-        LIMIT #{size} OFFSET #{offset}
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
     </select>
 
     <!-- 게시글 상세 조회 -->

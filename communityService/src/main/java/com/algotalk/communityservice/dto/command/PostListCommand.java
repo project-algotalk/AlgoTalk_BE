@@ -1,10 +1,12 @@
 package com.algotalk.communityservice.dto.command;
 
+import com.algotalk.common.pagination.Pagination;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 @Builder
 public class PostListCommand {
 
@@ -15,7 +17,5 @@ public class PostListCommand {
     private Long csCategoryId;      // CS 카테고리 태그 필터
     private List<Long> csCategoryIds;       // CS 카테고리 태그 필터 (복수)
     private String hashtag;         // 해시태그 필터
-    private int page;
-    private int size;
-    private int offset;             // MyBatis 페이징용 (page-1)*size
+    private Pagination pagination;    // 페이지네이션 정보 (page, size, offset)
 }

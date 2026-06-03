@@ -1,11 +1,13 @@
 package com.algotalk.userservice.client;
 
+import com.algotalk.common.pagination.PaginationRequestDTO;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.response.MyCommentResponseDTO;
 import com.algotalk.userservice.dto.response.MyLikeResponseDTO;
 import com.algotalk.userservice.dto.response.MyPostResponseDTO;
 import com.algotalk.userservice.dto.response.MyScrapResponseDTO;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.cloud.openfeign.SpringQueryMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,8 +19,7 @@ public interface CommunityFeignClient {
     @GetMapping("/community/v1/activity/posts")
     ApiResponse<List<MyPostResponseDTO>> getMyPosts(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @SpringQueryMap PaginationRequestDTO paginationRequest
     );
 
     // 내가 작성한 게시글 삭제
@@ -32,8 +33,7 @@ public interface CommunityFeignClient {
     @GetMapping("/community/v1/activity/comments")
     ApiResponse<List<MyCommentResponseDTO>> getMyComments(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @SpringQueryMap PaginationRequestDTO paginationRequest
     );
 
     // 내가 작성한 댓글 삭제
@@ -47,8 +47,7 @@ public interface CommunityFeignClient {
     @GetMapping("/community/v1/activity/scraps")
     ApiResponse<List<MyScrapResponseDTO>> getMyScraps(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @SpringQueryMap PaginationRequestDTO paginationRequest
     );
 
     // 스크랩 취소
@@ -62,8 +61,7 @@ public interface CommunityFeignClient {
     @GetMapping("/community/v1/activity/likes")
     ApiResponse<List<MyLikeResponseDTO>> getMyLikes(
             @RequestHeader("X-User-Id") Long userId,
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer size
+            @SpringQueryMap PaginationRequestDTO paginationRequest
     );
 
     // 좋아요 취소

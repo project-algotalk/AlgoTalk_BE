@@ -1,6 +1,7 @@
 package com.algotalk.communityservice.controller;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.common.pagination.Pagination;
 import com.algotalk.common.response.ApiResponse;
 import com.algotalk.communityservice.client.UserFeignClient;
 import com.algotalk.communityservice.dto.command.PostCommand;
@@ -34,9 +35,11 @@ public class CommunityPostController {
     // 게시글 목록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<List<PostListResponseDTO>>> getPostList(
-            @ModelAttribute PostListRequestDTO rDTO
+            @Valid @ModelAttribute PostListRequestDTO rDTO
     ) {
         log.info("{}.getPostList Start!", this.getClass().getName());
+
+        Pagination pagination = rDTO.toPagination();
 
         PostListCommand pCommand = PostListCommand.builder()
                 .categoryId(rDTO.categoryId())
@@ -46,9 +49,7 @@ public class CommunityPostController {
                 .keyword(rDTO.keyword())
                 .searchType(rDTO.searchType())
                 .hashtag(rDTO.hashtag())
-                .page(rDTO.page())
-                .size(rDTO.size())
-                .offset((rDTO.page() - 1) * rDTO.size())
+                .pagination(pagination)
                 .build();
 
         List<PostListResponseDTO> rList = communityPostService.getPostList(pCommand);
