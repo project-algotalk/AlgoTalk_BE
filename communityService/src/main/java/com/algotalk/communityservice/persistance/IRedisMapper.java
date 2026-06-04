@@ -57,6 +57,9 @@ public interface IRedisMapper {
     // 조회수 초기화 (DB에서 로드)
     void setViewCount(Long postId, long count);
 
+    // 게시글 관련 Redis 캐시 삭제
+    void deletePostCache(Long postId);
+
     // 동기화 대상 postId 목록 조회
     Set<String> getViewCountKeys();
     Set<String> getLikeCountKeys();

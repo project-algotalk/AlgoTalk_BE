@@ -18,9 +18,10 @@ public class MyCommentRowDTO {
     private String nickname;
     private String content;
     private String postTitle;
+    private String postDeletedYn;
     private Integer scrapCount;
     private Integer commentCount;
     private Integer viewCount;
-    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Integer totalCount;
 }

@@ -6,7 +6,6 @@ import com.algotalk.communityservice.client.AiFeignClient;
 import com.algotalk.communityservice.dto.command.HashTagCommand;
 import com.algotalk.communityservice.dto.command.PostCommand;
 import com.algotalk.communityservice.dto.command.PostListCommand;
-import com.algotalk.communityservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.communityservice.dto.response.CsCategoryResponseDTO;
 import com.algotalk.communityservice.dto.response.CsValidationItemDTO;
 import com.algotalk.communityservice.dto.response.CsValidationResponseDTO;
@@ -16,7 +15,9 @@ import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
 import com.algotalk.communityservice.exception.CommunityErrorCode;
 import com.algotalk.communityservice.persistance.IRedisMapper;
+import com.algotalk.communityservice.repository.ICommunityCommentMapper;
 import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
+import com.algotalk.communityservice.repository.ICommunityLikeScrapMapper;
 import com.algotalk.communityservice.repository.ICommunityPostMapper;
 import com.algotalk.communityservice.service.ICsCategoryFeignService;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,6 +49,12 @@ class CommunityPostServiceMockTest {
 
     @Mock
     private ICommunityHashTagMapper communityHashTagMapper;
+
+    @Mock
+    private ICommunityLikeScrapMapper likeScrapMapper;
+
+    @Mock
+    private ICommunityCommentMapper communityCommentMapper;
 
     @Mock
     private ICsCategoryFeignService csCategoryFeignService;
@@ -72,11 +80,11 @@ class CommunityPostServiceMockTest {
     @DisplayName("게시글 목록 조회 성공 - 해시태그 있음")
     void getPostList_success_withHashtags() {
         // given
-        given(redisMapper.getLikeCount(any())).willReturn(0L);
-        given(redisMapper.getScrapCount(any())).willReturn(0L);
-        given(redisMapper.getViewCount(any())).willReturn(0L);
-        given(communityHashTagMapper.getPostHashTags(any())).willReturn(
-                List.of(HashTagCommand.builder().tagName("스프링").build())
+        given(redisMapper.getLikeCounts(any())).willReturn(Map.of(postId, 0L));
+        given(redisMapper.getScrapCounts(any())).willReturn(Map.of(postId, 0L));
+        given(redisMapper.getViewCounts(any())).willReturn(Map.of(postId, 0L));
+        given(communityHashTagMapper.getPostHashTagsByPostIds(any())).willReturn(
+                List.of(HashTagCommand.builder().postId(postId).tagName("스프링").build())
         );
         given(csCategoryFeignService.getCategories()).willReturn(
                 List.of(new CsCategoryResponseDTO(101L, "JOB", "백엔드 개발자", null, 1, 1))
@@ -327,13 +335,14 @@ class CommunityPostServiceMockTest {
     }
 
     @Test
-    @DisplayName("게시글 삭제 성공")
-    void deletePost_success() {
+    @DisplayName("게시글 삭제 성공 - 활성 댓글 있으면 소프트딜리트")
+    void deletePost_success_softDeleteWhenActiveCommentsExist() {
         // given
         PostDetailRowDTO existing = PostDetailRowDTO.builder()
                 .postId(postId).userId(userId).build();
 
         given(communityPostMapper.getPostDetail(any())).willReturn(existing);
+        given(communityPostMapper.countActiveComments(any())).willReturn(1);
 
         // when
         communityPostService.deletePost(
@@ -341,7 +350,31 @@ class CommunityPostServiceMockTest {
         );
 
         // then
-        verify(communityPostMapper).deletePost(any());
+        verify(communityPostMapper).softDeletePost(any());
+        verify(communityHashTagMapper).deletePostHashTags(any());
+    }
+
+    @Test
+    @DisplayName("게시글 삭제 성공 - 활성 댓글 없으면 하드딜리트")
+    void deletePost_success_hardDeleteWhenNoActiveComments() {
+        // given
+        PostDetailRowDTO existing = PostDetailRowDTO.builder()
+                .postId(postId).userId(userId).build();
+
+        given(communityPostMapper.getPostDetail(any())).willReturn(existing);
+        given(communityPostMapper.countActiveComments(any())).willReturn(0);
+        given(communityHashTagMapper.getPostHashTagIds(any())).willReturn(List.of());
+
+        // when
+        communityPostService.deletePost(
+                PostCommand.builder().postId(postId).userId(userId).build()
+        );
+
+        // then
+        verify(communityPostMapper).hardDeletePost(any());
+        verify(communityCommentMapper).hardDeleteLeafCommentsByPostId(any());
+        verify(likeScrapMapper).deleteAllLikesByPostId(any());
+        verify(likeScrapMapper).deleteAllScrapsByPostId(any());
     }
 
     @Test

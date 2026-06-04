@@ -4,7 +4,11 @@ import com.algotalk.common.exception.BusinessException;
 import com.algotalk.communityservice.dto.command.CommentCommand;
 import com.algotalk.communityservice.dto.response.CommentResponseDTO;
 import com.algotalk.communityservice.exception.CommunityErrorCode;
+import com.algotalk.communityservice.persistance.IRedisMapper;
 import com.algotalk.communityservice.repository.ICommunityCommentMapper;
+import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
+import com.algotalk.communityservice.repository.ICommunityLikeScrapMapper;
+import com.algotalk.communityservice.repository.ICommunityPostMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,8 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CommunityCommentServiceMockTest {
@@ -31,6 +34,18 @@ class CommunityCommentServiceMockTest {
 
     @Mock
     private ICommunityCommentMapper communityCommentMapper;
+
+    @Mock
+    private ICommunityPostMapper communityPostMapper;
+
+    @Mock
+    private ICommunityHashTagMapper communityHashTagMapper;
+
+    @Mock
+    private ICommunityLikeScrapMapper likeScrapMapper;
+
+    @Mock
+    private IRedisMapper redisMapper;
 
     private final Long userId = 1L;
     private final Long postId = 1L;
@@ -282,8 +297,47 @@ class CommunityCommentServiceMockTest {
         );
 
         // then
-        verify(communityCommentMapper).deleteComment(any());
+        verify(communityCommentMapper).softDeleteComment(any());
     }
+
+    @Test
+    @DisplayName("댓글 삭제 성공 - 소프트딜리트된 최상위 댓글의 활성 하위 댓글이 모두 사라지면 댓글 그룹 하드딜리트")
+    void deleteComment_success_hardDeleteSoftDeletedRootWhenNoActiveGroupComments() {
+        // given
+        Long childCommentId = 2L;
+        CommentCommand child = CommentCommand.builder()
+                .commentId(childCommentId)
+                .postId(postId)
+                .userId(userId)
+                .parentId(commentId)
+                .groupId(0L)
+                .deletedYn("N")
+                .build();
+        CommentCommand root = CommentCommand.builder()
+                .commentId(commentId)
+                .postId(postId)
+                .userId(userId)
+                .groupId(0L)
+                .deletedYn("Y")
+                .build();
+
+        given(communityCommentMapper.getComment(any())).willReturn(child, root);
+        given(communityCommentMapper.hasChildComments(any())).willReturn(0);
+        given(communityCommentMapper.countActiveCommentsByRootCommentId(any())).willReturn(0);
+
+        // when
+        communityCommentService.deleteComment(
+                CommentCommand.builder()
+                        .commentId(childCommentId)
+                        .userId(userId)
+                        .build()
+        );
+
+        // then
+        verify(communityCommentMapper).hardDeleteComment(any());
+        verify(communityCommentMapper, atLeastOnce()).hardDeleteDeletedLeafCommentsByRootCommentId(any());
+    }
+
 
     @Test
     @DisplayName("댓글 삭제 실패 - 존재하지 않는 댓글")

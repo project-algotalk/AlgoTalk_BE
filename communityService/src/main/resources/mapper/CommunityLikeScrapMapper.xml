@@ -23,10 +23,16 @@
     </insert>
 
     <!-- 좋아요 삭제 (하드딜리트) -->
-    <delete id="deleteLike" parameterType="LikeScrapCommand">
+    <delete id="hardDeleteLike" parameterType="LikeScrapCommand">
         DELETE FROM COMMUNITY_LIKE
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
+    </delete>
+
+    <!--  게시글의 좋아요 전체 삭제 (하드딜리트)  -->
+    <delete id="deleteAllLikesByPostId" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_LIKE
+        WHERE POST_ID = #{postId}
     </delete>
 
     <!-- 스크랩 조회 -->
@@ -49,10 +55,16 @@
     </insert>
 
     <!-- 스크랩 삭제 (하드딜리트) -->
-    <delete id="deleteScrap" parameterType="LikeScrapCommand">
+    <delete id="hardDeleteScrap" parameterType="LikeScrapCommand">
         DELETE FROM COMMUNITY_SCRAP
         WHERE POST_ID = #{postId}
           AND USER_ID = #{userId}
+    </delete>
+
+    <!-- 게시글의 스크랩 전체 삭제 (하드딜리트) -->
+    <delete id="deleteAllScrapsByPostId" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_SCRAP
+        WHERE POST_ID = #{postId}
     </delete>
 
     <!-- 좋아요 수 조회 (DB) -->

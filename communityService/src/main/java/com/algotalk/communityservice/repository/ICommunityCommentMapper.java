@@ -27,11 +27,20 @@ public interface ICommunityCommentMapper {
     int updateGroupId(CommentCommand pCommand);
 
     // 댓글 소프트딜리트
-    int deleteComment(CommentCommand pCommand);
+    int softDeleteComment(CommentCommand pCommand);
 
     // 하위 댓글 수 조회
     int hasChildComments(CommentCommand pCommand);
 
-    // 하드딜리트
+    // 댓글 하드딜리트
     int hardDeleteComment(CommentCommand pCommand);
+
+    // 게시글의 자식 없는 댓글 하드딜리트
+    int hardDeleteLeafCommentsByPostId(CommentCommand pCommand);
+
+    // 최상위 댓글 트리 내 활성 댓글 수 조회
+    int countActiveCommentsByRootCommentId(CommentCommand pCommand);
+
+    // 최상위 댓글 트리 내 삭제된 자식 없는 댓글 하드딜리트
+    int hardDeleteDeletedLeafCommentsByRootCommentId(CommentCommand pCommand);
 }

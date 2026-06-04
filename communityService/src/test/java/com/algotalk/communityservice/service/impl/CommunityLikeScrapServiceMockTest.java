@@ -101,7 +101,7 @@ class CommunityLikeScrapServiceMockTest {
 
         // then
         assertThat(result.liked()).isFalse();
-        verify(likeScrapMapper).deleteLike(any());
+        verify(likeScrapMapper).hardDeleteLike(any());
         verify(redisMapper).decrementLikeCount(postId);
         verify(redisMapper).removeUserLiked(postId, userId);
     }
@@ -172,7 +172,7 @@ class CommunityLikeScrapServiceMockTest {
 
         // then
         assertThat(result.scrapped()).isFalse();
-        verify(likeScrapMapper).deleteScrap(any());
+        verify(likeScrapMapper).hardDeleteScrap(any());
         verify(redisMapper).decrementScrapCount(postId);
         verify(redisMapper).removeUserScrapped(postId, userId);
     }

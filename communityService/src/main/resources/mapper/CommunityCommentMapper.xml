@@ -95,7 +95,7 @@
     </update>
 
     <!-- 댓글 소프트딜리트 -->
-    <update id="deleteComment" parameterType="CommentCommand">
+    <update id="softDeleteComment" parameterType="CommentCommand">
         UPDATE COMMUNITY_COMMENT
         SET
             CONTENT    = '삭제된 댓글입니다.',
@@ -130,5 +130,44 @@
         DELETE FROM COMMUNITY_COMMENT
         WHERE COMMENT_ID = #{commentId}
           AND USER_ID    = #{userId}
+    </delete>
+
+    <!-- 게시글의 댓글 하드딜리트 (FK 보호를 위해 자식 없는 댓글부터 반복 삭제) -->
+    <delete id="hardDeleteLeafCommentsByPostId" parameterType="CommentCommand">
+        DELETE c
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT child ON child.PARENT_ID = c.COMMENT_ID
+        WHERE c.POST_ID = #{postId}
+          AND child.COMMENT_ID IS NULL
+    </delete>
+
+    <!-- 최상위 댓글 트리 내 활성 댓글 수 조회 -->
+    <select id="countActiveCommentsByRootCommentId" parameterType="CommentCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT parent ON c.PARENT_ID = parent.COMMENT_ID
+        WHERE (
+            c.GROUP_ID = #{commentId}
+                OR c.COMMENT_ID = #{commentId}
+                OR c.PARENT_ID = #{commentId}
+                OR parent.PARENT_ID = #{commentId}
+            )
+          AND c.DELETED_YN = 'N'
+    </select>
+
+    <!-- 최상위 댓글 트리 내 삭제된 댓글 하드딜리트 (FK 보호를 위해 자식 없는 댓글부터 반복 삭제) -->
+    <delete id="hardDeleteDeletedLeafCommentsByRootCommentId" parameterType="CommentCommand">
+        DELETE c
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT parent ON c.PARENT_ID = parent.COMMENT_ID
+                 LEFT JOIN COMMUNITY_COMMENT child ON child.PARENT_ID = c.COMMENT_ID
+        WHERE (
+            c.GROUP_ID = #{commentId}
+                OR c.COMMENT_ID = #{commentId}
+                OR c.PARENT_ID = #{commentId}
+                OR parent.PARENT_ID = #{commentId}
+            )
+          AND c.DELETED_YN = 'Y'
+          AND child.COMMENT_ID IS NULL
     </delete>
 </mapper>

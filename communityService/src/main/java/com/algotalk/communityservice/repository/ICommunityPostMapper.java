@@ -2,7 +2,6 @@ package com.algotalk.communityservice.repository;
 
 import com.algotalk.communityservice.dto.command.PostCommand;
 import com.algotalk.communityservice.dto.command.PostListCommand;
-import com.algotalk.communityservice.dto.response.PostDetailResponseDTO;
 import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
 import org.apache.ibatis.annotations.Mapper;
@@ -25,7 +24,16 @@ public interface ICommunityPostMapper {
     int updatePost(PostCommand pCommand);
 
     // 게시글 소프트딜리트
-    int deletePost(PostCommand pCommand);
+    int softDeletePost(PostCommand pCommand);
+
+    // 게시글 하드딜리트
+    int hardDeletePost(PostCommand pCommand);
+
+    // 게시글 활성 댓글 수 조회
+    int countActiveComments(PostCommand pCommand);
+
+    // 활성 댓글이 없는 소프트딜리트 게시글 수 조회
+    int countSoftDeletedPostWithoutActiveComments(PostCommand pCommand);
 
     // 조회수 Redis -> DB 동기화
     int syncViewCount(PostCommand pCommand);
