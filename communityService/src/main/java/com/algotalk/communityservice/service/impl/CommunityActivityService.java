@@ -114,7 +114,7 @@ public class CommunityActivityService implements ICommunityActivityService {
     public void deleteMyComments(ActivityCommand pCommand) {
         log.info("{}.deleteMyComments Start!", this.getClass().getName());
 
-        if (pCommand.getPostIds() == null || pCommand.getPostIds().isEmpty()) {
+        if (pCommand.getCommentIds() == null || pCommand.getCommentIds().isEmpty()) {
             throw new BusinessException(INVALID_REQUEST);
         }
 
