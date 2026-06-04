@@ -2,10 +2,7 @@ package com.algotalk.communityservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.communityservice.client.AiFeignClient;
-import com.algotalk.communityservice.dto.command.HashTagCommand;
-import com.algotalk.communityservice.dto.command.LikeScrapCommand;
-import com.algotalk.communityservice.dto.command.PostCommand;
-import com.algotalk.communityservice.dto.command.PostListCommand;
+import com.algotalk.communityservice.dto.command.*;
 import com.algotalk.communityservice.dto.request.CsValidationRequestDTO;
 import com.algotalk.communityservice.dto.response.CsCategoryResponseDTO;
 import com.algotalk.communityservice.dto.response.CsValidationResponseDTO;
@@ -15,6 +12,7 @@ import com.algotalk.communityservice.dto.row.PostDetailRowDTO;
 import com.algotalk.communityservice.dto.row.PostListRowDTO;
 import com.algotalk.communityservice.exception.CommunityErrorCode;
 import com.algotalk.communityservice.persistance.IRedisMapper;
+import com.algotalk.communityservice.repository.ICommunityCommentMapper;
 import com.algotalk.communityservice.repository.ICommunityHashTagMapper;
 import com.algotalk.communityservice.repository.ICommunityLikeScrapMapper;
 import com.algotalk.communityservice.repository.ICommunityPostMapper;
@@ -25,12 +23,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.List;
 import java.util.Map;
 
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_NOT_FOUND;
 import static com.algotalk.communityservice.exception.CommunityErrorCode.POST_UNAUTHORIZED;
+import static com.algotalk.communityservice.util.TransactionUtils.runAfterCommit;
 import static java.util.stream.Collectors.*;
 
 @Slf4j
@@ -40,6 +41,7 @@ public class CommunityPostService implements ICommunityPostService {
 
     private final ICommunityPostMapper communityPostMapper;
     private final ICommunityHashTagMapper communityHashTagMapper;
+    private final ICommunityCommentMapper communityCommentMapper;
     private final ICommunityLikeScrapMapper likeScrapMapper;
     private final ICsCategoryFeignService csCategoryFeignService;
     private final IRedisMapper redisMapper;
@@ -353,10 +355,61 @@ public class CommunityPostService implements ICommunityPostService {
             throw new BusinessException(POST_UNAUTHORIZED);
         }
 
-        communityPostMapper.deletePost(pCommand);
-        removeHashTags(pCommand.getPostId(), pCommand.getUserId());
+        if (communityPostMapper.countActiveComments(pCommand) > 0) {
+            // 활성 댓글이 남아 있으면 댓글 문맥 보존을 위해 소프트딜리트
+            communityPostMapper.softDeletePost(pCommand);
+            removeHashTags(pCommand.getPostId(), pCommand.getUserId());
+            deletePostLikesAndScraps(pCommand.getPostId());
+            deletePostCacheAfterCommit(pCommand.getPostId());
+        } else {
+            // 활성 댓글이 없으면 게시글과 연관 데이터를 즉시 하드딜리트
+            hardDeletePostWithRelations(pCommand);
+        }
 
         log.info("{}.deletePost End!", this.getClass().getName());
+    }
+
+    // 게시글 및 연관 데이터 하드딜리트 헬퍼
+    private void hardDeletePostWithRelations(PostCommand pCommand) {
+        Long postId = pCommand.getPostId();
+        Long userId = pCommand.getUserId();
+
+        removeHashTags(postId, userId);
+        hardDeleteCommentsByPostIdFromLeaves(postId);
+        deletePostLikesAndScraps(postId);
+        communityPostMapper.hardDeletePost(pCommand);
+        deletePostCacheAfterCommit(postId);
+    }
+
+    private void deletePostLikesAndScraps(Long postId) {
+        LikeScrapCommand likeScrapCommand = LikeScrapCommand.builder().postId(postId).build();
+        likeScrapMapper.deleteAllLikesByPostId(likeScrapCommand);
+        likeScrapMapper.deleteAllScrapsByPostId(likeScrapCommand);
+    }
+
+    private void deletePostCacheAfterCommit(Long postId) {
+        if (postId == null) {
+            return;
+        }
+
+        runAfterCommit(() -> deletePostCache(postId));
+    }
+
+    private void deletePostCache(Long postId) {
+        try {
+            redisMapper.deletePostCache(postId);
+        } catch (Exception e) {
+            log.warn("게시글 Redis 캐시 삭제 실패: postId={}, error={}", postId, e.getMessage());
+        }
+    }
+
+    // 게시글의 댓글을 FK 제약에 걸리지 않도록 자식 댓글부터 반복 하드딜리트
+    private void hardDeleteCommentsByPostIdFromLeaves(Long postId) {
+        CommentCommand commentCommand = CommentCommand.builder().postId(postId).build();
+        int deletedCount;
+        do {
+            deletedCount = communityCommentMapper.hardDeleteLeafCommentsByPostId(commentCommand);
+        } while (deletedCount > 0);
     }
 
     // 해시태그 이름 목록 조회 헬퍼

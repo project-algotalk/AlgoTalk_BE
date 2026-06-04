@@ -144,11 +144,14 @@
     </update>
 
     <!-- 게시글 소프트딜리트 -->
-    <update id="deletePost" parameterType="PostCommand">
+    <update id="softDeletePost" parameterType="PostCommand">
         UPDATE COMMUNITY_POST
         SET
             TITLE       = '[삭제된 게시글]',
             CONTENT     = '[삭제된 게시글]',
+            VIEW_COUNT  = 0,
+            LIKE_COUNT  = 0,
+            SCRAP_COUNT = 0,
             DELETED_YN  = 'Y',
             UPDATED_AT  = NOW(),
             UPDATED_BY  = #{userId}
@@ -157,7 +160,38 @@
           AND DELETED_YN = 'N'
     </update>
 
-    <!-- 조회수 Redis → DB 동기화 -->
+    <!-- 게시글 하드딜리트 -->
+    <delete id="hardDeletePost" parameterType="PostCommand">
+        DELETE FROM COMMUNITY_POST
+        WHERE POST_ID = #{postId}
+        <if test="userId != null">
+            AND USER_ID = #{userId}
+        </if>
+    </delete>
+
+    <!-- 게시글 활성 댓글 수 조회 -->
+    <select id="countActiveComments" parameterType="PostCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_COMMENT
+        WHERE POST_ID = #{postId}
+          AND DELETED_YN = 'N'
+    </select>
+
+    <!-- 활성 댓글이 없는 소프트딜리트 게시글 수 조회 -->
+    <select id="countSoftDeletedPostWithoutActiveComments" parameterType="PostCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_POST p
+        WHERE p.POST_ID = #{postId}
+          AND p.DELETED_YN = 'Y'
+          AND NOT EXISTS (
+            SELECT 1
+            FROM COMMUNITY_COMMENT c
+            WHERE c.POST_ID = p.POST_ID
+              AND c.DELETED_YN = 'N'
+        )
+    </select>
+
+    <!-- 조회수 Redis -> DB 동기화 -->
     <update id="syncViewCount" parameterType="PostCommand">
         UPDATE COMMUNITY_POST
         SET
@@ -165,6 +199,7 @@
             UPDATED_AT  = NOW(),
             UPDATED_BY  = 'SYSTEM'
         WHERE POST_ID = #{postId}
+        AND DELETED_YN = 'N'
     </update>
 
     <!-- 좋아요수 Redis -> DB 동기화 -->
@@ -175,6 +210,7 @@
             UPDATED_AT  = NOW(),
             UPDATED_BY  = 'SYSTEM'
         WHERE POST_ID = #{postId}
+        AND DELETED_YN = 'N'
     </update>
 
     <!-- 스크랩수 Redis -> DB 동기화 -->
@@ -185,6 +221,7 @@
             UPDATED_AT  = NOW(),
             UPDATED_BY  = 'SYSTEM'
         WHERE POST_ID = #{postId}
+        AND DELETED_YN = 'N'
     </update>
 
     <select id="getViewCount" parameterType="Long" resultType="Long">

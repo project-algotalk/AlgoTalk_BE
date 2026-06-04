@@ -156,6 +156,31 @@ public class RedisMapper implements IRedisMapper {
     }
 
     // ====================================================
+    //                 게시글 삭제 시 캐시 무효화
+    // ====================================================
+    @Override
+    public void deletePostCache(Long postId) {
+        if (postId == null) {
+            return;
+        }
+
+        redisTemplate.delete(List.of(
+                VIEW_COUNT_KEY + postId,
+                LIKE_COUNT_KEY + postId,
+                SCRAP_COUNT_KEY + postId
+        ));
+
+        deleteKeys(scanKeys(LIKE_USER_KEY + postId + ":*"));
+        deleteKeys(scanKeys(SCRAP_USER_KEY + postId + ":*"));
+    }
+
+    private void deleteKeys(Set<String> keys) {
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
+
+    // ====================================================
     //                 동기화 대상 키 조회 (SCAN 방식)
     // ====================================================
     @Override

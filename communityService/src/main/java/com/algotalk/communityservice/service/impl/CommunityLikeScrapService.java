@@ -45,7 +45,7 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
             liked = true;
         } else {
             // 좋아요 취소
-            likeScrapMapper.deleteLike(pCommand);
+            likeScrapMapper.hardDeleteLike(pCommand);
             liked = false;
         }
 
@@ -97,7 +97,7 @@ public class CommunityLikeScrapService implements ICommunityLikeScrapService {
             scrapped = true;
         } else {
             // 스크랩 취소
-            likeScrapMapper.deleteScrap(pCommand);
+            likeScrapMapper.hardDeleteScrap(pCommand);
             scrapped = false;
         }
 
