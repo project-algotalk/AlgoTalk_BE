@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentCommand {
@@ -24,4 +24,5 @@ public class CommentCommand {
     private String deletedYn;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String sortType;    // 정렬 기준
 }

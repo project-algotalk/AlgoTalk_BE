@@ -1,6 +1,7 @@
 package com.algotalk.communityservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.communityservice.domain.enums.SortType;
 import com.algotalk.communityservice.dto.command.CommentCommand;
 import com.algotalk.communityservice.dto.command.HashTagCommand;
 import com.algotalk.communityservice.dto.command.LikeScrapCommand;
@@ -39,7 +40,13 @@ public class CommunityCommentService implements ICommunityCommentService {
     public List<CommentResponseDTO> getCommentList(CommentCommand pCommand) {
         log.info("{}.getCommentList Start!", this.getClass().getName());
 
-        List<CommentCommand> rows = communityCommentMapper.getCommentList(pCommand);
+        String sortType = SortType.from(pCommand.getSortType()).name();
+
+        List<CommentCommand> rows = communityCommentMapper.getCommentList(
+                pCommand.toBuilder()
+                        .sortType(sortType)
+                        .build()
+        );
 
         List<CommentResponseDTO> rList = rows.stream()
                 .map(row -> CommentResponseDTO.builder()

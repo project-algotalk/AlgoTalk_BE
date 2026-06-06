@@ -19,7 +19,8 @@
             UPDATED_AT  AS updatedAt
         FROM COMMUNITY_COMMENT
         WHERE POST_ID = #{postId}
-        ORDER BY GROUP_ID ASC, CREATED_AT ASC
+        ORDER BY GROUP_ID ${sortType},
+                CREATED_AT ASC
     </select>
 
     <!-- 댓글 단건 조회 -->
