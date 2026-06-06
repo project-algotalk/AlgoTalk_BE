@@ -5,6 +5,7 @@ import com.algotalk.common.response.ApiResponse;
 import com.algotalk.communityservice.client.UserFeignClient;
 import com.algotalk.communityservice.dto.command.CommentCommand;
 import com.algotalk.communityservice.dto.request.CommentRequestDTO;
+import com.algotalk.communityservice.dto.request.SortRequestDTO;
 import com.algotalk.communityservice.dto.request.UserInfoRequestDTO;
 import com.algotalk.communityservice.dto.response.CommentResponseDTO;
 import com.algotalk.communityservice.dto.response.UserInfoResponseDTO;
@@ -31,12 +32,16 @@ public class CommunityCommentController {
     // 댓글 목록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<List<CommentResponseDTO>>> getCommentList(
-            @PathVariable Long postId
-    ) {
+            @PathVariable Long postId,
+            @ModelAttribute SortRequestDTO pDTO
+            ) {
         log.info("{}.getCommentList Start!", this.getClass().getName());
 
         List<CommentResponseDTO> rList = communityCommentService.getCommentList(
-                CommentCommand.builder().postId(postId).build()
+                CommentCommand.builder()
+                        .postId(postId)
+                        .sortType(pDTO.getSortType())
+                        .build()
         );
 
         log.info("{}.getCommentList End!", this.getClass().getName());
