@@ -5,5 +5,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    // StepVerifier를 사용해 Reactor Mono/Flux의 비동기 동작을 검증
+    testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.wiremock:wiremock-standalone:3.5.2'
 }

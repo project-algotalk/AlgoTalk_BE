@@ -1,5 +1,6 @@
 package com.algotalk.apigateway.filter;
 
+import com.algotalk.apigateway.auth.refresh.RefreshCoordinator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
@@ -14,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AutoRefreshOn401FilterTest {
 
-    private final AutoRefreshOn401Filter filter = new AutoRefreshOn401Filter(WebClient.builder().build());
+    private final AutoRefreshOn401Filter filter = new AutoRefreshOn401Filter(WebClient.builder().build(), new RefreshCoordinator());
 
     @Test
     @DisplayName("Authorization 헤더가 null이어도 NPE 없이 null을 반환한다")

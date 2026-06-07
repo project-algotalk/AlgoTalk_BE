@@ -73,6 +73,8 @@ class TokenReissueServiceMockTest {
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
         given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
         given(jwtTokenService.generateRefreshToken(any())).willReturn("new.refresh.token");
+        given(refreshTokenService.rotateRefreshToken(1L, refreshToken, "new.refresh.token"))
+                .willReturn(IRefreshTokenService.RotationResult.ROTATED);
 
         // when
         TokenReissueResponseDTO result =
@@ -83,7 +85,7 @@ class TokenReissueServiceMockTest {
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(600L);
 
-        verify(refreshTokenService).rotateRefreshToken(1L, "new.refresh.token");
+        verify(refreshTokenService).rotateRefreshToken(1L, refreshToken, "new.refresh.token");
 
         String setCookie = response.getHeader("Set-Cookie");
 
@@ -128,6 +130,29 @@ class TokenReissueServiceMockTest {
     }
 
     @Test
+    @DisplayName("초기 검증 후 다른 요청이 먼저 RTR을 완료하면 TOKEN_MISMATCH")
+    void reissue_fail_casMismatch() throws Exception {
+        String refreshToken = "valid.refresh.token";
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("RefreshToken", refreshToken));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        UserInfoCommand user = UserInfoCommand.builder().userId(1L).build();
+
+        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
+        given(refreshTokenService.getRefreshToken(1L)).willReturn(refreshToken);
+        given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
+        given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
+        given(jwtTokenService.generateRefreshToken(any())).willReturn("new.refresh.token");
+        given(refreshTokenService.rotateRefreshToken(1L, refreshToken, "new.refresh.token"))
+                .willReturn(IRefreshTokenService.RotationResult.MISMATCH);
+
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(request, response))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(TOKEN_MISMATCH));
+    }
+
+    @Test
     @DisplayName("RefreshToken 만료")
     public void reissue_fail_expired() throws Exception {
         // given
@@ -138,7 +163,7 @@ class TokenReissueServiceMockTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
-        given(refreshTokenService.getRefreshToken(1L)).willReturn(null); // Redis에 없음
+        given(refreshTokenService.getRefreshToken(1L)).willReturn(null);
 
         // when & then
         assertThatThrownBy(() -> tokenReissueService.reissueToken(request, response))

@@ -19,6 +19,10 @@ import org.springframework.stereotype.Service;
 
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 
+/**
+ * 쿠키의 기존 RT를 검증하고 새 AT/RT를 발급하는 서비스다.
+ * 마지막 RT 교체 단계는 Redis CAS 결과가 성공일 때에만 응답 쿠키를 만든다.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,21 +73,18 @@ public class TokenReissueService implements ITokenReissueService {
             throw new BusinessException(TOKEN_INVALID);
         }
 
-        // 3. Redis에서 userId로 저장된 Refresh Token 조회 및 비교 검증(유효성 검증)
-        String stored = refreshTokenService.getRefreshToken(userId);
-
-        // Redis에 해당 userId로 저장된 Refresh Token이 존재하지 않는 경우(null) 예외 처리
-        if(stored == null) {
+        // 3. Redis에 RT가 없거나 이미 다른 값이면 DB 조회와 토큰 생성을 하지 않고 빠르게 실패한다.
+        // 이 조회만으로 교체를 확정하지 않으며, 실제 저장 직전에 Redis CAS가 같은 조건을 다시 검사한다.
+        String storedRefreshToken = refreshTokenService.getRefreshToken(userId);
+        if (storedRefreshToken == null) {
             log.warn("Redis에 저장된 Refresh Token이 존재하지 않습니다.");
             throw new BusinessException(TOKEN_EXPIRED);
         }
-
-        // Redis에 저장된 Refresh Token과 제공된 Refresh Token이 일치하지 않는 경우 예외 처리
-        if(!stored.equals(refreshToken)) {
+        if (!storedRefreshToken.equals(refreshToken)) {
             log.warn("제공된 Refresh Token이 저장된 토큰과 일치하지 않습니다.");
             throw new BusinessException(TOKEN_MISMATCH);
         }
-        
+
         // 4. DB에서 사용자 정보를 조회(Access Token 재발급할 때 필요)
         UserInfoCommand rCommand = userLoginMapper.getUserAuthInfo(
                 UserInfoCommand.builder().userId(userId).build()
@@ -98,10 +99,22 @@ public class TokenReissueService implements ITokenReissueService {
         String newAccessToken = jwtTokenService.generateAccessToken(rCommand);
         String newRefreshToken = jwtTokenService.generateRefreshToken(rCommand);
 
-        // 6. Redis에 새로운 Refresh Token 저장
-        refreshTokenService.rotateRefreshToken(userId, newRefreshToken);
+        // 6. 기존 RT 비교와 새 RT 저장을 Redis에서 원자적으로 수행한다.
+        // 사전 조회 이후 다른 요청이 먼저 RTR을 완료했다면 여기서 MISMATCH가 되어 중복 성공을 막는다.
+        IRefreshTokenService.RotationResult rotationResult =
+                refreshTokenService.rotateRefreshToken(userId, refreshToken, newRefreshToken);
+        // Redis key가 만료되거나 삭제된 경우이므로 RT 만료로 응답한다.
+        if (rotationResult == IRefreshTokenService.RotationResult.NOT_FOUND) {
+            log.warn("Redis에 저장된 Refresh Token이 존재하지 않습니다.");
+            throw new BusinessException(TOKEN_EXPIRED);
+        }
+        // 다른 요청이 먼저 회전했거나 오래된 RT가 재사용된 경우이므로 불일치로 응답한다.
+        if (rotationResult == IRefreshTokenService.RotationResult.MISMATCH) {
+            log.warn("제공된 Refresh Token이 저장된 토큰과 일치하지 않습니다.");
+            throw new BusinessException(TOKEN_MISMATCH);
+        }
 
-        // 7. 새로운 Refresh Token을 Cookie에 담아서 Response에 추가
+        // 7. CAS가 성공한 뒤에만 새 RT를 쿠키에 내려 Redis 값과 브라우저 값을 맞춘다.
         setRefreshTokenCookie(newRefreshToken, response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
 
         // 8. 새로운 Access Token을 헤더 및 쿠키에 담아서 Response에 추가

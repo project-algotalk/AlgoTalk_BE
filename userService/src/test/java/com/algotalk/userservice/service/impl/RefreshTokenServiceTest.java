@@ -99,11 +99,13 @@ class RefreshTokenServiceTest {
 
         // when
         refreshTokenService.saveRefreshToken(userId, oldToken);
-        refreshTokenService.rotateRefreshToken(userId, newToken);
+        IRefreshTokenService.RotationResult result =
+                refreshTokenService.rotateRefreshToken(userId, oldToken, newToken);
 
         String stored = refreshTokenService.getRefreshToken(userId);
 
         // then
+        assertThat(result).isEqualTo(IRefreshTokenService.RotationResult.ROTATED);
         assertThat(stored).isEqualTo(newToken);
         assertThat(stored).isNotEqualTo(oldToken);
 

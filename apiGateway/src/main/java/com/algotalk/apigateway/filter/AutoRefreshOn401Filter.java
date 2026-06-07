@@ -1,5 +1,8 @@
 package com.algotalk.apigateway.filter;
 
+import com.algotalk.apigateway.auth.AuthFailureReason;
+import com.algotalk.apigateway.auth.refresh.RefreshCoordinator;
+import com.algotalk.apigateway.auth.refresh.RefreshOutcome;
 import com.algotalk.apigateway.util.CmmUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,17 +39,17 @@ import java.util.Set;
  * AT 만료 시 RT로 자동 재발급 후 원래 요청을 재시도하는 필터
  *
  * 동작 방식:
- * [401 감지 재시도] 다운스트림에서 401이 응답으로 내려오면 → RT로 재발급 후 원래 요청 재시도 (1회)
+ * [401 감지 재시도] 다운스트림에서 401이 응답으로 내려오면 -> RT로 재발급 후 원래 요청 재시도 (1회)
  *
  * 실행 순서 (request 처리):
- * CookieToAuthHeaderFilter (HIGHEST_PRECEDENCE)     ← AT 쿠키 → Authorization 헤더 변환
- * AutoRefreshOn401Filter   (HIGHEST_PRECEDENCE + 1) ← response 데코레이터 등록
- * JwtAuthenticationFilter  (HIGHEST_PRECEDENCE + 2) ← JWT 검증
+ * CookieToAuthHeaderFilter (HIGHEST_PRECEDENCE)     <- AT 쿠키 -> Authorization 헤더 변환
+ * AutoRefreshOn401Filter   (HIGHEST_PRECEDENCE + 1) <- response 데코레이터 등록
+ * JwtAuthenticationFilter  (HIGHEST_PRECEDENCE + 2) <- JWT 검증
  *
  * 실행 순서 (response 처리 - 역순):
- * JwtAuthenticationFilter  ← 401 writeWith() 호출
- * AutoRefreshOn401Filter   ← 401 가로챔 → RT 재발급 → 원래 요청 재시도 ✅
- * CookieToAuthHeaderFilter ← 통과
+ * JwtAuthenticationFilter  <- 401 writeWith() 호출
+ * AutoRefreshOn401Filter   <- 401 가로챔 -> RT 재발급 -> 원래 요청 재시도
+ * CookieToAuthHeaderFilter <- 통과
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -65,10 +68,17 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
     @Value("${api.server.user.protocol:http}://${api.server.user.host:localhost}:${api.server.user.port:10000}${api.server.user.refresh-endpoint:/user/v1/token/reissue}")
     private String refreshUrl;
 
+    // User Service의 토큰 재발급 API를 호출
     private final WebClient webClient;
 
-    // 동일 요청에서 재시도 여부를 표시하는 exchange attribute 키 (무한 루프 방지)
-    private static final String ATTR_RETRIED = "X-RT-RETRIED";
+    // 같은 RT로 발생한 동시 재발급 요청을 하나로 합침
+    private final RefreshCoordinator refreshCoordinator;
+
+    // 동일한 원 요청이 재발급 실패 후 무한히 다시 시도하지 않도록 표시
+    static final String ATTR_RETRIED = "X-RT-RETRIED";
+
+    // JwtAuthenticationFilter가 기록한 인증 실패 원인을 읽기 위한 공통 attribute key
+    static final String ATTR_AUTH_FAILURE_REASON = "AUTH_FAILURE_REASON";
 
     // 토큰 재발급/인증 관련 경로 - AutoRefresh 대상에서 제외
     private static final Set<String> SKIP_PATHS = java.util.Set.of(
@@ -83,9 +93,6 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
     );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
-    // 토큰 재발급 결과 (새 AT 값 + Set-Cookie 헤더 목록)
-    private record RefreshOutcome(String at, List<String> setCookies) {}
 
     // GlobalFilter 진입점
     @Override
@@ -111,10 +118,11 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
     }
 
 
-    // 401 감지 후 재시도 로직
     /**
-     * 응답이 401이면 RT로 재발급 후 동일 요청을 1회 재시도한다.
-     * POST/PUT/PATCH의 경우 body를 캐싱하여 재시도 시 재사용한다.
+     * 401 감지 후 재시도 로직
+     *
+     * 응답이 401이면 RT로 재발급 후 동일 요청을 1회 재시도
+     * POST/PUT/PATCH의 경우 body를 캐싱하여 재시도 시 재사용
      */
     private Mono<Void> on401RetryOnce(ServerWebExchange exchange, GatewayFilterChain chain) {
         return cacheBodyIfNeeded(exchange).flatMap(ex -> {
@@ -131,28 +139,36 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
                     String path = ex.getRequest().getPath().value();
                     if (isSelfRefreshCall(path)) return super.writeWith(body);
 
-                    boolean unauthorized = (status.value() == HttpStatus.UNAUTHORIZED.value());
-                    boolean notRetried   = ex.getAttributeOrDefault(ATTR_RETRIED, Boolean.FALSE) == Boolean.FALSE;
-                    boolean hasRt        = ex.getRequest().getCookies().containsKey(refreshCookieName);
+                    // HTTP 상태, 재시도 여부, RT 존재 여부, 실제 JWT 실패 원인을 모두 확인하여 재발급 시도 여부 결정
+                    boolean unauthorized = (status.value() == HttpStatus.UNAUTHORIZED.value()); // 401 응답인지 확인
+                    boolean notRetried = !ex.getAttributeOrDefault(ATTR_RETRIED, Boolean.FALSE); // 이미 재시도한 요청인지 확인 (무한 루프 방지)
+                    HttpCookie refreshCookie = ex.getRequest().getCookies().getFirst(refreshCookieName); // RT 쿠키 존재 여부 확인
+                    boolean accessTokenExpired = ex.getAttribute(ATTR_AUTH_FAILURE_REASON)
+                            == AuthFailureReason.ACCESS_TOKEN_EXPIRED; // JwtAuthenticationFilter가 기록한 실패 원인이 AT 만료인지 확인
 
-                    // 401이 아니거나, 이미 재시도했거나, RT가 없으면 그대로 응답
-                    if (!(unauthorized && notRetried && hasRt)) return super.writeWith(body);
+                    // 서명 오류 같은 일반 401은 RT로 해결할 수 없으므로 AT 만료일 때만 재발급
+                    if (!(unauthorized && accessTokenExpired && notRetried && refreshCookie != null)) {
+                        return super.writeWith(body);
+                    }
 
                     // 재시도 플래그 설정 (무한 루프 방지)
                     ex.getAttributes().put(ATTR_RETRIED, true);
-                    log.debug("[AutoRefresh] 401 감지 → RT로 재발급 시도: path={}", path);
+                    log.debug("[AutoRefresh] 401 감지 -> RT로 재발급 시도: path={}", path);
 
-                    return callRefresh(ex)
+                    // leader 요청만 실제 재발급 API를 호출하고 follower 요청은 같은 결과를 공유
+                    return refreshCoordinator.refresh(refreshCookie.getValue(), () -> callRefresh(ex))
                             .flatMap(outcome -> {
-                                if (outcome == null || CmmUtil.nvl(outcome.at()).isBlank()) {
-                                    // 재발급 실패 → 원래 401 응답 그대로 반환
-                                    log.debug("[AutoRefresh] 재발급 실패 → 401 그대로 반환");
+                                if (outcome == null || CmmUtil.nvl(outcome.accessToken()).isBlank()) {
+                                    // 재발급 실패 -> 원래 401 응답 그대로 반환
+                                    log.debug("[AutoRefresh] 재발급 실패 -> 401 그대로 반환");
                                     return Mono.defer(() -> super.writeWith(body));
                                 }
-                                // 재발급 성공 → 새 AT로 요청 재시도
-                                log.debug("[AutoRefresh] 재발급 성공 → 원래 요청 재시도");
+                                // 재발급 성공 -> 새 AT로 요청 재시도
+                                log.debug("[AutoRefresh] 재발급 성공 -> 원래 요청 재시도");
+                                // leader/follower 모두 같은 새 AT/RT 쿠키를 브라우저 응답에 넣도록 Set-Cookie 헤더 적용
                                 applySetCookies(original, outcome.setCookies());
-                                ServerWebExchange retryEx = mutateWithNewAT(ex, outcome.at());
+                                // 브라우저가 새 쿠키를 저장하기 전이므로 내부 재시도에는 새 AT를 직접 주입
+                                ServerWebExchange retryEx = mutateWithNewAT(ex, outcome.accessToken());
                                 return chain.filter(retryEx);
                             })
                             .switchIfEmpty(Mono.defer(() -> super.writeWith(body)));
@@ -163,10 +179,11 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
         });
     }
 
-    // 토큰 재발급 호출
     /**
-     * userService의 토큰 재발급 엔드포인트를 직접 호출한다.
-     * RT는 쿠키 헤더에 포함되어 전달된다.
+     * 토큰 재발급 호출
+     *
+     * userService의 토큰 재발급 엔드포인트를 직접 호출한
+     * RT는 쿠키 헤더에 포함되어 전달
      */
     private Mono<RefreshOutcome> callRefresh(ServerWebExchange exchange) {
         String cookieHeader = CmmUtil.nvl(exchange.getRequest().getHeaders().getFirst(HttpHeaders.COOKIE));
@@ -198,10 +215,11 @@ public class AutoRefreshOn401Filter implements GlobalFilter, Ordered {
                 });
     }
 
-    // 요청 body 캐싱 (POST/PUT/PATCH 재시도 시 body 재사용)
     /**
-     * POST/PUT/PATCH 요청의 body를 캐싱하여 재시도 시 재사용 가능하게 한다.
-     * GET/DELETE 등은 body가 없으므로 캐싱하지 않는다.
+     * 요청 body 캐싱 (POST/PUT/PATCH 재시도 시 body 재사용)
+     *
+     * POST/PUT/PATCH 요청의 body를 캐싱하여 재시도 시 재사용 가능하게 함
+     * GET/DELETE 등은 body가 없으므로 캐싱하지 않음
      */
     private Mono<ServerWebExchange> cacheBodyIfNeeded(ServerWebExchange exchange) {
         HttpMethod m = exchange.getRequest().getMethod();

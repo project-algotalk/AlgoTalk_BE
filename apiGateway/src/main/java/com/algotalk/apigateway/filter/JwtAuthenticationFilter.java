@@ -1,5 +1,6 @@
 package com.algotalk.apigateway.filter;
 
+import com.algotalk.apigateway.auth.AuthFailureReason;
 import com.algotalk.apigateway.exception.GatewayErrorCode;
 import com.algotalk.common.response.ErrorResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -134,7 +136,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     return chain.filter(exchange.mutate().request(mutateRequest).build());
                 })
                 .onErrorResume(JwtException.class, e -> {
+                    // 만료와 위조/형식 오류를 구분해야 불필요한 RT 회전을 막을 수 있다.
+                    if (isExpired(e)) {
+                        log.debug("JWT 만료: {}", e.getMessage());
+                        exchange.getAttributes().put(
+                                AutoRefreshOn401Filter.ATTR_AUTH_FAILURE_REASON,
+                                AuthFailureReason.ACCESS_TOKEN_EXPIRED
+                        );
+                        return onError(exchange, TOKEN_EXPIRED);
+                    }
                     log.warn("JWT 검증 실패: {}", e.getMessage());
+                    exchange.getAttributes().put(
+                            AutoRefreshOn401Filter.ATTR_AUTH_FAILURE_REASON,
+                            AuthFailureReason.ACCESS_TOKEN_INVALID
+                    );
                     return onError(exchange, TOKEN_INVALID);
                 });
     }
@@ -149,6 +164,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         return PERMIT_ALL.stream()
                 .anyMatch(pattern ->
                         pathMatcher.match(pattern, path));
+    }
+
+    /**
+     * Spring Security의 JWT 검증 오류 중 exp 만료 오류인지 확인한다.
+     * 단순 파싱/서명 오류는 false를 반환하여 자동 재발급 대상에서 제외한다.
+     */
+    private boolean isExpired(JwtException exception) {
+        if (!(exception instanceof JwtValidationException validationException)) {
+            return false;
+        }
+
+        // JwtValidationException에는 여러 검증 오류가 들어올 수 있으므로 만료 설명이 하나라도 있는지 확인한다.
+        return validationException.getErrors().stream()
+                .map(error -> error.getDescription().toLowerCase(java.util.Locale.ROOT))
+                .anyMatch(description -> description.contains("expired"));
     }
 
     // 인증 실패하는 경우 401 에러
