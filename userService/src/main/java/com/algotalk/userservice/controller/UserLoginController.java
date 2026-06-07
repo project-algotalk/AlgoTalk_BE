@@ -4,6 +4,7 @@ import com.algotalk.common.response.ApiResponse;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
 import com.algotalk.userservice.dto.response.LoginResponseDTO;
 import com.algotalk.userservice.service.IUserLoginService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,12 +64,23 @@ public class UserLoginController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal Jwt jwt,
+                                                    HttpServletRequest request,
                                                     HttpServletResponse response) throws Exception {
         log.info("{}.logout Start!", this.getClass().getName());
 
         Long userId = Long.valueOf(jwt.getSubject());
-        userLoginService.logout(userId, response);
+        userLoginService.logout(userId, request, response);
 
+        return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    /** 사용자의 모든 기기 로그인 세션을 폐기한다. */
+    @PostMapping("/logout/all")
+    public ResponseEntity<ApiResponse<Void>> logoutAll(
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletResponse response
+    ) throws Exception {
+        userLoginService.logoutAll(Long.valueOf(jwt.getSubject()), response);
         return ResponseEntity.ok(ApiResponse.ok());
     }
 }

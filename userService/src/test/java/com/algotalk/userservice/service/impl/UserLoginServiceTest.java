@@ -3,7 +3,6 @@ package com.algotalk.userservice.service.impl;
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.algotalk.userservice.dto.response.LoginResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,12 +58,12 @@ public class UserLoginServiceTest {
         // 회원가입
         userRegService.insertUser(
                 SignUpRequestDTO.builder()
-                .loginId(loginId)
-                .password(password)
-                .passwordConfirm(password)
-                .name(name)
-                .email(email)
-                .build());
+                        .loginId(loginId)
+                        .password(password)
+                        .passwordConfirm(password)
+                        .name(name)
+                        .email(email)
+                        .build());
 
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
                 .loginId(loginId)
@@ -85,11 +85,13 @@ public class UserLoginServiceTest {
         assertThat(allSetCookie).contains("SameSite");
 
         String accessToken = Objects.requireNonNull(response.getCookie("AccessToken")).getValue();
-
-        // cleanup: AT에서 실제 userId 추출 후 Redis 정리
         Long userId = jwtTokenService.getUserIdFromToken(accessToken);
-        log.info("cleanup - userId: {}", userId);
-        stringRedisTemplate.delete(REFRESH_TOKEN_KEY_PREFIX + userId);
+
+        // cleanup: sessionId 추출 후 세션 키 삭제
+        String refreshToken = Objects.requireNonNull(response.getCookie("RefreshToken")).getValue();
+        String sessionId = jwtTokenService.getSessionIdFromToken(refreshToken);
+        stringRedisTemplate.delete(REFRESH_TOKEN_KEY_PREFIX + userId + ":" + sessionId);
+        stringRedisTemplate.delete("refresh:sessions:" + userId);
         stringRedisTemplate.delete("email:verified:" + email);
     }
 
@@ -225,13 +227,18 @@ public class UserLoginServiceTest {
         Long userId = jwtTokenService.getUserIdFromToken(accessToken);
         log.info("로그아웃 대상 userId: {}", userId);
 
+        String refreshToken = loginResponse.getCookie("RefreshToken").getValue();
+        String sessionId = jwtTokenService.getSessionIdFromToken(refreshToken);
+        MockHttpServletRequest logoutRequest = new MockHttpServletRequest();
+        logoutRequest.setCookies(new jakarta.servlet.http.Cookie("RefreshToken", refreshToken));
+
         // when
         MockHttpServletResponse logoutResponse = new MockHttpServletResponse();
-        userLoginService.logout(userId, logoutResponse);
+        userLoginService.logout(userId, logoutRequest, logoutResponse);
 
-        // then: Redis RT 삭제 확인
+        // then: 현재 세션의 Redis RT 삭제 확인
         String savedRT = stringRedisTemplate.opsForValue()
-                .get(REFRESH_TOKEN_KEY_PREFIX + userId);
+                .get(REFRESH_TOKEN_KEY_PREFIX + userId + ":" + sessionId);
         assertThat(savedRT).isNull();
 
         // then: Cookie 만료 확인

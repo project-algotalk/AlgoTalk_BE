@@ -1,5 +1,6 @@
 package com.algotalk.userservice.persistence;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public interface IRedisMapper {
@@ -12,6 +13,30 @@ public interface IRedisMapper {
 
     // key와 연결된 값을 삭제
     void delete(String key);
+
+    /**
+     * Redis Set에 member 추가
+     *
+     * @param key Redis Set key
+     * @param member 추가할 Set member
+     */
+    void addSetMember(String key, String member);
+
+    /**
+     * Redis Set에서 member 제거
+     *
+     * @param key Redis Set key
+     * @param member 제거할 Set member
+     */
+    void removeSetMember(String key, String member);
+
+    /**
+     * Redis Set의 전체 member 조회
+     *
+     * @param key Redis Set key
+     * @return Set에 저장된 member 목록
+     */
+    Set<String> getSetMembers(String key);
 
     /**
      * 현재 저장값이 expectedValue와 일치할 때에만 newValue로 교체하고 TTL을 갱신

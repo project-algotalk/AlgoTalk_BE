@@ -143,6 +143,6 @@ class AuthFlowControllerTest {
         // cleanup
         stringRedisTemplate.delete("email:verified:" + email);
         Long userId = jwtTokenService.getUserIdFromToken(newAccessToken);
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteAllRefreshTokens(userId);
     }
 }

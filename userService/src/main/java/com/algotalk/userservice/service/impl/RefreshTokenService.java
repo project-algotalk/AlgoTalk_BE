@@ -1,17 +1,20 @@
 package com.algotalk.userservice.service.impl;
 
+import com.algotalk.userservice.domain.enums.RefreshTokenRotationResult;
 import com.algotalk.userservice.persistence.IRedisMapper;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Refresh Token의 Redis key와 만료 정책을 관리하는 서비스
- * 실제 Redis 명령은 IRedisMapper에 위임하여 서비스 로직과 저장소 구현을 분리
+ * 로그인 세션별 Refresh Token과 사용자별 활성 세션 인덱스 관리
+ * 기존 refresh:{userId} key와 sessionId가 없는 RT는 조회 대상에서 제외하며 배포 후 재로그인 필요
  */
 @Slf4j
 @Service
@@ -19,29 +22,28 @@ import java.util.concurrent.TimeUnit;
 public class RefreshTokenService implements IRefreshTokenService {
 
     private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
+    private static final String SESSION_INDEX_KEY_PREFIX = "refresh:sessions:";
 
-    // 서비스 계층에서 StringRedisTemplate을 직접 사용하지 않고 Mapper를 통해 접근
     private final IRedisMapper redisMapper;
 
-    @Value("${jwt.refresh.token.expiration}")
-    private long refreshTokenExpiration;
-
     @Override
-    public void saveRefreshToken(Long userId, String refreshToken) {
+    public void saveRefreshToken(Long userId, String sessionId, String refreshToken, Instant expiresAt) {
         log.info("{}.saveRefreshToken Start!", this.getClass().getName());
 
-        String key = key(userId);
-        redisMapper.setValue(key, refreshToken, refreshTokenExpiration, TimeUnit.MILLISECONDS);
+        long ttlMillis = remainingTtlMillis(expiresAt);
+        String key = key(userId, sessionId);
+        redisMapper.setValue(key, refreshToken, ttlMillis, TimeUnit.MILLISECONDS);
+        redisMapper.addSetMember(indexKey(userId), sessionId);
         log.info("Refresh Token 저장 완료: key={}", key);
 
         log.info("{}.saveRefreshToken End!", this.getClass().getName());
     }
 
     @Override
-    public String getRefreshToken(Long userId) {
+    public String getRefreshToken(Long userId, String sessionId) {
         log.info("{}.getRefreshToken Start!", this.getClass().getName());
 
-        String key = key(userId);
+        String key = key(userId, sessionId);
         String refreshToken = redisMapper.getValue(key);
         log.info("Refresh Token 조회: key={}", key);
 
@@ -50,27 +52,38 @@ public class RefreshTokenService implements IRefreshTokenService {
     }
 
     @Override
-    public void deleteRefreshToken(Long userId) {
+    public void deleteRefreshToken(Long userId, String sessionId) {
         log.info("{}.deleteRefreshToken Start!", this.getClass().getName());
 
-        String key = key(userId);
-        redisMapper.delete(key);
-        log.info("Refresh Token 삭제: key={}", key);
+        redisMapper.delete(key(userId, sessionId));
+        redisMapper.removeSetMember(indexKey(userId), sessionId);
+        log.info("Refresh Token 세션 삭제: userId={}, sessionId={}", userId, sessionId);
 
         log.info("{}.deleteRefreshToken End!", this.getClass().getName());
     }
 
     @Override
-    public boolean validateRefreshToken(Long userId, String refreshToken) {
+    public void deleteAllRefreshTokens(Long userId) {
+        log.info("{}.deleteAllRefreshTokens Start!", this.getClass().getName());
+
+        Set<String> sessionIds = redisMapper.getSetMembers(indexKey(userId));
+        if (sessionIds != null) {
+            sessionIds.forEach(sessionId -> redisMapper.delete(key(userId, sessionId)));
+        }
+        redisMapper.delete(indexKey(userId));
+        log.info("사용자의 전체 Refresh Token 세션 삭제: userId={}", userId);
+
+        log.info("{}.deleteAllRefreshTokens End!", this.getClass().getName());
+    }
+
+    @Override
+    public boolean validateRefreshToken(Long userId, String sessionId, String refreshToken) {
         log.info("{}.validateRefreshToken Start!", this.getClass().getName());
 
-        String key = key(userId);
-        String storedToken = redisMapper.getValue(key);
-        log.info("Refresh Token 검증: key={}", key);
-
+        String storedToken = getRefreshToken(userId, sessionId);
         boolean valid = storedToken != null && storedToken.equals(refreshToken);
         if (valid) {
-            log.info("Refresh Token 검증 성공!");
+            log.info("Refresh Token 검증 성공: userId={}, sessionId={}", userId, sessionId);
         }
 
         log.info("{}.validateRefreshToken End!", this.getClass().getName());
@@ -78,39 +91,51 @@ public class RefreshTokenService implements IRefreshTokenService {
     }
 
     @Override
-    public RotationResult rotateRefreshToken(
+    public RefreshTokenRotationResult rotateRefreshToken(
             Long userId,
+            String sessionId,
             String expectedRefreshToken,
-            String newRefreshToken
+            String newRefreshToken,
+            Instant expiresAt
     ) {
         log.info("{}.rotateRefreshToken Start!", this.getClass().getName());
 
-        String key = key(userId);
-        // 기존 RT 확인과 새 RT 저장을 Redis Lua CAS 한 번으로 처리
+        String key = key(userId, sessionId);
         IRedisMapper.CompareAndSetResult result = redisMapper.compareAndSet(
                 key,
                 expectedRefreshToken,
                 newRefreshToken,
-                refreshTokenExpiration,
+                remainingTtlMillis(expiresAt),
                 TimeUnit.MILLISECONDS
         );
 
-        // 저장소 계층의 결과를 인증 도메인에서 사용하는 RotationResult로 변환
-        RotationResult rotationResult = switch (result) {
-            case UPDATED -> {
-                log.info("Refresh Token RTR 완료: key={}", key);
-                yield RotationResult.ROTATED;
-            }
-            case NOT_FOUND -> RotationResult.NOT_FOUND;
-            case MISMATCH -> RotationResult.MISMATCH;
-        };
+        RefreshTokenRotationResult rotationResult;
+        if (result == IRedisMapper.CompareAndSetResult.UPDATED) {
+            log.info("Refresh Token RTR 완료: key={}", key);
+            rotationResult = RefreshTokenRotationResult.ROTATED;
+        } else if (result == IRedisMapper.CompareAndSetResult.NOT_FOUND) {
+            rotationResult = RefreshTokenRotationResult.NOT_FOUND;
+        } else {
+            rotationResult = RefreshTokenRotationResult.MISMATCH;
+        }
 
         log.info("{}.rotateRefreshToken End!", this.getClass().getName());
         return rotationResult;
     }
 
-    // 현재 저장 구조는 사용자별 RT 한 개를 refresh:{userId} 형식으로 관리
-    private String key(Long userId) {
-        return REFRESH_TOKEN_KEY_PREFIX + userId;
+    private long remainingTtlMillis(Instant expiresAt) {
+        long ttlMillis = Duration.between(Instant.now(), expiresAt).toMillis();
+        if (ttlMillis <= 0) {
+            throw new IllegalArgumentException("만료된 Refresh Token은 Redis에 저장할 수 없습니다.");
+        }
+        return ttlMillis;
+    }
+
+    private String key(Long userId, String sessionId) {
+        return REFRESH_TOKEN_KEY_PREFIX + userId + ":" + sessionId;
+    }
+
+    private String indexKey(Long userId) {
+        return SESSION_INDEX_KEY_PREFIX + userId;
     }
 }

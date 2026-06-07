@@ -1,5 +1,6 @@
 package com.algotalk.userservice.service.impl;
 
+import com.algotalk.userservice.domain.enums.RefreshTokenRotationResult;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -28,14 +30,14 @@ class RefreshTokenServiceTest {
         String refreshToken = "test.refresh";
 
         // when
-        refreshTokenService.saveRefreshToken(userId, refreshToken);
+        refreshTokenService.saveRefreshToken(userId, "test-session", refreshToken, Instant.now().plusSeconds(600));
 
         // then
-        String stored = refreshTokenService.getRefreshToken(userId);
+        String stored = refreshTokenService.getRefreshToken(userId, "test-session");
         assertThat(stored).isEqualTo(refreshToken);
 
         // cleanup
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteRefreshToken(userId, "test-session");
     }
 
     @Test
@@ -45,7 +47,7 @@ class RefreshTokenServiceTest {
         Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
 
         // when
-        String stored = refreshTokenService.getRefreshToken(userId);
+        String stored = refreshTokenService.getRefreshToken(userId, "test-session");
 
         // then
         assertThat(stored).isNull();
@@ -58,16 +60,16 @@ class RefreshTokenServiceTest {
         Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
-        refreshTokenService.saveRefreshToken(userId, refreshToken);
+        refreshTokenService.saveRefreshToken(userId, "test-session", refreshToken, Instant.now().plusSeconds(600));
 
         // when
-        boolean result = refreshTokenService.validateRefreshToken(userId, refreshToken);
+        boolean result = refreshTokenService.validateRefreshToken(userId, "test-session", refreshToken);
 
         // then
         assertThat(result).isTrue();
 
         // cleanup
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteRefreshToken(userId, "test-session");
     }
 
     @Test
@@ -77,16 +79,16 @@ class RefreshTokenServiceTest {
         Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
-        refreshTokenService.saveRefreshToken(userId, refreshToken);
+        refreshTokenService.saveRefreshToken(userId, "test-session", refreshToken, Instant.now().plusSeconds(600));
 
         // when
-        boolean result = refreshTokenService.validateRefreshToken(userId, "wrong.refresh");
+        boolean result = refreshTokenService.validateRefreshToken(userId, "test-session", "wrong.refresh");
 
         // then
         assertThat(result).isFalse();
 
         // cleanup
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteRefreshToken(userId, "test-session");
     }
 
     @Test
@@ -98,19 +100,19 @@ class RefreshTokenServiceTest {
         String newToken = "new.refresh";
 
         // when
-        refreshTokenService.saveRefreshToken(userId, oldToken);
-        IRefreshTokenService.RotationResult result =
-                refreshTokenService.rotateRefreshToken(userId, oldToken, newToken);
+        refreshTokenService.saveRefreshToken(userId, "test-session", oldToken, Instant.now().plusSeconds(600));
+        RefreshTokenRotationResult result =
+                refreshTokenService.rotateRefreshToken(userId, "test-session", oldToken, newToken, Instant.now().plusSeconds(600));
 
-        String stored = refreshTokenService.getRefreshToken(userId);
+        String stored = refreshTokenService.getRefreshToken(userId, "test-session");
 
         // then
-        assertThat(result).isEqualTo(IRefreshTokenService.RotationResult.ROTATED);
+        assertThat(result).isEqualTo(RefreshTokenRotationResult.ROTATED);
         assertThat(stored).isEqualTo(newToken);
         assertThat(stored).isNotEqualTo(oldToken);
 
         // cleanup
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteRefreshToken(userId, "test-session");
     }
 
     @Test
@@ -120,13 +122,13 @@ class RefreshTokenServiceTest {
         Long userId = Math.abs(UUID.randomUUID().getMostSignificantBits());
         String refreshToken = "test.refresh";
 
-        refreshTokenService.saveRefreshToken(userId, refreshToken);
+        refreshTokenService.saveRefreshToken(userId, "test-session", refreshToken, Instant.now().plusSeconds(600));
 
         // when
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteRefreshToken(userId, "test-session");
 
         // then
-        String stored = refreshTokenService.getRefreshToken(userId);
+        String stored = refreshTokenService.getRefreshToken(userId, "test-session");
         assertThat(stored).isNull();
     }
 

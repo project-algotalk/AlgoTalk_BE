@@ -1,6 +1,7 @@
 package com.algotalk.userservice.auth.oauth2;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.SocialLinkRequestDTO;
 import com.algotalk.userservice.service.IJwtTokenService;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -50,9 +53,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
     @Value("${cookie.access.name}")
     private String accessTokenName;
-
-    @Value("${jwt.refresh.token.expiration}")
-    private Long refreshTokenExpiration; // ms
 
     @Value("${cookie.refresh.name}")
     private String refreshTokenName;
@@ -136,13 +136,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     .build();
 
             String accessToken = jwtTokenService.generateAccessToken(userInfo);
-            String refreshToken = jwtTokenService.generateRefreshToken(userInfo);
+            RefreshTokenIssue refreshTokenIssue =
+                    jwtTokenService.issueRefreshToken(userInfo);
 
-            // RT Redis 저장
-            refreshTokenService.saveRefreshToken(oAuth2User.getUserId(), refreshToken);
+            refreshTokenService.saveRefreshToken(
+                    oAuth2User.getUserId(),
+                    refreshTokenIssue.sessionId(),
+                    refreshTokenIssue.token(),
+                    refreshTokenIssue.expiresAt()
+            );
 
             setAccessTokenCookie(accessToken, response); // 리다이렉트하기 때문에 헤더로 전달 불가능
-            setRefreshTokenCookie(refreshToken, response);
+            setRefreshTokenCookie(refreshTokenIssue.token(), refreshTokenIssue.expiresAt(), response);
 
             log.info("JWT 발급 완료");
 
@@ -173,13 +178,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.addHeader(HttpHeaders.SET_COOKIE, atCookie.toString());
     }
 
-    private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
+    private void setRefreshTokenCookie(String refreshToken, Instant expiresAt, HttpServletResponse response) {
         ResponseCookie rtCookie = ResponseCookie.from(refreshTokenName, refreshToken)
                 .httpOnly(true)
                 .secure(cookieSecure)
                 .path("/")
                 .sameSite(sameSite)
-                .maxAge(refreshTokenExpiration / 1000)
+                .maxAge(Math.max(0, Duration.between(Instant.now(), expiresAt).toSeconds()))
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, rtCookie.toString());
     }

@@ -1,6 +1,8 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.domain.enums.RefreshTokenRotationResult;
+import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.response.TokenReissueResponseDTO;
 import com.algotalk.userservice.repository.IUserLoginMapper;
@@ -19,6 +21,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
+
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -32,13 +36,12 @@ class TokenReissueServiceMockTest {
 
     @InjectMocks
     TokenReissueService tokenReissueService;
+    @Mock IJwtTokenService jwtTokenService;
+    @Mock IRefreshTokenService refreshTokenService;
+    @Mock IUserLoginMapper userLoginMapper;
 
-    @Mock
-    IJwtTokenService jwtTokenService;
-    @Mock
-    IRefreshTokenService refreshTokenService;
-    @Mock
-    IUserLoginMapper userLoginMapper;
+    private final Instant absoluteExpiresAt = Instant.now().plusSeconds(3600);
+    private final Instant tokenExpiresAt = Instant.now().plusSeconds(600);
 
     @BeforeEach
     void setUp() {
@@ -47,148 +50,122 @@ class TokenReissueServiceMockTest {
         ReflectionTestUtils.setField(tokenReissueService, "cookieSecure", false);
         ReflectionTestUtils.setField(tokenReissueService, "sameSite", "Lax");
         ReflectionTestUtils.setField(tokenReissueService, "accessTokenExpiration", 600000L);
-        ReflectionTestUtils.setField(tokenReissueService, "refreshTokenExpiration", 604800000L);
     }
 
     @Test
-    @DisplayName("토큰 재발급 성공")
-    void reissue_success() throws Exception {
-        // given
+    @DisplayName("토큰 재발급 성공 - 동일 세션 유지 및 해당 세션만 RTR")
+    void reissuePreservesSessionAndRotatesOnlyThatSession() throws Exception {
         String refreshToken = "valid.refresh.token";
-
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie("RefreshToken", refreshToken));
-
+        MockHttpServletRequest request = requestWith(refreshToken);
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        UserInfoCommand user = UserInfoCommand.builder()
-                .userId(1L)
-                .loginId("test")
-                .nickname("테스터")
-                .role("ROLE_USER")
-                .build();
-
-        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
-        given(refreshTokenService.getRefreshToken(1L)).willReturn(refreshToken);
+        UserInfoCommand user = UserInfoCommand.builder().userId(1L).role("ROLE_USER").build();
+        givenValidSession(refreshToken);
+        given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn(refreshToken);
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
         given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
-        given(jwtTokenService.generateRefreshToken(any())).willReturn("new.refresh.token");
-        given(refreshTokenService.rotateRefreshToken(1L, refreshToken, "new.refresh.token"))
-                .willReturn(IRefreshTokenService.RotationResult.ROTATED);
+        given(jwtTokenService.rotateRefreshToken(user, "session-a", absoluteExpiresAt))
+                .willReturn(new RefreshTokenIssue(
+                        "new.refresh.token", "session-a", tokenExpiresAt, absoluteExpiresAt));
+        given(refreshTokenService.rotateRefreshToken(
+                1L, "session-a", refreshToken, "new.refresh.token", tokenExpiresAt
+        )).willReturn(RefreshTokenRotationResult.ROTATED);
 
-        // when
-        TokenReissueResponseDTO result =
-                tokenReissueService.reissueToken(request, response);
+        TokenReissueResponseDTO result = tokenReissueService.reissueToken(request, response);
 
-        // then
-        assertThat(result).isNotNull();
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(600L);
-
-        verify(refreshTokenService).rotateRefreshToken(1L, refreshToken, "new.refresh.token");
-
-        String setCookie = response.getHeader("Set-Cookie");
-
-        assertThat(setCookie).isNotNull();
-        assertThat(setCookie).contains("RefreshToken=new.refresh.token");
-        assertThat(setCookie).contains("HttpOnly");
-        assertThat(setCookie).contains("SameSite=Lax");
+        verify(refreshTokenService).rotateRefreshToken(
+                1L, "session-a", refreshToken, "new.refresh.token", tokenExpiresAt);
+        assertThat(response.getHeaders("Set-Cookie").toString())
+                .contains("RefreshToken=new.refresh.token", "HttpOnly", "SameSite=Lax");
     }
 
     @Test
-    @DisplayName("RefreshToken 없음")
-    void reissue_fail_noCookie() {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        assertThatThrownBy(() ->
-                tokenReissueService.reissueToken(request, response)
-        ).isInstanceOf(BusinessException.class)
+    @DisplayName("토큰 재발급 실패 - Refresh Token 쿠키 없음")
+    void reissueFailsWithoutCookie() {
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(
+                new MockHttpServletRequest(), new MockHttpServletResponse()))
+                .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(REFRESH_TOKEN_NOT_FOUND));
     }
 
     @Test
-    @DisplayName("RefreshToken 불일치")
-    void reissue_fail_mismatch() throws Exception {
-
+    @DisplayName("토큰 재발급 실패 - 세션에 저장된 Refresh Token 불일치")
+    void reissueFailsWhenSessionTokenMismatches() throws Exception {
         String refreshToken = "invalid.token";
+        givenValidSession(refreshToken);
+        given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn("different.token");
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie("RefreshToken", refreshToken));
-
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
-        given(refreshTokenService.getRefreshToken(1L)).willReturn("different.token");
-
-        assertThatThrownBy(() ->
-                tokenReissueService.reissueToken(request, response)
-        ).isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(TOKEN_MISMATCH));
-    }
-
-    @Test
-    @DisplayName("초기 검증 후 다른 요청이 먼저 RTR을 완료하면 TOKEN_MISMATCH")
-    void reissue_fail_casMismatch() throws Exception {
-        String refreshToken = "valid.refresh.token";
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie("RefreshToken", refreshToken));
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        UserInfoCommand user = UserInfoCommand.builder().userId(1L).build();
-
-        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
-        given(refreshTokenService.getRefreshToken(1L)).willReturn(refreshToken);
-        given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
-        given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
-        given(jwtTokenService.generateRefreshToken(any())).willReturn("new.refresh.token");
-        given(refreshTokenService.rotateRefreshToken(1L, refreshToken, "new.refresh.token"))
-                .willReturn(IRefreshTokenService.RotationResult.MISMATCH);
-
-        assertThatThrownBy(() -> tokenReissueService.reissueToken(request, response))
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(
+                requestWith(refreshToken), new MockHttpServletResponse()))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(TOKEN_MISMATCH));
     }
 
     @Test
-    @DisplayName("RefreshToken 만료")
-    public void reissue_fail_expired() throws Exception {
-        // given
+    @DisplayName("토큰 재발급 실패 - Redis 세션 없음")
+    void reissueFailsWhenSessionIsMissing() throws Exception {
         String refreshToken = "expired.token";
+        givenValidSession(refreshToken);
+        given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn(null);
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie("RefreshToken", refreshToken));
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
-        given(refreshTokenService.getRefreshToken(1L)).willReturn(null);
-
-        // when & then
-        assertThatThrownBy(() -> tokenReissueService.reissueToken(request, response))
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(
+                requestWith(refreshToken), new MockHttpServletResponse()))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(TOKEN_EXPIRED));
     }
 
     @Test
-    @DisplayName("RefreshToken decode 실패")
-    public void reissue_fail_decodeError() throws Exception {
-        // given
-        String refreshToken = "malformed.token";
+    @DisplayName("토큰 재발급 실패 - 다른 요청이 먼저 RTR 완료")
+    void reissueFailsAfterCompetingRotationWins() throws Exception {
+        String refreshToken = "valid.refresh.token";
+        UserInfoCommand user = UserInfoCommand.builder().userId(1L).build();
+        givenValidSession(refreshToken);
+        given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn(refreshToken);
+        given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
+        given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
+        given(jwtTokenService.rotateRefreshToken(user, "session-a", absoluteExpiresAt))
+                .willReturn(new RefreshTokenIssue(
+                        "new.refresh.token", "session-a", tokenExpiresAt, absoluteExpiresAt));
+        given(refreshTokenService.rotateRefreshToken(
+                1L, "session-a", refreshToken, "new.refresh.token", tokenExpiresAt
+        )).willReturn(RefreshTokenRotationResult.MISMATCH);
 
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new Cookie("RefreshToken", refreshToken));
-        MockHttpServletResponse response = new MockHttpServletResponse();
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(
+                requestWith(refreshToken), new MockHttpServletResponse()))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                        .isEqualTo(TOKEN_MISMATCH));
+    }
 
-        given(jwtTokenService.getUserIdFromToken(refreshToken))
-                .willThrow(new RuntimeException("RefreshToken decode error"));
+    @Test
+    @DisplayName("토큰 재발급 실패 - 세션 절대 만료 시간 경과")
+    void reissueRejectsExpiredAbsoluteSession() throws Exception {
+        String refreshToken = "absolute.expired.token";
+        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
+        given(jwtTokenService.getSessionIdFromToken(refreshToken)).willReturn("session-a");
+        given(jwtTokenService.getSessionExpiresAtFromToken(refreshToken))
+                .willReturn(Instant.now().minusSeconds(1));
 
-        // when & then
-        assertThatThrownBy(() -> tokenReissueService.reissueToken(request, response))
+        assertThatThrownBy(() -> tokenReissueService.reissueToken(
+                requestWith(refreshToken), new MockHttpServletResponse()))
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
                         .isEqualTo(TOKEN_INVALID));
+    }
+
+    private void givenValidSession(String refreshToken) throws Exception {
+        given(jwtTokenService.getUserIdFromToken(refreshToken)).willReturn(1L);
+        given(jwtTokenService.getSessionIdFromToken(refreshToken)).willReturn("session-a");
+        given(jwtTokenService.getSessionExpiresAtFromToken(refreshToken)).willReturn(absoluteExpiresAt);
+    }
+
+    private MockHttpServletRequest requestWith(String refreshToken) {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("RefreshToken", refreshToken));
+        return request;
     }
 }

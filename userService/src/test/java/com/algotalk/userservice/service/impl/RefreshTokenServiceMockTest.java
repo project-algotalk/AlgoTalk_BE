@@ -1,19 +1,22 @@
 package com.algotalk.userservice.service.impl;
 
+import com.algotalk.userservice.domain.enums.RefreshTokenRotationResult;
 import com.algotalk.userservice.persistence.IRedisMapper;
-import com.algotalk.userservice.service.IRefreshTokenService;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -26,37 +29,48 @@ class RefreshTokenServiceMockTest {
     @Mock
     private IRedisMapper redisMapper;
 
-    @BeforeEach
-    void setUp() {
-        ReflectionTestUtils.setField(refreshTokenService, "refreshTokenExpiration", 604_800_000L);
+    @Test
+    @DisplayName("동일 사용자의 로그인 세션별 Refresh Token key 분리")
+    void storesEachLoginInItsOwnSessionKey() {
+        Instant expiresAt = Instant.now().plusSeconds(600);
+
+        refreshTokenService.saveRefreshToken(1L, "pc", "pc-rt", expiresAt);
+        refreshTokenService.saveRefreshToken(1L, "mobile", "mobile-rt", expiresAt);
+
+        verify(redisMapper).setValue(eq("refresh:1:pc"), eq("pc-rt"), anyLong(), eq(TimeUnit.MILLISECONDS));
+        verify(redisMapper).setValue(eq("refresh:1:mobile"), eq("mobile-rt"), anyLong(), eq(TimeUnit.MILLISECONDS));
+        verify(redisMapper).addSetMember("refresh:sessions:1", "pc");
+        verify(redisMapper).addSetMember("refresh:sessions:1", "mobile");
     }
 
     @Test
-    @DisplayName("RTR은 Redis 원자적 compare-and-set 결과를 반환한다")
-    void rotateRefreshTokenUsesAtomicCompareAndSet() {
+    @DisplayName("세션 단위 Refresh Token 회전 시 Redis 원자적 CAS 사용")
+    void rotateRefreshTokenUsesSessionScopedAtomicCompareAndSet() {
+        Instant expiresAt = Instant.now().plusSeconds(600);
         given(redisMapper.compareAndSet(
-                "refresh:1", "old-rt", "new-rt", 604_800_000L, TimeUnit.MILLISECONDS
+                eq("refresh:1:session-a"),
+                eq("old-rt"),
+                eq("new-rt"),
+                anyLong(),
+                eq(TimeUnit.MILLISECONDS)
         )).willReturn(IRedisMapper.CompareAndSetResult.UPDATED);
 
-        IRefreshTokenService.RotationResult result =
-                refreshTokenService.rotateRefreshToken(1L, "old-rt", "new-rt");
-
-        assertThat(result).isEqualTo(IRefreshTokenService.RotationResult.ROTATED);
-        verify(redisMapper).compareAndSet(
-                "refresh:1", "old-rt", "new-rt", 604_800_000L, TimeUnit.MILLISECONDS
+        RefreshTokenRotationResult result = refreshTokenService.rotateRefreshToken(
+                1L, "session-a", "old-rt", "new-rt", expiresAt
         );
+
+        assertThat(result).isEqualTo(RefreshTokenRotationResult.ROTATED);
     }
 
     @Test
-    @DisplayName("저장된 RT 불일치는 MISMATCH로 변환한다")
-    void rotateRefreshTokenReturnsMismatch() {
-        given(redisMapper.compareAndSet(
-                "refresh:1", "stale-rt", "new-rt", 604_800_000L, TimeUnit.MILLISECONDS
-        )).willReturn(IRedisMapper.CompareAndSetResult.MISMATCH);
+    @DisplayName("사용자 세션 인덱스를 이용한 전체 Refresh Token 삭제")
+    void deleteAllRefreshTokensUsesUserSessionIndex() {
+        given(redisMapper.getSetMembers("refresh:sessions:1")).willReturn(Set.of("pc", "mobile"));
 
-        IRefreshTokenService.RotationResult result =
-                refreshTokenService.rotateRefreshToken(1L, "stale-rt", "new-rt");
+        refreshTokenService.deleteAllRefreshTokens(1L);
 
-        assertThat(result).isEqualTo(IRefreshTokenService.RotationResult.MISMATCH);
+        verify(redisMapper).delete("refresh:1:pc");
+        verify(redisMapper).delete("refresh:1:mobile");
+        verify(redisMapper).delete("refresh:sessions:1");
     }
 }

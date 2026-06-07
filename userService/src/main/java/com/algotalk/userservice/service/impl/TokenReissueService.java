@@ -1,6 +1,8 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.domain.enums.RefreshTokenRotationResult;
+import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.response.TokenReissueResponseDTO;
 import com.algotalk.userservice.repository.IUserLoginMapper;
@@ -17,11 +19,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import static com.algotalk.userservice.exception.UserErrorCode.*;
 
 /**
- * 쿠키의 기존 RT를 검증하고 새 AT/RT를 발급하는 서비스다.
- * 마지막 RT 교체 단계는 Redis CAS 결과가 성공일 때에만 응답 쿠키를 만든다.
+ * 쿠키의 기존 RT 검증 및 새 AT/RT 발급
+ * Redis CAS 성공 이후에만 새 RT 응답 쿠키 생성
  */
 @Slf4j
 @Service
@@ -47,12 +52,10 @@ public class TokenReissueService implements ITokenReissueService {
     @Value("${cookie.same-site}")
     private String sameSite;
 
-    @Value("${jwt.refresh.token.expiration}")
-    private Long refreshTokenExpiration;
-
     @Override
     public TokenReissueResponseDTO reissueToken(HttpServletRequest request,
                                                 HttpServletResponse response) throws Exception {
+        log.info("{}.reissueToken Start!", this.getClass().getName());
 
         // 1. Cookie에서 Refresh Token 추출
         String refreshToken = extractRefreshTokenFromCookie(request);
@@ -63,19 +66,26 @@ public class TokenReissueService implements ITokenReissueService {
         }
 
         // 2. Refresh Token Decode해서 userId 추출
-        Long userId; // userId 추출 실패 했을 때 예외 처리 위해 try-catch로 감싸기
+        Long userId;
+        String sessionId;
+        Instant absoluteExpiresAt;
         try {
             userId = jwtTokenService.getUserIdFromToken(refreshToken);
-            log.debug("Refresh Token에서 userId 추출 완료");
+            sessionId = jwtTokenService.getSessionIdFromToken(refreshToken);
+            absoluteExpiresAt = jwtTokenService.getSessionExpiresAtFromToken(refreshToken);
+            if (sessionId == null || !absoluteExpiresAt.isAfter(Instant.now())) {
+                throw new IllegalArgumentException("만료되었거나 세션 정보가 없는 Refresh Token");
+            }
+            log.debug("Refresh Token에서 userId와 sessionId 추출 완료");
         } catch (Exception e) {
             // decode 실패 시 예외 처리 (유효하지 않은 토큰)
             log.warn("유효하지 않은 Refresh Token입니다. class={}", e.getClass().getSimpleName());
             throw new BusinessException(TOKEN_INVALID);
         }
 
-        // 3. Redis에 RT가 없거나 이미 다른 값이면 DB 조회와 토큰 생성을 하지 않고 빠르게 실패한다.
-        // 이 조회만으로 교체를 확정하지 않으며, 실제 저장 직전에 Redis CAS가 같은 조건을 다시 검사한다.
-        String storedRefreshToken = refreshTokenService.getRefreshToken(userId);
+        // 3. Redis RT 부재 또는 불일치 시 DB 조회와 토큰 생성 전 실패 처리
+        // 사전 조회는 빠른 실패 판단에만 사용하고 실제 교체 조건은 Redis CAS에서 재검증
+        String storedRefreshToken = refreshTokenService.getRefreshToken(userId, sessionId);
         if (storedRefreshToken == null) {
             log.warn("Redis에 저장된 Refresh Token이 존재하지 않습니다.");
             throw new BusinessException(TOKEN_EXPIRED);
@@ -95,27 +105,36 @@ public class TokenReissueService implements ITokenReissueService {
             throw new BusinessException(USER_NOT_FOUND);
         }
 
+
         // 5. 새로운 Access Token과 Refresh Token 생성
         String newAccessToken = jwtTokenService.generateAccessToken(rCommand);
-        String newRefreshToken = jwtTokenService.generateRefreshToken(rCommand);
+        RefreshTokenIssue newRefreshTokenIssue =
+                jwtTokenService.rotateRefreshToken(rCommand, sessionId, absoluteExpiresAt);
+        String newRefreshToken = newRefreshTokenIssue.token();
 
-        // 6. 기존 RT 비교와 새 RT 저장을 Redis에서 원자적으로 수행한다.
-        // 사전 조회 이후 다른 요청이 먼저 RTR을 완료했다면 여기서 MISMATCH가 되어 중복 성공을 막는다.
-        IRefreshTokenService.RotationResult rotationResult =
-                refreshTokenService.rotateRefreshToken(userId, refreshToken, newRefreshToken);
-        // Redis key가 만료되거나 삭제된 경우이므로 RT 만료로 응답한다.
-        if (rotationResult == IRefreshTokenService.RotationResult.NOT_FOUND) {
+        // 6. 기존 RT 비교와 새 RT 저장을 Redis에서 원자적으로 수행
+        // 사전 조회 이후 선행 RTR이 완료된 경우 MISMATCH 반환으로 중복 성공 방지
+        RefreshTokenRotationResult rotationResult =
+                refreshTokenService.rotateRefreshToken(
+                        userId,
+                        sessionId,
+                        refreshToken,
+                        newRefreshToken,
+                        newRefreshTokenIssue.expiresAt()
+                );
+        // Redis key 만료 또는 삭제 시 RT 만료 응답
+        if (rotationResult == RefreshTokenRotationResult.NOT_FOUND) {
             log.warn("Redis에 저장된 Refresh Token이 존재하지 않습니다.");
             throw new BusinessException(TOKEN_EXPIRED);
         }
-        // 다른 요청이 먼저 회전했거나 오래된 RT가 재사용된 경우이므로 불일치로 응답한다.
-        if (rotationResult == IRefreshTokenService.RotationResult.MISMATCH) {
+        // 선행 회전 또는 이전 RT 재사용 시 불일치 응답
+        if (rotationResult == RefreshTokenRotationResult.MISMATCH) {
             log.warn("제공된 Refresh Token이 저장된 토큰과 일치하지 않습니다.");
             throw new BusinessException(TOKEN_MISMATCH);
         }
 
-        // 7. CAS가 성공한 뒤에만 새 RT를 쿠키에 내려 Redis 값과 브라우저 값을 맞춘다.
-        setRefreshTokenCookie(newRefreshToken, response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
+        // 7. CAS 성공 이후에만 새 RT 쿠키 설정으로 Redis와 브라우저 값 일치 보장
+        setRefreshTokenCookie(newRefreshToken, newRefreshTokenIssue.expiresAt(), response); // 기존 쿠키 삭제 및 새로운 쿠키 설정
 
         // 8. 새로운 Access Token을 헤더 및 쿠키에 담아서 Response에 추가
         setAccessTokenHeader(newAccessToken, response);
@@ -127,6 +146,7 @@ public class TokenReissueService implements ITokenReissueService {
                 .expiresIn(accessTokenExpiration / 1000) // ms -> 초 변환
                 .build();
 
+        log.info("{}.reissueToken End!", this.getClass().getName());
         return rDTO;
     }
 
@@ -135,6 +155,7 @@ public class TokenReissueService implements ITokenReissueService {
         log.info("{}.extractRefreshTokenFromCookie Start!", this.getClass().getName());
         // 쿠키에서 Refresh Token 추출 로직 구현
         if(request.getCookies() == null) {
+            log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
             return null; // 쿠기에 토큰 없으면 null 반환
         }
 
@@ -143,8 +164,8 @@ public class TokenReissueService implements ITokenReissueService {
         Cookie[] cookies = request.getCookies();
         for (Cookie cookie : cookies) {
             if(refreshCookieName.equals(cookie.getName())) {
-               log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
-               return  cookie.getValue();
+                log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
+                return  cookie.getValue();
             }
         }
 
@@ -177,7 +198,7 @@ public class TokenReissueService implements ITokenReissueService {
     }
 
     // 토큰 삭제 및 저장 함수
-    private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
+    private void setRefreshTokenCookie(String refreshToken, Instant expiresAt, HttpServletResponse response) {
         log.info("{}.setRefreshTokenCookie Start!", this.getClass().getName());
 
         // 새로운 Refresh Token이 저장된 쿠키 생성 및 추가
@@ -186,7 +207,7 @@ public class TokenReissueService implements ITokenReissueService {
                 .secure(cookieSecure) // yml 설정값 사용
                 .path("/")
                 .sameSite(sameSite) // yml 설정값 사용
-                .maxAge(refreshTokenExpiration / 1000) // ms -> 초 변환
+                .maxAge(Math.max(0, Duration.between(Instant.now(), expiresAt).toSeconds()))
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());

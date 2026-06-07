@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -58,6 +59,21 @@ public class RedisMapper implements IRedisMapper {
     @Override
     public void delete(String key) {
         redisTemplate.delete(key);
+    }
+
+    @Override
+    public void addSetMember(String key, String member) {
+        redisTemplate.opsForSet().add(key, member);
+    }
+
+    @Override
+    public void removeSetMember(String key, String member) {
+        redisTemplate.opsForSet().remove(key, member);
+    }
+
+    @Override
+    public Set<String> getSetMembers(String key) {
+        return redisTemplate.opsForSet().members(key);
     }
 
     @Override
