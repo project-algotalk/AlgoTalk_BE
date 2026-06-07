@@ -14,6 +14,7 @@ public enum UserErrorCode implements ErrorCode {
     ACCOUNT_LOCKED          ("USER_002", "로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해 주세요.", HttpStatus.FORBIDDEN),
     ACCOUNT_DELETED         ("USER_003", "탈퇴한 계정입니다.", HttpStatus.UNAUTHORIZED),
     USER_NOT_FOUND          ("USER_004", "존재하지 않는 사용자입니다.", HttpStatus.UNAUTHORIZED),
+    LOGOUT_ALL_FAIL         ("AUTH_005", "모든 기기에서 로그아웃하지 못했습니다. 잠시 후 다시 시도해 주세요.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 회원가입
     DUPLICATE_LOGIN_ID      ("USER_020", "이미 사용 중인 아이디입니다.", HttpStatus.CONFLICT),

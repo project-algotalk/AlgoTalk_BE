@@ -27,6 +27,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import static com.algotalk.userservice.exception.UserErrorCode.LOGOUT_ALL_FAIL;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -150,7 +152,13 @@ public class UserLoginService implements IUserLoginService {
     public void logoutAll(Long userId, HttpServletResponse response) throws Exception {
         log.info("{}.logoutAll Start!", this.getClass().getName());
 
-        refreshTokenService.deleteAllRefreshTokens(userId);
+        try {
+            refreshTokenService.deleteAllRefreshTokens(userId);
+        } catch (Exception e) {
+            log.error("모든 기기 로그아웃 실패: userId={}", userId, e);
+            throw new BusinessException(LOGOUT_ALL_FAIL);
+        }
+
         expireAccessTokenCookie(response);
         expireRefreshTokenCookie(response);
 
