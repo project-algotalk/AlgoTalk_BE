@@ -1,6 +1,7 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
 import com.algotalk.userservice.dto.response.LoginResponseDTO;
@@ -8,6 +9,7 @@ import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,9 +22,12 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,7 +62,6 @@ class UserLoginServiceMockTest {
         ReflectionTestUtils.setField(userLoginService, "maxFailCount", 5);
         ReflectionTestUtils.setField(userLoginService, "lockMinutes", 1L);
         ReflectionTestUtils.setField(userLoginService, "accessTokenExpiration", 600000L);
-        ReflectionTestUtils.setField(userLoginService, "refreshTokenExpiration", 604800000L);
     }
 
     @Test
@@ -79,7 +83,10 @@ class UserLoginServiceMockTest {
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(userInfo);
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
         given(jwtTokenService.generateAccessToken(any())).willReturn("mock.access.token");
-        given(jwtTokenService.generateRefreshToken(any())).willReturn("mock.refresh.token");
+        given(jwtTokenService.issueRefreshToken(any())).willReturn(
+                new RefreshTokenIssue(
+                        "mock.refresh.token", "session-a",
+                        Instant.now().plusSeconds(600), Instant.now().plusSeconds(3600)));
 
         LoginRequestDTO pDTO = LoginRequestDTO.builder()
                 .loginId("testuser")
@@ -91,7 +98,7 @@ class UserLoginServiceMockTest {
         userLoginService.login(pDTO, response);
 
         // then
-        verify(refreshTokenService).saveRefreshToken(anyLong(), anyString()); // RefreshToken 저장 여부 검증
+        verify(refreshTokenService).saveRefreshToken(anyLong(), anyString(), anyString(), any()); // RefreshToken 저장 여부 검증
 
         String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
 
@@ -175,13 +182,17 @@ class UserLoginServiceMockTest {
     @DisplayName("로그아웃 성공")
     void logout_success() throws Exception {
         // given
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new Cookie("RefreshToken", "refresh-token"));
         MockHttpServletResponse response = new MockHttpServletResponse();
+        given(jwtTokenService.getUserIdFromToken("refresh-token")).willReturn(1L);
+        given(jwtTokenService.getSessionIdFromToken("refresh-token")).willReturn("session-a");
 
         // when
-        userLoginService.logout(1L, response);
+        userLoginService.logout(1L, request, response);
 
         // then
-        verify(refreshTokenService).deleteRefreshToken(1L);
+        verify(refreshTokenService).deleteRefreshToken(1L, "session-a");
 
         String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
 
@@ -191,5 +202,16 @@ class UserLoginServiceMockTest {
         assertThat(allSetCookie).contains("HttpOnly");
         assertThat(allSetCookie).contains("SameSite=Lax");
         assertThat(allSetCookie).contains("Max-Age=0");
+    }
+
+    @Test
+    @DisplayName("모든 기기 로그아웃")
+    void logoutAll_success() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        userLoginService.logoutAll(1L, response);
+
+        verify(refreshTokenService).deleteAllRefreshTokens(1L);
+        assertThat(String.join("\n", response.getHeaders("Set-Cookie"))).contains("Max-Age=0");
     }
 }

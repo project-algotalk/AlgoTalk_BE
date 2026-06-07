@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockCookie;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -252,10 +253,12 @@ public class UserLoginControllerTest {
 
         // AT 추출
         String accessToken = Objects.requireNonNull(loginResult.getResponse().getCookie("AccessToken")).getValue();
+        String refreshToken = Objects.requireNonNull(loginResult.getResponse().getCookie("RefreshToken")).getValue();
 
-        // when: 로그아웃 (AT를 Authorization 헤더에 포함)
+        // when: 로그아웃 (AT와 현재 세션 RT 쿠키를 함께 전달)
         mockMvc.perform(post("/user/v1/logout")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .cookie(new MockCookie("RefreshToken", refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Set-Cookie", org.hamcrest.Matchers.containsString("Max-Age=0")));
 
