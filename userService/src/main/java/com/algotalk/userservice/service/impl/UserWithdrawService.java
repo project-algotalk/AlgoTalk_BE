@@ -119,7 +119,7 @@ public class UserWithdrawService implements IUserWithdrawService {
         }
 
         // 6. Redis에서 RT 삭제
-        refreshTokenService.deleteRefreshToken(userId);
+        refreshTokenService.deleteAllRefreshTokens(userId);
 
         log.info("{}.withdraw End!", this.getClass().getName());
     }

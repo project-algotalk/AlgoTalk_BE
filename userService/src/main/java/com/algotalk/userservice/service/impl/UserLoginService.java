@@ -1,6 +1,7 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
 import com.algotalk.userservice.dto.response.LoginResponseDTO;
@@ -10,6 +11,8 @@ import com.algotalk.userservice.service.IJwtTokenService;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
 import com.algotalk.userservice.util.CmmUtil;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -56,9 +61,6 @@ public class UserLoginService implements IUserLoginService {
 
     @Value("${cookie.same-site}")
     private String sameSite;
-
-    @Value("${jwt.refresh.token.expiration}")
-    private long refreshTokenExpiration;
 
     @Override
     public void login(LoginRequestDTO pDTO, HttpServletResponse response) throws Exception {
@@ -98,13 +100,18 @@ public class UserLoginService implements IUserLoginService {
 
         // 7. JWT Access Token 및 Refresh Token 생성
         String accessToken = jwtTokenService.generateAccessToken(rCommand);
-        String refreshToken = jwtTokenService.generateRefreshToken(rCommand);
+        RefreshTokenIssue refreshTokenIssue = jwtTokenService.issueRefreshToken(rCommand);
 
-        // 8. Refresh Token Redis 저장
-        refreshTokenService.saveRefreshToken(rCommand.getUserId(), refreshToken);
+        // 8. 로그인 세션별 Refresh Token Redis 저장
+        refreshTokenService.saveRefreshToken(
+                rCommand.getUserId(),
+                refreshTokenIssue.sessionId(),
+                refreshTokenIssue.token(),
+                refreshTokenIssue.expiresAt()
+        );
 
-        // 9. Refresh Token 쿠키 설정
-        setRefreshTokenCookie(refreshToken, response);
+        // 9. 실제 RT 만료 시각에 맞춰 쿠키 설정
+        setRefreshTokenCookie(refreshTokenIssue.token(), refreshTokenIssue.expiresAt(), response);
 
         // 10. Access Token 헤더 설정
 //        setAccessTokenHeader(accessToken, response);
@@ -114,18 +121,40 @@ public class UserLoginService implements IUserLoginService {
     }
 
     @Override
-    public void logout(Long userId, HttpServletResponse response) throws Exception {
+    public void logout(Long userId, HttpServletRequest request, HttpServletResponse response) throws Exception {
         log.info("{}.logout Start!", this.getClass().getName());
 
-        // 1. Refresh Token Redis 삭제
-        refreshTokenService.deleteRefreshToken(userId);
+        // 쿠키의 RT가 가리키는 현재 로그인 세션만 폐기
+        String refreshToken = extractRefreshTokenFromCookie(request);
+        if (refreshToken != null) {
+            try {
+                Long tokenUserId = jwtTokenService.getUserIdFromToken(refreshToken);
+                String sessionId = jwtTokenService.getSessionIdFromToken(refreshToken);
+                if (userId.equals(tokenUserId) && sessionId != null) {
+                    refreshTokenService.deleteRefreshToken(userId, sessionId);
+                }
+            } catch (Exception e) {
+                log.warn("로그아웃 요청의 Refresh Token을 해석할 수 없어 쿠키만 삭제합니다.");
+            }
+        }
 
-        // 2. Refresh Token 쿠키 삭제
+        // 클라이언트 인증 쿠키 삭제
         expireAccessTokenCookie(response);
         expireRefreshTokenCookie(response);
 
         log.info("{}.logout End!", this.getClass().getName());
 
+    }
+
+    @Override
+    public void logoutAll(Long userId, HttpServletResponse response) throws Exception {
+        log.info("{}.logoutAll Start!", this.getClass().getName());
+
+        refreshTokenService.deleteAllRefreshTokens(userId);
+        expireAccessTokenCookie(response);
+        expireRefreshTokenCookie(response);
+
+        log.info("{}.logoutAll End!", this.getClass().getName());
     }
 
     private boolean isAccountLocked(String loginId) {
@@ -190,7 +219,7 @@ public class UserLoginService implements IUserLoginService {
         log.info("{}.expireAccessTokenCookie End!", this.getClass().getName());
     }
 
-    private void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
+    private void setRefreshTokenCookie(String refreshToken, Instant expiresAt, HttpServletResponse response) {
         log.info("{}.setRefreshTokenCookie Start!", this.getClass().getName());
 
         ResponseCookie cookie = ResponseCookie.from(refreshCookieName, refreshToken)
@@ -198,12 +227,31 @@ public class UserLoginService implements IUserLoginService {
                 .secure(cookieSecure) // yml 설정값 사용
                 .path("/")
                 .sameSite(sameSite) // yml 설정값 사용
-                .maxAge(refreshTokenExpiration / 1000) // ms -> 초 변환
+                .maxAge(Math.max(0, Duration.between(Instant.now(), expiresAt).toSeconds()))
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         log.info("{}.setRefreshTokenCookie End!", this.getClass().getName());
+    }
+
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        log.info("{}.extractRefreshTokenFromCookie Start!", this.getClass().getName());
+
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
+            return null;
+        }
+        for (Cookie cookie : cookies) {
+            if (refreshCookieName.equals(cookie.getName())) {
+                log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
+                return cookie.getValue();
+            }
+        }
+
+        log.info("{}.extractRefreshTokenFromCookie End!", this.getClass().getName());
+        return null;
     }
 
     private void expireRefreshTokenCookie(HttpServletResponse response) {
