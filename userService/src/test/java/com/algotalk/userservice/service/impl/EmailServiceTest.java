@@ -1,6 +1,8 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.request.EmailSendRequestDTO;
+import com.algotalk.userservice.dto.request.EmailVerifyRequestDTO;
 import com.algotalk.userservice.service.IEmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
@@ -15,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,9 +42,12 @@ class EmailServiceTest {
         // given
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
         stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+        EmailSendRequestDTO pDTO = EmailSendRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .build();
 
         // when
-        emailService.sendEmailVerificationCode(TEST_EMAIL);
+        emailService.sendEmailVerificationCode(pDTO);
 
         // then: Redis에 저장됐는지 확인
         String savedCode = stringRedisTemplate.opsForValue()
@@ -66,16 +70,24 @@ class EmailServiceTest {
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
         stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
         stringRedisTemplate.delete("email:verified:" + TEST_EMAIL);
+        EmailSendRequestDTO pDTO = EmailSendRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .build();
 
-        emailService.sendEmailVerificationCode(TEST_EMAIL);
+        emailService.sendEmailVerificationCode(pDTO);
         String code = stringRedisTemplate.opsForValue()
                 .get("email:auth:" + TEST_EMAIL);
 
         log.info("테스트용 인증번호: {}", code);
         assertThat(code).isNotNull();
 
+        EmailVerifyRequestDTO verifyDTO = EmailVerifyRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .authNumber(code)
+                .build();
+
         // when: 올바른 코드 입력
-        emailService.verifyEmailCode(TEST_EMAIL, code);
+        emailService.verifyEmailCode(verifyDTO);
 
         // then: 인증 완료 플래그 확인
         String verified = stringRedisTemplate.opsForValue()
@@ -98,12 +110,20 @@ class EmailServiceTest {
         // given
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
         stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+        EmailSendRequestDTO pDTO = EmailSendRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .build();
 
-        emailService.sendEmailVerificationCode(TEST_EMAIL);
+        emailService.sendEmailVerificationCode(pDTO);
+
+        EmailVerifyRequestDTO verifyDTO = EmailVerifyRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .authNumber("000000")  // 잘못된 코드
+                .build();
 
         // when & then
         assertThatThrownBy(() ->
-                emailService.verifyEmailCode(TEST_EMAIL, "000000")  // 잘못된 코드
+                emailService.verifyEmailCode(verifyDTO)  // 잘못된 코드
         ).isInstanceOf(BusinessException.class);
 
         // 테스트 후 정리
@@ -115,10 +135,14 @@ class EmailServiceTest {
     void verifyEmailCode_expired() {
         // given: Redis에 데이터 없음 (만료 시뮬레이션)
         stringRedisTemplate.delete("email:auth:" + TEST_EMAIL);
+        EmailVerifyRequestDTO verifyDTO = EmailVerifyRequestDTO.builder()
+                .email(TEST_EMAIL)
+                .authNumber("123456")
+                .build();
 
         // when & then
         assertThatThrownBy(() ->
-                emailService.verifyEmailCode(TEST_EMAIL, "123456")
+                emailService.verifyEmailCode(verifyDTO)
         ).isInstanceOf(BusinessException.class);
     }
 

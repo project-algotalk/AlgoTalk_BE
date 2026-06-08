@@ -1,25 +1,33 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.dto.command.SocialAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.EmploymentRequestDTO;
-import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
+import com.algotalk.userservice.dto.request.*;
+import com.algotalk.userservice.dto.response.ExistsResponseDTO;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
+import com.algotalk.userservice.repository.ISocialAccountMapper;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IUserRegService;
 import com.algotalk.userservice.util.CmmUtil;
+import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.algotalk.userservice.exception.UserErrorCode.*;
 
 @Slf4j
 @Service
@@ -28,16 +36,22 @@ public class UserRegService implements IUserRegService {
 
     private final IUserRegMapper userRegMapper;
     private final IEmailService emailService;
-
+    private final ISocialAccountMapper socialAccountMapper;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final PasswordEncoder passwordEncoder;
 
+    private static final String TEMP_TOKEN_PREFIX = "oauth2:temp:";
+    private static final int MAX_NICKNAME_LENGTH = 10;
+
     @Override
-    public boolean isLoginIdDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isLoginIdDuplicated(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.isLoginIdDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getLoginIdExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getLoginIdExists(UserInfoCommand.builder()
+                                    .loginId(CmmUtil.nvl(pDTO.loginId()))
+                                    .build());
+        String existsYn = rDTO.existsYn();
         log.info("existsYn from DB: {}", existsYn);
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
@@ -47,24 +61,28 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public boolean isNicknameDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isNicknameDuplicated(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.isNicknameDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getNicknameExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getNicknameExists(UserInfoCommand.builder()
+                                    .nickname(CmmUtil.nvl(pDTO.nickname()))
+                                    .build());
+        String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
         return existsYn.equals("Y"); // true면 중복, false면 미중복
     }
 
     @Override
-    public boolean isEmailDuplicated(UserInfoCommand pCommand) throws Exception {
+    public boolean isEmailDuplicated(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.isEmailDuplicated Start!", this.getClass().getName());
 
         // 1. DB 조회
-        UserInfoCommand rCommand = userRegMapper.getEmailExists(pCommand);
-        String existsYn = rCommand.getExistsYn();
+        ExistsResponseDTO rDTO = userRegMapper.getEmailExists(UserInfoCommand.builder()
+                                    .email(CmmUtil.nvl(pDTO.email()))
+                                    .build());
+        String existsYn = rDTO.existsYn();
 
         // 2. DB 조회 결과에 따라 중복 여부 판단 후 반환
         log.info("{}.isEmailDuplicated End!", this.getClass().getName());
@@ -72,51 +90,51 @@ public class UserRegService implements IUserRegService {
     }
 
     @Override
-    public void validateLoginIdUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateLoginIdUnique(CheckLoginIdRequestDTO pDTO) throws Exception {
         log.info("{}.validateLoginIdUnique Start!", this.getClass().getName());
 
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
-
         // 1. 값 잘 넘어왔는지 확인(로그인 아이디)
-        String loginId = CmmUtil.nvl(pCommand.getLoginId());
+        String loginId = CmmUtil.nvl(pDTO.loginId());
         log.info("loginId: {}", loginId);
 
         log.info("{}.validateLoginIdUnique End!", this.getClass().getName());
 
-        if(isLoginIdDuplicated(pCommand)) {
+        if(isLoginIdDuplicated(pDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_LOGIN_ID);
         }
     }
 
     @Override
-    public void validateNicknameUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateNicknameUnique(CheckNicknameRequestDTO pDTO) throws Exception {
         log.info("{}.validateNicknameUnique Start!", this.getClass().getName());
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
-
         // 1. 값 잘 넘어왔는지 확인(닉네임)
-        String nickName = CmmUtil.nvl(pCommand.getNickname());
+        String nickName = CmmUtil.nvl(pDTO.nickname());
         log.info("nickName: {}", nickName);
 
         log.info("{}.validateNicknameUnique End!", this.getClass().getName());
 
-        if (isNicknameDuplicated(pCommand)) {
+        if (isNicknameDuplicated(pDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_NICKNAME);
         }
 
     }
 
     @Override
-    public void validateEmailUnique(SignUpRequestDTO pDTO) throws Exception {
+    public void validateEmailUnique(CheckEmailRequestDTO pDTO) throws Exception {
         log.info("{}.validateEmailUnique Start!", this.getClass().getName());
-        UserInfoCommand pCommand = UserInfoCommand.from(pDTO);
 
         // 1. 값 잘 넘어왔는지 확인(이메일)
-        String email = CmmUtil.nvl(pCommand.getEmail());
+        String email = CmmUtil.nvl(pDTO.email());
         log.info("email: {}", email);
+
+        // 2. 이메일 암호화
+        CheckEmailRequestDTO encDTO = CheckEmailRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(email))
+                .build();
 
         log.info("{}.validateEmailUnique End!", this.getClass().getName());
 
-        if(isEmailDuplicated(pCommand)) {
+        if(isEmailDuplicated(encDTO)) {
             throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
         }
     }
@@ -138,20 +156,30 @@ public class UserRegService implements IUserRegService {
         if (!emailService.isEmailVerified(pDTO.email())) {
             throw new BusinessException(UserErrorCode.EMAIL_NOT_VERIFIED);
         }
-        // 1.3. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
+
+        // 1.3. 이메일 중복 최종 확인
+        // 회원가입 API를 직접 호출하는 경우를 대비해 insert 직전 서버 측에서 한 번 더 검증
+        if (isEmailDuplicated(CheckEmailRequestDTO.builder()
+                .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
+                .build())) {
+            throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 1.4. 값 잘 넘어왔는지 확인하고, UserInfoCommand로 변환(비밀번호, 이메일 암호화)
         UserInfoCommand pCommand = UserInfoCommand.builder()
                 // USERS
                 .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(pDTO.email())))
-                .nickname(CmmUtil.nvl(pDTO.resolvedNickname()))
+                .nickname(CmmUtil.nvl(pDTO.resolvedNickname().strip()))
                 .name(CmmUtil.nvl(pDTO.name()))
                 .addr1(CmmUtil.nvl(pDTO.addr1()))
                 .addr2(CmmUtil.nvl(pDTO.addr2()))
                 // USER_CREDENTIAL
                 .loginId(CmmUtil.nvl(pDTO.loginId()))
                 .password(passwordEncoder.encode(CmmUtil.nvl(pDTO.password())))
+                .passwordSetYn("Y")
                 .build();
 
-        // 1.4. USER 테이블에 INSERT (userId 채번)
+        // 1.5. USER 테이블에 INSERT (userId 채번)
         userRegMapper.insertUser(pCommand);
 
         // 2. USER_CREDENTIAL
@@ -183,8 +211,8 @@ public class UserRegService implements IUserRegService {
                                 .userId(pCommand.getUserId())
                                 .categoryId(job.categoryId())
                                 .categoryName(job.categoryName())
-                                .startDate(job.startDate())
-                                .endDate(job.endDate())
+                                .startDate(parseDateOrThrow(job.startDate()))
+                                .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
                                 .build()
                 );
             }
@@ -204,8 +232,8 @@ public class UserRegService implements IUserRegService {
                                 .categoryId(emp.categoryId())
                                 .categoryName(emp.categoryName())
                                 .companyName(emp.companyName())
-                                .startDate(emp.startDate())
-                                .endDate(emp.endDate())
+                                .startDate(parseDateOrThrow(emp.startDate()))
+                                .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
                                 .build()
                 );
             }
@@ -222,5 +250,172 @@ public class UserRegService implements IUserRegService {
         log.info("{}.insertUser End!", this.getClass().getName());
 
         return rDTO;
+    }
+
+    @Transactional
+    @Override
+    public SignUpResponseDTO insertSocialUser(SocialSignUpRequestDTO pDTO) throws Exception {
+        log.info("{}.insertSocialUser Start!", this.getClass().getName());
+
+        // 1. Redis에서 임시 토큰 조회
+        String redisKey = TEMP_TOKEN_PREFIX + pDTO.tempToken();
+        Map<Object, Object> tempData = redisTemplate.opsForHash().entries(redisKey);
+
+        if (tempData == null || tempData.isEmpty()) {
+            log.error("임시 토큰이 존재하지 않습니다.");
+            throw new BusinessException(OAUTH2_TEMP_TOKEN_NOT_FOUND);
+        }
+
+        // 7. Redis에 저장된 임시 토큰 삭제
+        // 동시 요청이 오게되면 먼저 처리되는 요청이 토큰을 삭제하기 때문에
+        // 이후 요청은 토큰이 없어서 실패시키기 위함 -> 동시 요청 방지
+        redisTemplate.delete(redisKey);
+        log.info("임시 토큰 삭제: {}", redisKey);
+
+        String provider = (String) tempData.get("provider");
+        String providerId = (String) tempData.get("providerId");
+        String email = (String) tempData.get("email");
+        String name = (String) tempData.get("name");
+
+        log.info("소셜 회원 정보: provider={}, providerId={}, email={}, name={}", provider, providerId, email, name);
+
+        UserInfoCommand pCommand = null;
+        List<String> targetJobNames = new ArrayList<>();
+        try {
+            // 2. USERS 테이블에 INSERT (userId 채번)
+            pCommand = UserInfoCommand.builder()
+                    .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(email)))
+                    .name(CmmUtil.nvl(name))
+                    .nickname(CmmUtil.nvl(
+                            normalizedNickname(pDTO.resolvedNickname(name))
+                    ))
+                    .addr1(CmmUtil.nvl(pDTO.addr1()))
+                    .addr2(CmmUtil.nvl(pDTO.addr2()))
+                    .loginId(generateLoginId(provider))
+                    .password(passwordEncoder.encode(UUID.randomUUID().toString()))
+                    .passwordSetYn("N")
+                    .build();
+
+            userRegMapper.insertUser(pCommand);
+
+            // 3. USER_CREDENTIAL 테이블에 INSERT (소셜 가입자는 비밀번호 미설정 상태)
+            userRegMapper.insertUserCredential(pCommand);
+
+            // 4. USER_ROLES 테이블에 INSERT (userId, role)
+            userRegMapper.insertUserRoles(
+                    UserInfoCommand.builder()
+                            .userId(pCommand.getUserId())
+                            .role("ROLE_USER") // 기본 역할로 "ROLE_USER" 저장
+                            .build()
+            );
+
+            // 5. SOCIAL_ACCOUNT 테이블에 INSERT (userId, provider, providerId)
+            SocialAccountCommand socialCommand = SocialAccountCommand.builder()
+                    .userId(pCommand.getUserId())
+                    .provider(provider)
+                    .providerId(providerId)
+                    .email(EncryptUtil.encAES128CBC(CmmUtil.nvl(email)))
+                    .build();
+
+            socialAccountMapper.insertSocialAccount(socialCommand);
+
+            // 6. USER_TARGET_JOB
+            // 6.1. USER_TARGET_JOB 테이블에 INSERT (userId, categoryId, categoryName, startDate, endDate)
+            List<TargetJobRequestDTO> targetJobs = pDTO.targetJobs();
+            if (targetJobs != null && !targetJobs.isEmpty()) {
+                for (TargetJobRequestDTO job : targetJobs) {
+                    log.info("목표 직무 정보: categoryId={}, categoryName={}, startDate={}, endDate={}",
+                            job.categoryId(), job.categoryName(), job.startDate(), job.endDate());
+
+                    targetJobNames.add(job.categoryName());
+
+                    userRegMapper.insertUserTargetJob(
+                            UserInfoCommand.builder()
+                                    .userId(pCommand.getUserId())
+                                    .categoryId(job.categoryId())
+                                    .categoryName(job.categoryName())
+                                    .startDate(parseDateOrThrow(job.startDate()))
+                                    .endDate(job.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(job.endDate()))
+                                    .build()
+                    );
+                }
+            }
+
+            // 7. USER_EMPLOYMENT
+            // 7.1. USER_EMPLOYMENT 테이블에 INSERT (userId, categoryId, categoryName, companyName, startDate, endDate)
+            List<EmploymentRequestDTO> employments = pDTO.employments();
+            if (employments != null && !employments.isEmpty()) {
+                for (EmploymentRequestDTO emp : employments) {
+                    log.info("재직 이력 정보: categoryId={}, categoryName={}, companyName={}, startDate={}, endDate={}",
+                            emp.categoryId(), emp.categoryName(), emp.companyName(), emp.startDate(), emp.endDate());
+
+                    userRegMapper.insertUserEmployment(
+                            UserInfoCommand.builder()
+                                    .userId(pCommand.getUserId())
+                                    .categoryId(emp.categoryId())
+                                    .categoryName(emp.categoryName())
+                                    .companyName(emp.companyName())
+                                    .startDate(parseDateOrThrow(emp.startDate()))
+                                    .endDate(emp.endDate() == null ? java.time.LocalDate.of(9999, 12, 31) : parseDateOrThrow(emp.endDate()))
+                                    .build()
+                    );
+                }
+            }
+        } catch (Exception e) {
+            log.error("소셜 회원가입 처리 중 오류 발생", e);
+            throw new BusinessException(SOCIAL_SIGN_UP_FAIL);
+        }
+
+        SignUpResponseDTO rDTO = SignUpResponseDTO.builder()
+                .userId(pCommand.getUserId())
+                .email(EncryptUtil.decAES128CBC(pCommand.getEmail()))
+                .nickname(pCommand.getNickname())
+                .targetJobs(targetJobNames)
+                .build();
+
+        log.info("{}.insertSocialUser End!", this.getClass().getName());
+        return rDTO;
+    }
+
+    // 소셜 회원가입 시 이름 초과 문제 해결을 위한 닉네임 처리 로직
+    private String normalizedNickname(String nickname) {
+        if(nickname == null || nickname.isBlank()) {
+            nickname = "알고톡";
+        }
+
+        String trimmed = nickname.trim();
+
+        if(trimmed.length() > (MAX_NICKNAME_LENGTH - 5)) {
+            trimmed = trimmed.substring(0, MAX_NICKNAME_LENGTH - 5);
+        }
+
+        // UUID를 활용하여 닉네임 뒤에 5자리 랜덤 문자열 추가 (중복 방지)
+        String uuidPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, 5); // 5자리
+
+        return trimmed + uuidPart;
+    }
+
+    private String generateLoginId(String provider) {
+        String normalizedProvider = CmmUtil.nvl(provider).toLowerCase();
+        String prefix = normalizedProvider + "_";
+        int uuidLength = Math.max(1, 20 - prefix.length());
+
+        String uuidPart = UUID.randomUUID()
+                .toString()
+                .replace("-", "")
+                .substring(0, uuidLength);
+
+        return prefix + uuidPart;
+    }
+
+    private LocalDate parseDateOrThrow(String rawDate) {
+        try {
+            return DateUtil.parseLocalDate(rawDate);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(INVALID_DATE_FORMAT);
+        }
     }
 }

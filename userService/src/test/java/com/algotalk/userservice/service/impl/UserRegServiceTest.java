@@ -2,36 +2,33 @@ package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
-import com.algotalk.userservice.dto.request.EmploymentRequestDTO;
-import com.algotalk.userservice.dto.request.SignUpRequestDTO;
-import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
+import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.SignUpResponseDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
 import com.algotalk.userservice.service.IUserRegService;
 import com.algotalk.userservice.util.EncryptUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.security.core.parameters.P;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static java.time.LocalDate.of;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class UserRegServiceTest {
 
     @Autowired
@@ -43,20 +40,19 @@ class UserRegServiceTest {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Test
     @DisplayName("loginId 중복 확인 - 존재하지 않으면 false 반환")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
                 .loginId("not_exist_id")
                 .build();
 
-        // when
-       userRegService.validateLoginIdUnique(pDTO);
-//        log.info("loginId 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateLoginIdUnique(pDTO));
     }
 
     @Test
@@ -67,9 +63,10 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("플로우테스트")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("existing_id")
+                .email(EncryptUtil.encAES128CBC("reg01@algotalk.com"))
+                .loginId("reg01")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -77,8 +74,8 @@ class UserRegServiceTest {
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("existing_id") // 실제 DB에 존재하는 loginId로 변경
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
+                .loginId("reg01") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
         // when, then
@@ -95,16 +92,17 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email(EncryptUtil.encAES128CBC("reg02@algotalk.com"))
+                .loginId("reg02")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        CheckNicknameRequestDTO pDTO = CheckNicknameRequestDTO.builder()
                 .nickname("중복 닉네임") // 실제 DB에 존재하는 nickname
                 .build();
 
@@ -118,16 +116,12 @@ class UserRegServiceTest {
     @DisplayName("email 중복 확인 - 존재하지 않으면 false 반환")
     void isEmailDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
                 .email("not_exist@algotalk.com")
                 .build();
 
-        // when
-        userRegService.validateEmailUnique(pDTO);
-//        log.info("email 중복 여부: {}", result);
-
-        // then
-//        assertThat(result).isFalse();
+        // when, then
+        assertDoesNotThrow(() -> userRegService.validateEmailUnique(pDTO));
     }
 
     @Test
@@ -138,17 +132,18 @@ class UserRegServiceTest {
         UserInfoCommand oldCmd = UserInfoCommand.builder()
                 .nickname("중복 닉네임")
                 .name("테스트")
-                .email("test@algotalk.com")
-                .loginId("test")
+                .email(EncryptUtil.encAES128CBC("reg03@algotalk.com"))
+                .loginId("reg03")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .email("test@algotalk.com") // 실제 DB에 존재하는 email
+        CheckEmailRequestDTO pDTO = CheckEmailRequestDTO.builder()
+                .email("reg03@algotalk.com") // 실제 DB에 존재하는 email
                 .build();
 
         // when, then
@@ -163,10 +158,10 @@ class UserRegServiceTest {
     void insertUser_baseOnly() throws Exception {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg04")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg04@algotalk.com")
                 .name("홍길동")
                 .nickname("둘리")
                 .build();
@@ -193,10 +188,10 @@ class UserRegServiceTest {
     void insertUser_nicknameResolvedFromName() throws Exception {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg05")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg05@algotalk.com")
                 .name("홍길동")
                 .build();
 
@@ -226,15 +221,15 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg06")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg06@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -267,7 +262,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -275,7 +270,7 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(102L)
                         .categoryName("풀스택 개발자")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
@@ -283,15 +278,15 @@ class UserRegServiceTest {
                 TargetJobRequestDTO.builder()
                         .categoryId(121L)
                         .categoryName("DevOps/SRE 엔지니어")
-                        .startDate(of(2026, 3, 1))
+                        .startDate("2026-3-1")
                         .build()
         );
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg07")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg07@algotalk.com")
                 .name("홍길동")
                 .targetJobs(targetJobs)
                 .build();
@@ -325,8 +320,8 @@ class UserRegServiceTest {
                         .categoryId(111L)
                         .categoryName("데이터 사이언티스트")
                         .companyName("알고톡")
-                        .startDate(of(2022, 11, 1))
-                        .endDate(of(2023, 12, 1))
+                        .startDate("2022-11-1")
+                        .endDate("2023-12-1")
                         .build()
         );
 
@@ -335,16 +330,16 @@ class UserRegServiceTest {
                         .categoryId(101L)
                         .categoryName("백엔드 개발자")
                         .companyName("비바리퍼블리카")
-                        .startDate(of(2024, 1, 1))
+                        .startDate("2024-3-1")
                         .build()
         );
 
 
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("test")
+                .loginId("reg08")
                 .password("test1234")
                 .passwordConfirm("test1234")
-                .email("test@algotalk.com")
+                .email("reg08@algotalk.com")
                 .name("홍길동")
                 .employments(employments)
                 .build();
@@ -365,5 +360,90 @@ class UserRegServiceTest {
         stringRedisTemplate.delete("email:verified:" + pDTO.email());
     }
 
+    @Test
+    @Transactional
+    @DisplayName("소셜 회원가입 성공 - 기본 정보만")
+    void insertSocialUser_baseOnly() throws Exception {
+        // given
+        String tempToken = "test-temp-token-" + UUID.randomUUID();
+        String redisKey = "oauth2:temp:" + tempToken;
+
+        Map<String, String> tempData = new HashMap<>();
+        tempData.put("provider",   "GOOGLE");
+        tempData.put("providerId", "test-provider-id-001");
+        tempData.put("email",      "social01@gmail.com");
+        tempData.put("name",       "홍길동");
+        redisTemplate.opsForHash().putAll(redisKey, tempData);
+
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken(tempToken)
+                .build();
+
+        // when
+        SignUpResponseDTO rDTO = userRegService.insertSocialUser(pDTO);
+        log.info("소셜 회원가입 결과: {}", rDTO);
+
+        // then
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.userId()).isNotNull();
+        assertThat(rDTO.nickname()).isNotNull();
+        assertThat(rDTO.email()).isEqualTo("social01@gmail.com");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("소셜 회원가입 성공 - 목표직무 포함")
+    void insertSocialUser_withTargetJob() throws Exception {
+        // given
+        String tempToken = "test-temp-token-" + UUID.randomUUID();
+        String redisKey = "oauth2:temp:" + tempToken;
+
+        Map<String, String> tempData = new HashMap<>();
+        tempData.put("provider",   "GOOGLE");
+        tempData.put("providerId", "test-provider-id-002");
+        tempData.put("email",      "social02@gmail.com");
+        tempData.put("name",       "김철수");
+        redisTemplate.opsForHash().putAll(redisKey, tempData);
+
+        List<TargetJobRequestDTO> targetJobs = new ArrayList<>();
+        targetJobs.add(
+                TargetJobRequestDTO.builder()
+                        .categoryId(101L)
+                        .categoryName("백엔드 개발자")
+                        .startDate("2026-3-1")
+                        .build()
+        );
+
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken(tempToken)
+                .targetJobs(targetJobs)
+                .build();
+
+        // when
+        SignUpResponseDTO rDTO = userRegService.insertSocialUser(pDTO);
+        log.info("소셜 회원가입 결과: {}", rDTO);
+
+        // then
+        assertThat(rDTO).isNotNull();
+        assertThat(rDTO.userId()).isNotNull();
+        assertThat(rDTO.targetJobs()).hasSize(1);
+
+        // cleanup
+        redisTemplate.delete(redisKey);
+    }
+
+    @Test
+    @DisplayName("소셜 회원가입 실패 - 임시 토큰 없음")
+    void insertSocialUser_tempTokenNotFound() {
+        // given
+        SocialSignUpRequestDTO pDTO = SocialSignUpRequestDTO.builder()
+                .tempToken("not-exist-token")
+                .build();
+
+        // when, then
+        assertThrows(BusinessException.class, () -> {
+            userRegService.insertSocialUser(pDTO);
+        });
+    }
 
 }

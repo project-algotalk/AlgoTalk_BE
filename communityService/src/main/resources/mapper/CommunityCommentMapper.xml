@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.communityservice.repository.ICommunityCommentMapper">
+
+    <!-- 댓글 목록 조회 -->
+    <select id="getCommentList" parameterType="CommentCommand" resultType="CommentCommand">
+        SELECT
+            COMMENT_ID  AS commentId,
+            POST_ID     AS postId,
+            USER_ID     AS userId,
+            NICKNAME    AS nickname,
+            PARENT_ID   AS parentId,
+            GROUP_ID    AS groupId,
+            DEPTH       AS depth,
+            CONTENT     AS content,
+            DELETED_YN  AS deletedYn,
+            CREATED_AT  AS createdAt,
+            UPDATED_AT  AS updatedAt
+        FROM COMMUNITY_COMMENT
+        WHERE POST_ID = #{postId}
+        ORDER BY GROUP_ID ${sortType},
+                CREATED_AT ASC
+    </select>
+
+    <!-- 댓글 단건 조회 -->
+    <select id="getComment" parameterType="CommentCommand" resultType="CommentCommand">
+        SELECT
+            COMMENT_ID  AS commentId,
+            POST_ID     AS postId,
+            USER_ID     AS userId,
+            PARENT_ID   AS parentId,
+            GROUP_ID    AS groupId,
+            DEPTH       AS depth,
+            CONTENT     AS content,
+            DELETED_YN  AS deletedYn,
+            CREATED_AT  AS createdAt,
+            UPDATED_AT  AS updatedAt
+        FROM COMMUNITY_COMMENT
+        WHERE COMMENT_ID = #{commentId}
+    </select>
+
+    <!-- 부모 댓글 조회 (depth, groupId 계산용) -->
+    <select id="getParentComment" parameterType="CommentCommand" resultType="CommentCommand">
+        SELECT
+            COMMENT_ID  AS commentId,
+            GROUP_ID    AS groupId,
+            DEPTH       AS depth,
+            DELETED_YN  AS deletedYn
+        FROM COMMUNITY_COMMENT
+        WHERE COMMENT_ID = #{parentId}
+    </select>
+
+    <!-- 댓글 작성 -->
+    <insert id="insertComment" parameterType="CommentCommand"
+            useGeneratedKeys="true" keyProperty="commentId">
+        INSERT INTO COMMUNITY_COMMENT (
+            POST_ID,
+            USER_ID,
+            NICKNAME,
+            PARENT_ID,
+            GROUP_ID,
+            DEPTH,
+            CONTENT,
+            DELETED_YN,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY
+        ) VALUES (
+                     #{postId},
+                     #{userId},
+                     #{nickname},
+                     #{parentId},
+                     #{groupId},
+                     #{depth},
+                     #{content},
+                     'N',
+                     NOW(),
+                     #{userId},
+                     NOW(),
+                     #{userId}
+                 )
+    </insert>
+
+    <!-- 댓글 수정 -->
+    <update id="updateComment" parameterType="CommentCommand">
+        UPDATE COMMUNITY_COMMENT
+        SET
+            CONTENT    = #{content},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE COMMENT_ID = #{commentId}
+          AND USER_ID    = #{userId}
+          AND DELETED_YN = 'N'
+    </update>
+
+    <!-- 댓글 소프트딜리트 -->
+    <update id="softDeleteComment" parameterType="CommentCommand">
+        UPDATE COMMUNITY_COMMENT
+        SET
+            CONTENT    = '삭제된 댓글입니다.',
+            DELETED_YN = 'Y',
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE COMMENT_ID = #{commentId}
+          AND USER_ID    = #{userId}
+          AND DELETED_YN = 'N'
+    </update>
+
+    <!-- GROUP_ID 업데이트 (최상위 댓글 insert 후 자신의 ID로 설정) -->
+    <update id="updateGroupId" parameterType="CommentCommand">
+        UPDATE COMMUNITY_COMMENT
+        SET
+            GROUP_ID   = #{groupId},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE COMMENT_ID = #{commentId}
+    </update>
+
+    <!-- 하위 댓글 존재 여부 -->
+    <select id="hasChildComments" parameterType="CommentCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_COMMENT
+        WHERE PARENT_ID = #{commentId}
+          AND DELETED_YN = 'N'
+    </select>
+
+    <!-- 하드딜리트 -->
+    <delete id="hardDeleteComment" parameterType="CommentCommand">
+        DELETE FROM COMMUNITY_COMMENT
+        WHERE COMMENT_ID = #{commentId}
+          AND USER_ID    = #{userId}
+    </delete>
+
+    <!-- 게시글의 댓글 하드딜리트 (FK 보호를 위해 자식 없는 댓글부터 반복 삭제) -->
+    <delete id="hardDeleteLeafCommentsByPostId" parameterType="CommentCommand">
+        DELETE c
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT child ON child.PARENT_ID = c.COMMENT_ID
+        WHERE c.POST_ID = #{postId}
+          AND child.COMMENT_ID IS NULL
+    </delete>
+
+    <!-- 최상위 댓글 트리 내 활성 댓글 수 조회 -->
+    <select id="countActiveCommentsByRootCommentId" parameterType="CommentCommand" resultType="int">
+        SELECT COUNT(*)
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT parent ON c.PARENT_ID = parent.COMMENT_ID
+        WHERE (
+            c.GROUP_ID = #{commentId}
+                OR c.COMMENT_ID = #{commentId}
+                OR c.PARENT_ID = #{commentId}
+                OR parent.PARENT_ID = #{commentId}
+            )
+          AND c.DELETED_YN = 'N'
+    </select>
+
+    <!-- 최상위 댓글 트리 내 삭제된 댓글 하드딜리트 (FK 보호를 위해 자식 없는 댓글부터 반복 삭제) -->
+    <delete id="hardDeleteDeletedLeafCommentsByRootCommentId" parameterType="CommentCommand">
+        DELETE c
+        FROM COMMUNITY_COMMENT c
+                 LEFT JOIN COMMUNITY_COMMENT parent ON c.PARENT_ID = parent.COMMENT_ID
+                 LEFT JOIN COMMUNITY_COMMENT child ON child.PARENT_ID = c.COMMENT_ID
+        WHERE (
+            c.GROUP_ID = #{commentId}
+                OR c.COMMENT_ID = #{commentId}
+                OR c.PARENT_ID = #{commentId}
+                OR parent.PARENT_ID = #{commentId}
+            )
+          AND c.DELETED_YN = 'Y'
+          AND child.COMMENT_ID IS NULL
+    </delete>
+</mapper>

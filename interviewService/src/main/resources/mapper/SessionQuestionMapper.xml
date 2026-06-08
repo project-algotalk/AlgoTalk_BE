@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.interviewservice.repository.ISessionQuestionMapper">
+
+    <!-- QUESTION_KEYWORDS JsonListTypeHandler 명시적 매핑 -->
+    <resultMap id="sessionQuestionResultMap" type="SessionQuestionCommand">
+        <result property="questionKeywords" column="QUESTION_KEYWORDS"
+                typeHandler="com.algotalk.interviewservice.util.JsonListTypeHandler"/>
+    </resultMap>
+
+    <!--  세션 질문 단건 저장  -->
+    <insert id="insertSessionQuestion"
+            parameterType="SessionQuestionCommand"
+            useGeneratedKeys="true"
+            keyProperty="sessionQuestionId">
+        INSERT INTO SESSION_QUESTION (
+            SESSION_ID, REF_ID, QUESTION_TEXT,
+            SOURCE_TYPE, CATEGORY_ID, QUESTION_ORDER, DIFFICULTY,
+            QUESTION_INTENT,
+            QUESTION_KEYWORDS,
+            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        )
+        VALUES (
+                   #{sessionId}, #{refId}, #{questionText},
+                   #{sourceType}, #{categoryId}, #{questionOrder}, #{difficulty},
+                   #{questionIntent},
+                   #{questionKeywords, typeHandler=com.algotalk.interviewservice.util.JsonListTypeHandler},
+                   NOW(), #{userId}, NOW(), #{userId}
+               )
+    </insert>
+
+    <!--  세션 질문 목록 조회  -->
+    <select id="getSessionQuestionList"
+            parameterType="InterviewSessionCommand"
+            resultMap="sessionQuestionResultMap"
+    >
+        SELECT
+            SESSION_QUESTION_ID,
+            SESSION_ID,
+            QUESTION_TEXT,
+            SOURCE_TYPE,
+            QUESTION_ORDER,
+            DIFFICULTY,
+            QUESTION_INTENT,
+            QUESTION_KEYWORDS
+        FROM SESSION_QUESTION
+        WHERE SESSION_ID = #{sessionId}
+        ORDER BY QUESTION_ORDER ASC
+    </select>
+
+    <!-- 유저별 최근 출제 질문 조회 (히스토리 기반 재출제 방지용) -->
+    <select id="findRecentQuestionsByUserAndCategories"
+            parameterType="RecentQuestionSearchCommand"
+            resultType="string">
+        SELECT
+        sq.QUESTION_TEXT
+        FROM SESSION_QUESTION sq
+        JOIN INTERVIEW_SESSION s
+        ON sq.SESSION_ID = s.SESSION_ID
+        WHERE s.USER_ID = #{userId}
+        AND sq.SOURCE_TYPE = 'LLM_GENERATED'
+        AND sq.CATEGORY_ID IN
+        <foreach collection="categoryIds" item="categoryId" open="(" separator="," close=")">
+            #{categoryId}
+        </foreach>
+        ORDER BY sq.CREATED_AT DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

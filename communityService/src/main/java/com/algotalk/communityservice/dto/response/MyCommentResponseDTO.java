@@ -1,0 +1,23 @@
+package com.algotalk.communityservice.dto.response;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record MyCommentResponseDTO(
+        Long commentId,
+        Long postId,
+        String categoryName,
+        String nickname,
+        String content,
+        String postTitle,
+        String postDeletedYn,
+        Integer scrapCount,
+        Integer commentCount,
+        Integer viewCount,
+        LocalDateTime updatedAt,
+        Integer totalCount
+) {}

@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IUserUpdateMapper">
+
+    <select id="getMyPageSummaryByUserId"
+            parameterType="long"
+            resultType="UserInfoCommand">
+        SELECT
+            U.USER_ID AS userId,
+            U.NICKNAME AS nickname,
+            U.NAME AS name,
+            U.EMAIL AS email,
+            U.ADDR1 AS addr1,
+            U.ADDR2 AS addr2,
+            U.CREATED_AT AS createdAt,
+            UC.LOGIN_ID AS loginId,
+            UC.PASSWORD_SET_YN AS passwordSetYn
+        FROM USERS U
+                 LEFT JOIN USER_CREDENTIAL UC ON U.USER_ID = UC.USER_ID
+        WHERE U.USER_ID = #{userId}
+          AND U.DELETED_YN = 'N'
+    </select>
+
+    <select id="getMyPageSocialAccountsByUserId"
+            parameterType="long"
+            resultType="SocialAccountCommand">
+        SELECT
+            USER_ID AS userId,
+            PROVIDER_CD AS provider,
+            PROVIDER_UID AS providerId
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <select id="getMyPageTargetJobsByUserId"
+            parameterType="long"
+            resultType="UserInfoCommand">
+        SELECT
+            UTJ.CATEGORY_ID AS categoryId,
+            C.CATEGORY_NAME AS categoryName,
+            UTJ.START_DATE AS startDate,
+            UTJ.END_DATE AS endDate
+        FROM USER_TARGET_JOB UTJ
+                 LEFT JOIN CS_CATEGORY C
+                           ON C.CATEGORY_ID = UTJ.CATEGORY_ID
+        WHERE UTJ.USER_ID = #{userId}
+        ORDER BY UTJ.CATEGORY_ID
+    </select>
+
+    <select id="getMyPageEmploymentsByUserId"
+            parameterType="long"
+            resultType="UserInfoCommand">
+        SELECT
+            UE.COMPANY_NAME AS companyName,
+            UE.CATEGORY_ID AS employmentCategoryId,
+            C.CATEGORY_NAME AS employmentCategoryName,
+            UE.START_DATE AS startDate,
+            UE.END_DATE AS endDate
+        FROM USER_EMPLOYMENT UE
+                 LEFT JOIN CS_CATEGORY C
+                           ON C.CATEGORY_ID = UE.CATEGORY_ID
+        WHERE UE.USER_ID = #{userId}
+        ORDER BY UE.START_DATE DESC
+    </select>
+
+    <!--  변경 전 아이디 중복 확인  -->
+    <select id="getLoginIdExists"
+            parameterType="UserInfoCommand"
+            resultType="ExistsResponseDTO">
+        SELECT
+            IF(COUNT(LOGIN_ID) > 0, 'Y', 'N') AS existsYn
+        FROM USER_CREDENTIAL
+        WHERE LOGIN_ID = #{loginId}
+    </select>
+
+    <!--  아이디 변경  -->
+    <update id="updateLoginId" parameterType="UserInfoCommand">
+        UPDATE USER_CREDENTIAL
+        SET LOGIN_ID   = #{loginId},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID  = #{userId}
+    </update>
+
+    <!--  비밀번호 변경  -->
+    <update id="updatePassword"
+            parameterType="UserInfoCommand">
+        UPDATE USER_CREDENTIAL
+        SET PASSWORD = #{password},
+            PASSWORD_SET_YN = 'Y',
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <select id="getUserInfoByUserId"
+            parameterType="UserInfoCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            UC.user_id AS userId,
+            UC.login_id AS loginId,
+            UC.password AS password,
+            UC.password_set_yn AS passwordSetYn
+        FROM USER_CREDENTIAL UC
+                 INNER JOIN USERS U
+                            ON U.USER_ID = UC.USER_ID
+        WHERE 1 = 1
+          AND UC.user_id = #{userId}
+          AND U.DELETED_YN = 'N'
+    </select>
+
+    <!--  이름 변경  -->
+    <update id="updateName"
+            parameterType="UserInfoCommand">
+        UPDATE USERS
+        SET NAME = #{name},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!--  변경 전 닉네임 중복 확인  -->
+    <select id="getNicknameExists"
+            parameterType="UserInfoCommand"
+            resultType="ExistsResponseDTO">
+        SELECT
+            IF(COUNT(NICKNAME) > 0, 'Y', 'N') AS existsYn
+        FROM USERS
+        WHERE NICKNAME = #{nickname}
+    </select>
+
+    <!--  닉네임 변경  -->
+    <update id="updateNickname"
+            parameterType="UserInfoCommand">
+        UPDATE USERS
+        SET NICKNAME = #{nickname},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!--  변경 전 이메일 중복 확인  -->
+    <select id="getEmailExists"
+            parameterType="UserInfoCommand"
+            resultType="ExistsResponseDTO">
+        SELECT
+            IF(COUNT(EMAIL) > 0, 'Y', 'N') AS existsYn
+        FROM USERS
+        WHERE EMAIL = #{email}
+    </select>
+
+    <!--  이메일 변경  -->
+    <update id="updateEmail"
+            parameterType="UserInfoCommand">
+        UPDATE USERS
+        SET EMAIL = #{email},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!--  주소 변경  -->
+    <update id="updateAddr"
+            parameterType="UserInfoCommand">
+        UPDATE USERS
+        SET ADDR1 = #{addr1},
+            ADDR2 = #{addr2},
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!--  기존 목표직무 삭제  -->
+    <delete id="deleteTargetJobsByUserId"
+            parameterType="UserInfoCommand">
+        DELETE FROM USER_TARGET_JOB
+        WHERE USER_ID = #{userId}
+    </delete>
+
+    <!--  새로운 목표직무 등록  -->
+    <insert id="insertTargetJobByUserId"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_TARGET_JOB (
+             USER_ID, CATEGORY_ID, CATEGORY_NAME,
+             START_DATE, END_DATE,
+             CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+            #{userId}, #{categoryId}, #{categoryName},
+            #{startDate}, #{endDate},
+            NOW(), #{userId}, NOW(), #{userId}
+        )
+    </insert>
+
+    <!--  기존 재직이력 삭제  -->
+    <delete id="deleteEmploymentsByUserId"
+            parameterType="UserInfoCommand">
+        DELETE FROM USER_EMPLOYMENT
+        WHERE USER_ID = #{userId}
+    </delete>
+
+    <!--  새로운 재직이력 등록  -->
+    <insert id="insertEmploymentByUserId"
+            parameterType="UserInfoCommand">
+        INSERT INTO USER_EMPLOYMENT (
+            USER_ID, COMPANY_NAME, CATEGORY_ID, CATEGORY_NAME,
+            START_DATE, END_DATE,
+            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+            #{userId}, #{companyName}, #{categoryId}, #{categoryName},
+            #{startDate}, #{endDate},
+            NOW(), #{userId}, NOW(), #{userId}
+        )
+    </insert>
+
+</mapper>

@@ -1,6 +1,7 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.userservice.dto.command.UserInfoCommand;
+import com.algotalk.userservice.dto.request.CheckLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.SignUpRequestDTO;
 import com.algotalk.userservice.dto.request.TargetJobRequestDTO;
 import com.algotalk.userservice.repository.IUserRegMapper;
@@ -25,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,21 +48,19 @@ class UserRegControllerTest {
     @MockBean
     private IEmailService emailService;
 
-    // TODO - 각 메서드에 대해서 경우의 수 별로 테스트 코드 작성
     @Test
     @Transactional
     @DisplayName("loginId 중복 확인 - 중복 되지 않은 경우")
     void isLoginIdDuplicated_notExists() throws Exception {
         // given
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("not_exist_id")
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
+                .loginId("notExistId")
                 .build();
 
         // when & then
         mockMvc.perform(post("/user/v1/reg/check/loginId")
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -77,24 +75,40 @@ class UserRegControllerTest {
                 .nickname("플로우테스트")
                 .name("테스트")
                 .email("test@algotalk.com")
-                .loginId("existing_id")
+                .loginId("existId")
                 .password("$2a$10$hashedpassword")
                 .role("USER")
+                .passwordSetYn("Y")
                 .build();
 
         userRegMapper.insertUser(oldCmd);
         userRegMapper.insertUserCredential(oldCmd);
         assertThat(oldCmd.getUserId()).isNotNull();
 
-        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
-                .loginId("existing_id") // 실제 DB에 존재하는 loginId로 변경
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
+                .loginId("existId") // 실제 DB에 존재하는 loginId로 변경
                 .build();
 
         // 2. 중복되는 로그인 아이디로 테스트
         mockMvc.perform(post("/user/v1/reg/check/loginId")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
+                .andExpect(status().is4xxClientError())
+        ;
+    }
+
+    @Test
+    @DisplayName("loginId 중복 확인 - loginId 누락")
+    void checkLoginId_missingLoginId()  throws Exception {
+        // given
+        CheckLoginIdRequestDTO pDTO = CheckLoginIdRequestDTO.builder()
+                .loginId("") // 빈 문자열로 설정
+                .build();
+
+        // when & then
+        mockMvc.perform(post("/user/v1/reg/check/loginId")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().is4xxClientError())
         ;
     }
@@ -112,7 +126,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/nickname")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -129,6 +142,7 @@ class UserRegControllerTest {
                 .email("test@algotalk.com")
                 .loginId("test")
                 .password("$2a$10$hashedpassword")
+                .passwordSetYn("Y")
                 .role("USER")
                 .build();
 
@@ -143,7 +157,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/nickname")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().is4xxClientError())
         ;
     }
@@ -161,7 +174,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/reg/check/email")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
 //                .andExpect(jsonPath("$.data").value(false))
         ;
@@ -187,7 +199,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").isNotEmpty())
                 .andExpect(jsonPath("$.data.nickname").value("길동이"));
@@ -200,16 +211,16 @@ class UserRegControllerTest {
         // given
         SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
                 .loginId("ctrltest02")
-                .password("Test1234!")
-                .passwordConfirm("Test1234!")
+                .password("test1234!")
+                .passwordConfirm("test1234!")
                 .email("ctrl02@algotalk.com")
                 .name("홍길동")
-                .nickname("길동이2")
+                .nickname("둘리")
                 .targetJobs(List.of(
                         TargetJobRequestDTO.builder()
                                 .categoryId(101L)
                                 .categoryName("백엔드 개발자")
-                                .startDate(LocalDate.of(2026, 1, 1))
+                                .startDate("2026-1-1")
                                 .build()
                 ))
                 .build();
@@ -221,7 +232,6 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").isNotEmpty())
                 .andExpect(jsonPath("$.data.targetJobs[0]").value("백엔드 개발자"));
@@ -242,7 +252,21 @@ class UserRegControllerTest {
         mockMvc.perform(post("/user/v1/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
-                .andDo(print())
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    @DisplayName("회원가입 실패 - 필수 입력값 누락")
+    void signUp_missingRequiredFields() throws Exception {
+        SignUpRequestDTO pDTO = SignUpRequestDTO.builder()
+                .password("Test1234!")
+                .passwordConfirm("Test1234!")
+                .email("")
+                .build();
+
+        mockMvc.perform(post("/user/v1/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().is4xxClientError());
     }
 }

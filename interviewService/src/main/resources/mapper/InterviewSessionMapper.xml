@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.interviewservice.repository.IInterviewSessionMapper">
+
+    <!--  면접 세션 생성  -->
+    <insert id="insertInterviewSession"
+            parameterType="InterviewSessionCommand"
+            useGeneratedKeys="true"
+            keyProperty="sessionId"
+    >
+        INSERT INTO INTERVIEW_SESSION (
+            USER_ID, SESSION_TITLE, SESSION_STATUS, TOTAL_QUESTIONS,
+            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        )
+        VALUES (
+            #{userId}, #{sessionTitle}, #{sessionStatus}, #{totalQuestions},
+            NOW(), #{userId}, NOW(), #{userId}
+       )
+    </insert>
+
+    <select id="getSessionResult" parameterType="SessionResultCommand" resultType="SessionResultRowDTO">
+        SELECT
+            S.SESSION_ID,
+            S.SESSION_TITLE,
+            S.TOTAL_QUESTIONS,
+            Q.SESSION_QUESTION_ID,
+            Q.QUESTION_ORDER,
+            Q.QUESTION_TEXT
+        FROM
+            INTERVIEW_SESSION S
+                INNER JOIN SESSION_QUESTION Q ON S.SESSION_ID = Q.SESSION_ID
+        WHERE
+            S.SESSION_ID = #{sessionId}
+        ORDER BY
+            Q.QUESTION_ORDER ASC
+    </select>
+
+    <!-- 대시보드용 세션 목록 조회 -->
+    <select id="getDashboardSessions" parameterType="InterviewSessionCommand"
+            resultType="InterviewSessionCommand">
+        SELECT
+            SESSION_ID      AS sessionId,
+            SESSION_TITLE   AS sessionTitle,
+            TOTAL_QUESTIONS AS totalQuestions,
+            COMPLETED_AT    AS completedAt
+        FROM INTERVIEW_SESSION
+        WHERE USER_ID        = #{userId}
+          AND SESSION_STATUS = 'COMPLETED'
+        ORDER BY COMPLETED_AT DESC
+        LIMIT #{pagination.size} OFFSET #{pagination.offset}
+    </select>
+
+    <!-- 대시보드용 총 세션 수 -->
+    <select id="getDashboardSessionCount" parameterType="Long" resultType="int">
+        SELECT COUNT(*)
+        FROM INTERVIEW_SESSION
+        WHERE USER_ID        = #{userId}
+          AND SESSION_STATUS = 'COMPLETED'
+    </select>
+
+    <update id="completeSession" parameterType="Long">
+        UPDATE INTERVIEW_SESSION
+        SET SESSION_STATUS = 'COMPLETED',
+            COMPLETED_AT   = NOW(),
+            UPDATED_AT     = NOW(),
+            UPDATED_BY     = CAST(#{sessionId} AS CHAR)
+        WHERE SESSION_ID = #{sessionId}
+    </update>
+</mapper>

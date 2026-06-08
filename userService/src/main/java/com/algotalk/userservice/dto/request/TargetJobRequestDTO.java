@@ -1,10 +1,8 @@
 package com.algotalk.userservice.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
-import org.springframework.format.annotation.DateTimeFormat;
-
-import java.time.LocalDate;
 
 @Builder
 public record TargetJobRequestDTO(
@@ -13,12 +11,10 @@ public record TargetJobRequestDTO(
 
         String categoryName,
 
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        @NotNull(message = "준비 시작일을 입력해주세요.")
-        LocalDate startDate,
+        @NotBlank(message = "준비 시작일을 입력해주세요.")
+        String startDate,
 
         // 종료일 null = 현재 준비중
-        @DateTimeFormat(pattern = "yyyy-MM-dd")
-        LocalDate endDate
+        String endDate
 ) {
 }

@@ -5,8 +5,8 @@
 
     <!--  회원가입 전 아이디 중복 확인  -->
     <select id="getLoginIdExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="CheckLoginIdRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(LOGIN_ID) > 0, 'Y', 'N') AS existsYn
         FROM USER_CREDENTIAL
@@ -16,8 +16,8 @@
 
     <!--  회원가입 전 닉네임 중복 확인  -->
     <select id="getNicknameExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="CheckNicknameRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(NICKNAME) > 0, 'Y', 'N') AS existsYn
         FROM USERS
@@ -27,8 +27,8 @@
 
     <!--  회원가입 전 이메일 중복 확인  -->
     <select id="getEmailExists"
-            parameterType="UserInfoCommand"
-            resultType="UserInfoCommand">
+            parameterType="CheckEmailRequestDTO"
+            resultType="ExistsResponseDTO">
         SELECT
             IF(COUNT(EMAIL) > 0, 'Y', 'N') AS existsYn
         FROM USERS
@@ -44,10 +44,10 @@
             keyProperty="userId">
         INSERT INTO USERS (
                                NICKNAME, NAME, EMAIL,
-                               PROFILE_IMG_URL, ADDR1, ADDR2, DELETED_AT,
+                               PROFILE_IMG_URL, ADDR1, ADDR2,
                                CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
         VALUES (#{nickname}, #{name}, #{email},
-                #{profileImgUrl}, #{addr1}, #{addr2}, NULL,
+                #{profileImgUrl}, #{addr1}, #{addr2},
                 NOW(), 'system', NOW(), 'system')
     </insert>
 
@@ -55,9 +55,9 @@
     <insert id="insertUserCredential"
             parameterType="UserInfoCommand">
         INSERT INTO USER_CREDENTIAL (
-                                        USER_ID, LOGIN_ID, PASSWORD,
+                                        USER_ID, LOGIN_ID, PASSWORD, PASSWORD_SET_YN,
                                         CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY)
-        VALUES (#{userId}, #{loginId}, #{password},
+        VALUES (#{userId}, #{loginId}, #{password}, #{passwordSetYn},
                 NOW(), #{userId}, NOW(), #{userId})
     </insert>
 

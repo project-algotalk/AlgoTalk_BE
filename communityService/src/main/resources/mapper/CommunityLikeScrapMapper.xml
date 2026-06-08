@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.communityservice.repository.ICommunityLikeScrapMapper">
+
+    <!-- 좋아요 조회 -->
+    <select id="getLike" parameterType="LikeScrapCommand" resultType="LikeScrapCommand">
+        SELECT
+            POST_ID AS postId,
+            USER_ID AS userId
+        FROM COMMUNITY_LIKE
+        WHERE POST_ID = #{postId}
+          AND USER_ID = #{userId}
+    </select>
+
+    <!-- 좋아요 등록 -->
+    <insert id="insertLike" parameterType="LikeScrapCommand">
+        INSERT INTO COMMUNITY_LIKE (
+            POST_ID, USER_ID, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+                     #{postId}, #{userId}, NOW(), #{userId}, NOW(), #{userId}
+                 )
+    </insert>
+
+    <!-- 좋아요 삭제 (하드딜리트) -->
+    <delete id="hardDeleteLike" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_LIKE
+        WHERE POST_ID = #{postId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <!--  게시글의 좋아요 전체 삭제 (하드딜리트)  -->
+    <delete id="deleteAllLikesByPostId" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_LIKE
+        WHERE POST_ID = #{postId}
+    </delete>
+
+    <!-- 스크랩 조회 -->
+    <select id="getScrap" parameterType="LikeScrapCommand" resultType="LikeScrapCommand">
+        SELECT
+            POST_ID AS postId,
+            USER_ID AS userId
+        FROM COMMUNITY_SCRAP
+        WHERE POST_ID = #{postId}
+          AND USER_ID = #{userId}
+    </select>
+
+    <!-- 스크랩 등록 -->
+    <insert id="insertScrap" parameterType="LikeScrapCommand">
+        INSERT INTO COMMUNITY_SCRAP (
+            POST_ID, USER_ID, CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
+        ) VALUES (
+                     #{postId}, #{userId}, NOW(), #{userId}, NOW(), #{userId}
+                 )
+    </insert>
+
+    <!-- 스크랩 삭제 (하드딜리트) -->
+    <delete id="hardDeleteScrap" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_SCRAP
+        WHERE POST_ID = #{postId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <!-- 게시글의 스크랩 전체 삭제 (하드딜리트) -->
+    <delete id="deleteAllScrapsByPostId" parameterType="LikeScrapCommand">
+        DELETE FROM COMMUNITY_SCRAP
+        WHERE POST_ID = #{postId}
+    </delete>
+
+    <!-- 좋아요 수 조회 (DB) -->
+    <select id="getLikeCountFromDB" parameterType="LikeScrapCommand" resultType="Long">
+        SELECT COUNT(*)
+        FROM COMMUNITY_LIKE
+        WHERE POST_ID = #{postId}
+    </select>
+
+    <!-- 스크랩 수 조회 (DB) -->
+    <select id="getScrapCountFromDB" parameterType="LikeScrapCommand" resultType="Long">
+        SELECT COUNT(*)
+        FROM COMMUNITY_SCRAP
+        WHERE POST_ID = #{postId}
+    </select>
+
+</mapper>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.ISocialAccountMapper">
+
+    <select id="findByProviderAndProviderId"
+            parameterType="SocialAccountCommand"
+            resultType="UserInfoCommand">
+        SELECT
+            U.USER_ID    AS userId,
+            U.NICKNAME   AS nickname,
+            U.EMAIL      AS email,
+            U.DELETED_YN AS deletedYn,
+            UR.ROLE      AS role
+        FROM SOCIAL_ACCOUNT SA
+                 JOIN USERS U ON SA.USER_ID = U.USER_ID
+                 JOIN USER_ROLES UR ON U.USER_ID = UR.USER_ID
+        WHERE SA.PROVIDER_CD = #{provider}
+          AND SA.PROVIDER_UID = #{providerId}
+          AND U.DELETED_YN = 'N'
+    </select>
+
+    <insert id="insertSocialAccount"
+            parameterType="SocialAccountCommand">
+        INSERT INTO SOCIAL_ACCOUNT (
+            USER_ID,
+            PROVIDER_CD,
+            PROVIDER_UID,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY
+        ) VALUES (
+                     #{userId},
+                     #{provider},
+                     #{providerId},
+                     NOW(),
+                     #{userId},
+                     NOW(),
+                     #{userId}
+                 )
+    </insert>
+
+    <!-- 소셜 연결 해제 - 물리 삭제 -->
+    <delete id="deleteSocialAccount"
+            parameterType="SocialAccountCommand">
+        DELETE FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+          AND PROVIDER_CD = #{provider}
+    </delete>
+
+    <!-- 연결된 소셜 수 조회 -->
+    <select id="countByUserId"
+            parameterType="Long"
+            resultType="int">
+        SELECT COUNT(*)
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <!-- userId + provider로 소셜 계정 조회 -->
+    <select id="findByUserIdAndProvider"
+            parameterType="SocialAccountCommand"
+            resultType="SocialAccountCommand">
+        SELECT
+            USER_ID    AS userId,
+            PROVIDER_CD  AS provider,
+            PROVIDER_UID AS providerId
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+          AND PROVIDER_CD = #{provider}
+    </select>
+
+    <!-- userId와 provider로 소셜 계정 존재 여부 확인 -->
+    <select id="existsByUserIdAndProvider" parameterType="SocialAccountCommand" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+          AND PROVIDER_CD = #{provider}
+    </select>
+
+    <!-- provider와 providerId로 소셜 계정 존재 여부 확인 -->
+    <select id="existsByProviderAndProviderId" parameterType="SocialAccountCommand" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM SOCIAL_ACCOUNT
+        WHERE PROVIDER_CD = #{provider}
+          AND PROVIDER_UID = #{providerId}
+    </select>
+
+    <!-- 탈퇴 시 전체 소셜 계정 물리 삭제 -->
+    <delete id="deleteAllByUserId"
+            parameterType="Long">
+        DELETE FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+    </delete>
+</mapper>

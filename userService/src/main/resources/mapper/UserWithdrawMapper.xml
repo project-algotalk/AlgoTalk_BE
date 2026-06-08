@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IUserWithdrawMapper">
+
+    <!--  회원 탈퇴  -->
+    <update id="withdrawUser"
+            parameterType="UserInfoCommand">
+        UPDATE USERS
+        SET DELETED_YN = 'Y',
+            NICKNAME = CONCAT('탈퇴회원_', USER_ID),
+            EMAIL = CONCAT('withdrawn_', USER_ID, '_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')),
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+          AND DELETED_YN = 'N'
+    </update>
+
+    <update id="withdrawUserCredential"
+            parameterType="UserInfoCommand">
+        UPDATE USER_CREDENTIAL
+        SET LOGIN_ID = CONCAT('withdrawn_', USER_ID, '_', DATE_FORMAT(NOW(), '%Y%m%d%H%i%s')),
+            UPDATED_AT = NOW(),
+            UPDATED_BY = #{userId}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <!--  회원 소셜 계정 연동 삭제  -->
+    <delete id="deleteAllSocialAccountsByUserId"
+            parameterType="UserInfoCommand">
+        DELETE FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+    </delete>
+
+    <!--  회원 소셜 연동 수 조회  -->
+    <select id="getSocialAccountCountByUserId"
+            parameterType="UserInfoCommand"
+            resultType="int">
+        SELECT COUNT(1)
+        FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+    </select>
+
+    <!--  provider별 소셜 연동 해제  -->
+    <delete id="deleteSocialAccountByProvider"
+            parameterType="UserInfoCommand">
+        DELETE FROM SOCIAL_ACCOUNT
+        WHERE USER_ID = #{userId}
+          AND PROVIDER_CD = #{provider}
+    </delete>
+</mapper>
