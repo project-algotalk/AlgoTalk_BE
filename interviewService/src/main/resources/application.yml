@@ -1,5 +1,5 @@
 spring:
   application:
-    name: interview-service
+    name: INTERVIEW-SERVICE
   profiles:
-    active: local
+    active: prod

@@ -1,5 +1,5 @@
 spring:
   application:
-    name: user-service
+    name: USER-SERVICE
   profiles:
-    active: local
+    active: prod
