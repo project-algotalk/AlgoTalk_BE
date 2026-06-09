@@ -82,7 +82,7 @@ class UserLoginServiceMockTest {
         given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(userInfo);
         given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
-        given(jwtTokenService.generateAccessToken(any())).willReturn("mock.access.token");
+        given(jwtTokenService.generateAccessToken(any(), anyString())).willReturn("mock.access.token");
         given(jwtTokenService.issueRefreshToken(any())).willReturn(
                 new RefreshTokenIssue(
                         "mock.refresh.token", "session-a",
@@ -98,6 +98,7 @@ class UserLoginServiceMockTest {
         userLoginService.login(pDTO, response);
 
         // then
+        verify(jwtTokenService).generateAccessToken(userInfo, "session-a");
         verify(refreshTokenService).saveRefreshToken(anyLong(), anyString(), anyString(), any()); // RefreshToken 저장 여부 검증
 
         String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
