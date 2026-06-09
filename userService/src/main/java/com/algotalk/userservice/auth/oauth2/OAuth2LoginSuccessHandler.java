@@ -135,9 +135,10 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                     .role(oAuth2User.getRole()) // 기존 회원은 DB에 저장된 권한 사용
                     .build();
 
-            String accessToken = jwtTokenService.generateAccessToken(userInfo);
             RefreshTokenIssue refreshTokenIssue =
                     jwtTokenService.issueRefreshToken(userInfo);
+            String accessToken = jwtTokenService.generateAccessToken(
+                    userInfo, refreshTokenIssue.sessionId());
 
             refreshTokenService.saveRefreshToken(
                     oAuth2User.getUserId(),

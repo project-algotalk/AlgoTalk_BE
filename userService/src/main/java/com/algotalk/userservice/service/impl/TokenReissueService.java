@@ -107,7 +107,7 @@ public class TokenReissueService implements ITokenReissueService {
 
 
         // 5. 새로운 Access Token과 Refresh Token 생성
-        String newAccessToken = jwtTokenService.generateAccessToken(rCommand);
+        String newAccessToken = jwtTokenService.generateAccessToken(rCommand, sessionId);
         RefreshTokenIssue newRefreshTokenIssue =
                 jwtTokenService.rotateRefreshToken(rCommand, sessionId, absoluteExpiresAt);
         String newRefreshToken = newRefreshTokenIssue.token();
