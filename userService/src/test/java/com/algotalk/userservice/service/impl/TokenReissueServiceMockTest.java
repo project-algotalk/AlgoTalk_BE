@@ -27,6 +27,7 @@ import static com.algotalk.userservice.exception.UserErrorCode.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -62,7 +63,7 @@ class TokenReissueServiceMockTest {
         givenValidSession(refreshToken);
         given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn(refreshToken);
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
-        given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
+        given(jwtTokenService.generateAccessToken(any(), anyString())).willReturn("new.access.token");
         given(jwtTokenService.rotateRefreshToken(user, "session-a", absoluteExpiresAt))
                 .willReturn(new RefreshTokenIssue(
                         "new.refresh.token", "session-a", tokenExpiresAt, absoluteExpiresAt));
@@ -74,6 +75,7 @@ class TokenReissueServiceMockTest {
 
         assertThat(result.tokenType()).isEqualTo("Bearer");
         assertThat(result.expiresIn()).isEqualTo(600L);
+        verify(jwtTokenService).generateAccessToken(user, "session-a");
         verify(refreshTokenService).rotateRefreshToken(
                 1L, "session-a", refreshToken, "new.refresh.token", tokenExpiresAt);
         assertThat(response.getHeaders("Set-Cookie").toString())
@@ -126,7 +128,7 @@ class TokenReissueServiceMockTest {
         givenValidSession(refreshToken);
         given(refreshTokenService.getRefreshToken(1L, "session-a")).willReturn(refreshToken);
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(user);
-        given(jwtTokenService.generateAccessToken(any())).willReturn("new.access.token");
+        given(jwtTokenService.generateAccessToken(any(), anyString())).willReturn("new.access.token");
         given(jwtTokenService.rotateRefreshToken(user, "session-a", absoluteExpiresAt))
                 .willReturn(new RefreshTokenIssue(
                         "new.refresh.token", "session-a", tokenExpiresAt, absoluteExpiresAt));

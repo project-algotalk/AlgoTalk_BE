@@ -12,5 +12,8 @@ public enum AuthFailureReason {
     ACCESS_TOKEN_EXPIRED,
 
     // 서명 오류, 형식 오류 등 재발급으로 복구하면 안 되는 경우
-    ACCESS_TOKEN_INVALID
+    ACCESS_TOKEN_INVALID,
+
+    // Redis에서 로그인 세션이 삭제되어 즉시 로그아웃 처리해야 하는 경우
+    SESSION_REVOKED
 }

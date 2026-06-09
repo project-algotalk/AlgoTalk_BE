@@ -100,9 +100,9 @@ public class UserLoginService implements IUserLoginService {
         // 6. 로그인 성공 시 로그인 실패 횟수 초기화
         stringRedisTemplate.delete(LOGIN_FAIL_KEY + loginId);
 
-        // 7. JWT Access Token 및 Refresh Token 생성
-        String accessToken = jwtTokenService.generateAccessToken(rCommand);
+        // 7. 로그인 세션을 먼저 생성하고 Access Token에도 동일한 sessionId를 포함
         RefreshTokenIssue refreshTokenIssue = jwtTokenService.issueRefreshToken(rCommand);
+        String accessToken = jwtTokenService.generateAccessToken(rCommand, refreshTokenIssue.sessionId());
 
         // 8. 로그인 세션별 Refresh Token Redis 저장
         refreshTokenService.saveRefreshToken(

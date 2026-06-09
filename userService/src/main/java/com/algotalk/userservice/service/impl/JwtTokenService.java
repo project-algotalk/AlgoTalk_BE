@@ -33,7 +33,7 @@ public class JwtTokenService implements IJwtTokenService {
     private long absoluteSessionExpiration; // ms, 기본 30일
 
     @Override
-    public String generateAccessToken(UserInfoCommand pCommand) throws Exception {
+    public String generateAccessToken(UserInfoCommand pCommand, String sessionId) throws Exception {
         log.info("{}.generateAccessToken Start!", this.getClass().getName());
 
         Instant now = Instant.now();
@@ -50,6 +50,7 @@ public class JwtTokenService implements IJwtTokenService {
                 .claim("loginId", CmmUtil.nvl(pCommand.getLoginId())) // 추가 클레임
                 .claim("nickname", CmmUtil.nvl(pCommand.getNickname())) // 추가 클레임
                 .claim("roles", List.of(pCommand.getRole())) // 토큰 권한 정보
+                .claim("sessionId", sessionId) // Redis 로그인 세션과 Access Token 연결
                 .build();
 
         String accessToken = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

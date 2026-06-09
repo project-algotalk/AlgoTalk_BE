@@ -10,10 +10,11 @@ public interface IJwtTokenService {
      * Access Token 생성
      *
      * @param pCommand 토큰 claim 구성에 사용할 사용자 정보
+     * @param sessionId Redis 로그인 세션과 연결할 식별자
      * @return 생성된 JWT Access Token
      * @throws Exception Access Token 생성 실패
      */
-    String generateAccessToken(UserInfoCommand pCommand) throws Exception;
+    String generateAccessToken(UserInfoCommand pCommand, String sessionId) throws Exception;
 
     /**
      * 새 로그인 세션 생성 및 최초 Refresh Token 발급
