@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'eurekaServer/**'
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -22,12 +22,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
-        run: chmod +x eurekaServer/gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: |
-          cd eurekaServer
-          ./gradlew bootJar -x test
+        run: ./gradlew :eurekaServer:bootJar -x test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
