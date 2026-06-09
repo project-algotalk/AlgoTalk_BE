@@ -57,4 +57,4 @@ jobs:
           script: |
             cd /home/ec2-user/algotalk
             docker compose pull eurekaserver
-            docker compose up -d eurekaserver
+            docker compose up -d --no-deps eurekaserver
