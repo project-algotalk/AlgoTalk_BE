@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'apiGateway/**'
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -21,12 +22,10 @@ jobs:
           distribution: 'temurin'
 
       - name: Grant execute permission for gradlew
-        run: chmod +x apiGateway/gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: |
-          cd apiGateway
-          ./gradlew bootJar -x test
+        run: ./gradlew :apiGateway:bootJar -x test
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
