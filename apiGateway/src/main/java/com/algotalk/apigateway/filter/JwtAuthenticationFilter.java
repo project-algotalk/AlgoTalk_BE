@@ -10,8 +10,11 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -34,6 +37,22 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final ReactiveJwtDecoder jwtDecoder;
     private final ObjectMapper objectMapper;
+
+    private final ReactiveStringRedisTemplate redisTemplate;
+
+    @Value("${jwt.token.access.name:AccessToken}")
+    private String accessCookieName;
+
+    @Value("${jwt.token.refresh.name:RefreshToken}")
+    private String refreshCookieName;
+
+    @Value("${cookie.secure:false}")
+    private boolean cookieSecure;
+
+    @Value("${cookie.same-site:Lax}")
+    private String sameSite;
+
+    private static final String REFRESH_TOKEN_KEY_PREFIX = "refresh:";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -112,7 +131,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .flatMap(jwt -> {
                     // 5. Jwt에서 필요한 정보 추출
                     String userId = jwt.getSubject();
+                    String sessionId = jwt.getClaimAsString("sessionId");
                     List<String> roles = jwt.getClaimAsStringList("roles");
+
+                    if (userId == null || userId.isBlank() || sessionId == null || sessionId.isBlank()) {
+                        log.warn("JWT에 사용자 또는 세션 식별자가 없음");
+                        exchange.getAttributes().put(
+                                AutoRefreshOn401Filter.ATTR_AUTH_FAILURE_REASON,
+                                AuthFailureReason.ACCESS_TOKEN_INVALID
+                        );
+                        return onError(exchange, TOKEN_INVALID, true);
+                    }
 
                     String role;
                     if(roles != null && !roles.isEmpty()) {
@@ -121,19 +150,35 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         role = "";
                     }
 
-                    log.debug("JWT 검증 성공 - userId: {}, role: {}", userId, role);
+                    String sessionKey = REFRESH_TOKEN_KEY_PREFIX + userId + ":" + sessionId;
+                    String finalRole = role;
+                    return redisTemplate.hasKey(sessionKey)
+                            .flatMap(sessionActive -> {
+                                if (!sessionActive) {
+                                    log.info("폐기된 로그인 세션 접근 차단: userId={}, sessionId={}", userId, sessionId);
+                                    exchange.getAttributes().put(
+                                            AutoRefreshOn401Filter.ATTR_AUTH_FAILURE_REASON,
+                                            AuthFailureReason.SESSION_REVOKED
+                                    );
+                                    return onError(exchange, SESSION_REVOKED, true);
+                                }
 
-                    // 5. Header에 인증정보 추가
-                    ServerHttpRequest mutateRequest = exchange.getRequest().mutate()
-                            .headers(headers -> {
-                                headers.remove("X-User-Id");
-                                headers.remove("X-User-Role");
-                                headers.set("X-User-Id", userId);
-                                headers.set("X-User-Role", role);
+                                log.debug("JWT 및 로그인 세션 검증 성공 - userId: {}, role: {}", userId, finalRole);
+                                ServerHttpRequest mutateRequest = exchange.getRequest().mutate()
+                                        .headers(headers -> {
+                                            headers.remove("X-User-Id");
+                                            headers.remove("X-User-Role");
+                                            headers.set("X-User-Id", userId);
+                                            headers.set("X-User-Role", finalRole);
+                                        })
+                                        .build();
+
+                                return chain.filter(exchange.mutate().request(mutateRequest).build());
                             })
-                            .build();
-
-                    return chain.filter(exchange.mutate().request(mutateRequest).build());
+                            .onErrorResume(e -> {
+                                log.error("Redis 로그인 세션 검증 실패: userId={}, sessionId={}", userId, sessionId, e);
+                                return onError(exchange, INTERNAL_ERROR);
+                            });
                 })
                 .onErrorResume(JwtException.class, e -> {
                     // 만료와 위조/형식 오류를 구분해야 불필요한 RT 회전을 막을 수 있다.
@@ -183,9 +228,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     // 인증 실패하는 경우 401 에러
     private Mono<Void> onError(ServerWebExchange exchange, GatewayErrorCode errorCode) {
+        return onError(exchange, errorCode, false);
+    }
+
+    private Mono<Void> onError(
+            ServerWebExchange exchange,
+            GatewayErrorCode errorCode,
+            boolean clearAuthenticationCookies
+    ) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(errorCode.getHttpStatus());
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        if (clearAuthenticationCookies) {
+            expireAuthenticationCookies(response);
+        }
 
         try {
             ErrorResponse errorResponse = ErrorResponse.of(errorCode);
@@ -196,5 +252,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             log.error("Error writing error response: {}", e.getMessage(), e);
             return response.setComplete(); // JSON 변환 실패 시 빈 응답으로 종료
         }
+    }
+
+    private void expireAuthenticationCookies(ServerHttpResponse response) {
+        response.addCookie(expiredCookie(accessCookieName));
+        response.addCookie(expiredCookie(refreshCookieName));
+    }
+
+    private ResponseCookie expiredCookie(String name) {
+        return ResponseCookie.from(name, "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(sameSite)
+                .maxAge(0)
+                .build();
     }
 }
