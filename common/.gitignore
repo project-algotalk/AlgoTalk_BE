@@ -4,5 +4,7 @@
 # =====================================================
 
 # 로컬 환경 설정
-application-*.yml
-application-*.yaml
+/application-local*.yml
+/application-local*.yaml
+/application-test*.yml
+/application-test*.yaml

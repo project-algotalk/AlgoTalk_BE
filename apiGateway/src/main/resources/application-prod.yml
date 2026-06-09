@@ -1,0 +1,8 @@
+# apiGateway/src/main/resources/application-prod.yml
+spring:
+    config:
+        # 운영 환경의 Config Server 주소로 변경해야 합니다. (예: http://config-server:8888)
+        import: "optional:configserver:http://configserver:8888"
+    cloud:
+        config:
+            fail-fast: true
