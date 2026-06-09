@@ -2,4 +2,4 @@ spring:
   application:
     name: COMMUNITY-SERVICE
   profiles:
-    active: prod
+    active: local

@@ -2,4 +2,4 @@ spring:
   application:
     name: API-GATEWAY
   profiles:
-    active: prod
+    active: local
