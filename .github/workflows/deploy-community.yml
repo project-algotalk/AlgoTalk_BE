@@ -58,4 +58,4 @@ jobs:
           script: |
             cd /home/ec2-user/algotalk
             docker compose pull communityservice
-            docker compose up -d communityservice
+            docker compose up -d --no-deps communityservice
