@@ -1,6 +1,7 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.auth.CustomUserDetails;
 import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
@@ -20,6 +21,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +45,7 @@ public class UserLoginService implements IUserLoginService {
     private final IRefreshTokenService refreshTokenService;
     private final PasswordEncoder passwordEncoder;
     private final StringRedisTemplate stringRedisTemplate;
+    private final AuthenticationManager authenticationManager;
 
     private static final String LOGIN_FAIL_KEY = "login:fail:"; // 로그인 실패 횟수
     private static final String LOGIN_LOCK_KEY = "login:lock:"; // 로그인 잠금 여부
@@ -76,28 +83,37 @@ public class UserLoginService implements IUserLoginService {
             throw new BusinessException(UserErrorCode.ACCOUNT_LOCKED);
         }
 
-        // 2. 사용자 정보 조회
-        UserInfoCommand rCommand = userLoginMapper.getUserAuthInfo(
-                UserInfoCommand.builder()
-                        .loginId(loginId)
-                        .build()
-        );
-
-        // 3. 사용자 존재 여부 확인
-        if (rCommand == null) {
+        // 2. AuthenticationManager에 인증 위임
+        //    내부적으로 CustomUserDetailsService.loadUserByUsername() 호출 후
+        //    PasswordEncoder로 비밀번호 검증까지 처리
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginId, pDTO.password())
+            );
+        } catch (BadCredentialsException e) {
+            log.warn("비밀번호가 일치하지 않습니다: loginId={}", loginId);
+            handleLoginFail(loginId);
+            throw new BusinessException(UserErrorCode.LOGIN_FAIL);
+        } catch (UsernameNotFoundException e) {
             log.warn("사용자 정보가 존재하지 않습니다: loginId={}", loginId);
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
 
-        // 4. 비밀번호 검증
-        if(!passwordEncoder.matches(pDTO.password(), rCommand.getPassword())) {
-            log.warn("비밀번호가 일치하지 않습니다: loginId={}", loginId);
-            // 로그인 실패 횟수 증가 및 잠금 처리
-            handleLoginFail(loginId);
-            throw new BusinessException(UserErrorCode.LOGIN_FAIL);
+        // 3. 인증 성공 - UserDetails에서 사용자 정보 추출
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Long userId = userDetails.userAuthDTO().userId();
+
+        // 4. DB에서 JWT 발급에 필요한 추가 정보 조회 (nickname, role 등)
+        UserInfoCommand rCommand = userLoginMapper.getUserAuthInfo(
+                UserInfoCommand.builder().userId(userId).build()
+        );
+
+        if (rCommand == null) {
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
 
-        // 6. 로그인 성공 시 로그인 실패 횟수 초기화
+        // 5. 로그인 성공 시 로그인 실패 횟수 초기화
         stringRedisTemplate.delete(LOGIN_FAIL_KEY + loginId);
 
         // 7. 로그인 세션을 먼저 생성하고 Access Token에도 동일한 sessionId를 포함
