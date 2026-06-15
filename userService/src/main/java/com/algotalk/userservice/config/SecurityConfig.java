@@ -4,11 +4,13 @@ import com.algotalk.userservice.auth.oauth2.CustomAuthorizationRequestResolver;
 import com.algotalk.userservice.auth.oauth2.CustomOAuth2UserService;
 import com.algotalk.userservice.auth.oauth2.OAuth2FailureHandler;
 import com.algotalk.userservice.auth.oauth2.OAuth2LoginSuccessHandler;
+import com.algotalk.userservice.service.impl.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,6 +20,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -30,6 +33,8 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2FailureHandler oAuth2FailureHandler;
+    private final CustomUserDetailsService customUserDetailsService;
+    private final JwtAuthenticationConverter jwtAuthenticationConverter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -42,8 +47,17 @@ public class SecurityConfig {
     }
 
     @Bean
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .authenticationProvider(daoAuthenticationProvider())
                 .cors(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm ->
@@ -82,7 +96,11 @@ public class SecurityConfig {
                 )
                 // Gateway에서 Cookie -> Authorization 헤더로 변환해서 넘겨주므로
                 // userService는 Bearer JWT 헤더만 검증하면 됨
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter)
+                        )
+                )
                 .build();
     }
 }
