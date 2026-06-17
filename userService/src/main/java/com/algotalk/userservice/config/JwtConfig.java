@@ -95,14 +95,16 @@ public class JwtConfig {
      *   Spring Security가 이해하는 형태로 바꿔주는 역할
      *
      * 변환 흐름:
-     *   AT payload 안의 "roles": ["USER"]
-     *       ↓  setAuthoritiesClaimName("roles") 로 roles 필드를 읽음
-     *       ↓  setAuthorityPrefix("ROLE_") 로 앞에 ROLE_ 붙임
+     *   AT payload 안의 "roles": ["ROLE_USER"]
+     *       ->  setAuthoritiesClaimName("roles") 로 roles 필드를 읽음
+     *       ->  setAuthorityPrefix("ROLE_") 로 Spring Security 권한 prefix를 붙임
      *   Spring Security 권한 객체 -> GrantedAuthority("ROLE_USER")
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
+        // JWT roles 클레임은 "USER"처럼 ROLE_ prefix 없이 저장하고,
+        // Spring Security 권한으로 변환하는 이 지점에서만 ROLE_ prefix를 붙인다.
         delegate.setAuthorityPrefix("ROLE_");           // "USER" -> "ROLE_USER"
         delegate.setAuthoritiesClaimName("roles");      // payload에서 읽어올 필드명
 
