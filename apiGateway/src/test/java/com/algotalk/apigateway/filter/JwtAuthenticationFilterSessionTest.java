@@ -67,7 +67,7 @@ class JwtAuthenticationFilterSessionTest {
 
         assertThat(forwarded.get()).isNotNull();
         assertThat(forwarded.get().getRequest().getHeaders().getFirst("X-User-Id")).isEqualTo("1");
-        assertThat(forwarded.get().getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("ROLE_USER");
+        assertThat(forwarded.get().getRequest().getHeaders().getFirst("X-User-Role")).isEqualTo("USER");
         verify(redisTemplate).hasKey("refresh:1:session-a");
     }
 
@@ -98,7 +98,7 @@ class JwtAuthenticationFilterSessionTest {
                 .subject("1")
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(300))
-                .claim("roles", List.of("ROLE_USER"))
+                .claim("roles", List.of("USER"))
                 .build();
         given(jwtDecoder.decode("valid-token")).willReturn(Mono.just(jwt));
 
@@ -122,7 +122,7 @@ class JwtAuthenticationFilterSessionTest {
                 .subject(userId)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plusSeconds(300))
-                .claim("roles", List.of("ROLE_USER"))
+                .claim("roles", List.of("USER"))
                 .claim("sessionId", sessionId)
                 .build();
     }

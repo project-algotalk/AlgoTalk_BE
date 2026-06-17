@@ -21,6 +21,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class JwtTokenService implements IJwtTokenService {
 
+    private static final String ROLE_PREFIX = "ROLE_";
+
     private final JwtEncoder jwtEncoder;
     private final JwtDecoder jwtDecoder;
 
@@ -49,7 +51,7 @@ public class JwtTokenService implements IJwtTokenService {
                 .subject(String.valueOf(pCommand.getUserId())) // 사용자 ID subject 설정
                 .claim("loginId", CmmUtil.nvl(pCommand.getLoginId())) // 추가 클레임
                 .claim("nickname", CmmUtil.nvl(pCommand.getNickname())) // 추가 클레임
-                .claim("roles", List.of(pCommand.getRole())) // 토큰 권한 정보
+                .claim("roles", List.of(toJwtRoleClaim(pCommand.getRole()))) // 토큰 권한 정보
                 .claim("sessionId", sessionId) // Redis 로그인 세션과 Access Token 연결
                 .build();
 
@@ -57,6 +59,13 @@ public class JwtTokenService implements IJwtTokenService {
 
         log.info("{}.generateAccessToken End!", this.getClass().getName());
         return accessToken;
+    }
+
+    private String toJwtRoleClaim(String role) {
+        String normalizedRole = CmmUtil.nvl(role);
+        return normalizedRole.startsWith(ROLE_PREFIX)
+                ? normalizedRole.substring(ROLE_PREFIX.length())
+                : normalizedRole;
     }
 
     @Override
