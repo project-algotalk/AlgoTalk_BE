@@ -189,7 +189,7 @@ public class TokenReissueService implements ITokenReissueService {
                 .secure(cookieSecure) // yml 설정값 사용
                 .path("/")
                 .sameSite(sameSite) // yml 설정값 사용
-//                .maxAge(accessTokenExpiration / 1000) // ms -> 초 변환
+                .maxAge(accessTokenExpiration / 1000) // ms -> 초 변환
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
