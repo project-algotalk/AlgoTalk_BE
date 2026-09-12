@@ -64,6 +64,7 @@ public class SecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // OAuth2 로그인 시 세션 생성, JWT 인증 시 세션 미사용
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/test/**").permitAll()
                         .requestMatchers(
                                 "/user/v1/reg/**",
                                 "/user/v1/signup",
