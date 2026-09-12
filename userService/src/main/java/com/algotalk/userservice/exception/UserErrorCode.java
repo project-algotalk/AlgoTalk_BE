@@ -78,7 +78,17 @@ public enum UserErrorCode implements ErrorCode {
     EMAIL_NOT_VERIFIED      ("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAIL         ("EMAIL_004", "이메일 인증 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    // 파일
+    FILE_UPLOAD_FAIL        ("FILE_001", "파일 업로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_DELETE_FAIL        ("FILE_002", "파일 삭제에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_IS_EMPTY            ("FILE_003", "파일이 비어있습니다.", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_EXCEEDED      ("FILE_004", "파일 크기가 초과되었습니다.", HttpStatus.BAD_REQUEST),
+    FILE_TYPE_NOT_ALLOWED   ("FILE_005", "허용되지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
+    FILE_NOT_FOUND          ("FILE_006", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
+
     ;
+
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;
