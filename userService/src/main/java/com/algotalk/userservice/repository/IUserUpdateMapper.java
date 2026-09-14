@@ -46,6 +46,9 @@ public interface IUserUpdateMapper {
     // 주소 변경(주소는 중복 확인 필요 X)
     int updateAddr(UserInfoCommand pCommand) throws Exception;
 
+    // 프로필 이미지 변경
+    int updateProfileImg(UserInfoCommand pCommand) throws Exception;
+
     // 기존 목표직무 삭제
     void deleteTargetJobsByUserId(UserInfoCommand pCommand) throws Exception;
 

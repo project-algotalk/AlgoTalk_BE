@@ -10,9 +10,13 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,6 +46,7 @@ public class S3Service implements IS3Service {
     );
 
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -119,15 +124,15 @@ public class S3Service implements IS3Service {
     }
 
     @Override
-    public void deleteProfileImg(String fileURL) throws Exception {
-        if(fileURL == null || fileURL.isBlank()) {
+    public void deleteProfileImg(String fileUrl) throws Exception {
+        if(fileUrl == null || fileUrl.isBlank()) {
             return;
         }
 
         String key;
 
         try {
-            URI uri = URI.create(fileURL);
+            URI uri = URI.create(fileUrl);
             String path = uri.getPath();
 
             key = path.startsWith("/") ? path.substring(1) : path;
@@ -142,8 +147,47 @@ public class S3Service implements IS3Service {
                     .build();
             s3Client.deleteObject(request);
         } catch (Exception e) {
-            log.error("S3 삭제 실패. fileURL: {}, error: {}", fileURL, e.getMessage(), e);
+            log.error("S3 삭제 실패. fileURL: {}, error: {}", fileUrl, e.getMessage(), e);
             throw new BusinessException(FILE_DELETE_FAIL);
+        }
+    }
+
+    @Override
+    public String getProfileImgUrl(String fileUrl) throws Exception {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            return null;
+        }
+
+        String key;
+
+        try {
+            URI uri = URI.create(fileUrl);
+            String path = uri.getPath();
+
+            key = path.startsWith("/") ? path.substring(1) : path;
+        } catch (Exception e) {
+            log.error("S3 URL 파싱 실패. fileURL: {}, error: {}", fileUrl, e.getMessage(), e);
+            throw new BusinessException(FILE_NOT_FOUND);
+        }
+
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .build();
+
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofHours(1))
+                    .getObjectRequest(getObjectRequest)
+                    .build();
+
+            return s3Presigner
+                    .presignGetObject(presignRequest)
+                    .url()
+                    .toString();
+        } catch (Exception e) {
+            log.error("S3 Presigned URL 생성 실패. fileURL: {}, error: {}", fileUrl, e.getMessage(), e);
+            throw new BusinessException(PROFILE_IMG_URL_GENERATE_FAIL);
         }
     }
 }

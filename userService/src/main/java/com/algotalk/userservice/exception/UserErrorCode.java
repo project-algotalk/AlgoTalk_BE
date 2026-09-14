@@ -43,6 +43,7 @@ public enum UserErrorCode implements ErrorCode {
     TARGET_JOB_LIMIT_EXCEEDED       ("USER_044", "목표 직무는 최대 3개까지 등록 가능합니다.", HttpStatus.BAD_REQUEST),
     TARGET_JOB_UPDATE_FAIL          ("USER_045", "목표 직무 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     EMPLOYMENT_UPDATE_FAIL          ("USER_046", "재직 이력 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    PROFILE_IMG_UPDATE_FAIL         ("USER_047", "프로필 이미지 변경에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
@@ -85,6 +86,7 @@ public enum UserErrorCode implements ErrorCode {
     FILE_SIZE_EXCEEDED      ("FILE_004", "파일 크기가 초과되었습니다.", HttpStatus.BAD_REQUEST),
     FILE_TYPE_NOT_ALLOWED   ("FILE_005", "허용되지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
     FILE_NOT_FOUND          ("FILE_006", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    PROFILE_IMG_URL_GENERATE_FAIL ("FILE_007", "프로필 이미지 URL 생성에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
 
     ;

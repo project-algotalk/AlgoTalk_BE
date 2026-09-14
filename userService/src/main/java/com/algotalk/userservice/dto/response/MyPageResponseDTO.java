@@ -16,6 +16,7 @@ public class MyPageResponseDTO {
     private String nickname;
     private String name;
     private String email;
+    private String profileImgUrl;
     private String addr1;
     private String addr2;
     private LocalDateTime createdAt;
