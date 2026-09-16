@@ -3,6 +3,7 @@ package com.algotalk.userservice.service;
 import com.algotalk.userservice.dto.request.*;
 import com.algotalk.userservice.dto.response.MyPageResponseDTO;
 import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -41,6 +42,12 @@ public interface IMypageService {
 
     // 재직이력 변경
     int updateEmployments(Long userId, List<EmploymentRequestDTO> pDTO) throws Exception;
+
+    // 프로필 이미지 변경
+    String updateProfileImg(Long userId, MultipartFile file) throws Exception;
+
+    // 프로필 이미지 삭제
+    void deleteProfileImg(Long userId) throws Exception;
 
     // 목표직무 조회
     List<TargetJobInfoResponseDTO> getTargetJobs(Long userId) throws Exception;
