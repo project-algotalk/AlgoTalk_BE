@@ -24,6 +24,11 @@ public enum UserErrorCode implements ErrorCode {
     INVALID_DATE_FORMAT     ("USER_024", "날짜 형식이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
     SIGN_UP_FAIL            ("USER_030", "회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
+    // 관리자 회원가입 및 승인
+    ADMIN_APPLICATION_NOT_FOUND("ADMIN_001", "관리자 가입 신청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    ADMIN_APPLICATION_ALREADY_PROCESSED("ADMIN_002", "이미 처리된 관리자 가입 신청입니다.", HttpStatus.CONFLICT),
+    ADMIN_SIGN_UP_FAIL      ("ADMIN_003", "관리자 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+
     // 회원 정보 변경
     // 아이디/비밀번호 변경,
     LOGIN_ID_UPDATE_FAIL            ("USER_031", "아이디 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
