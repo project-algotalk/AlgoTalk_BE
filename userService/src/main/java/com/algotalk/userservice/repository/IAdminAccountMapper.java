@@ -1,7 +1,6 @@
 package com.algotalk.userservice.repository;
 
 import com.algotalk.userservice.dto.command.AdminAccountCommand;
-import com.algotalk.userservice.dto.command.UserInfoCommand;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
@@ -11,9 +10,9 @@ public interface IAdminAccountMapper {
     // 관리자 가입 신청
     int insertAdminAccount(AdminAccountCommand pCommand) throws Exception;
     // 관리자 승인상태 조회
-    AdminAccountCommand getAdminAccount() throws Exception;
+    AdminAccountCommand getAdminAccount(AdminAccountCommand pCommand) throws Exception;
     // 관리자 가입신청 목록
-    List<AdminAccountCommand> getAdminAccountList() throws Exception;
+    List<AdminAccountCommand> getAdminAccountLists(AdminAccountCommand pCommand) throws Exception;
     // 관리자 계정 승인
     int approveAdmin(AdminAccountCommand pCommand) throws Exception;
     // 관리자 계정 반려

@@ -15,7 +15,7 @@
     </insert>
 
     <!--  관리자 승인상태 조회  -->
-    <select id="getAdminAccount" parameterType="Long" resultType="AdminAccountCommand">
+    <select id="getAdminAccount" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
         SELECT USER_ID, APPROVAL_STATUS,
                ADMIN_GRADE, APPROVED_BY,
                APPROVED_AT, REJECT_REASON,
