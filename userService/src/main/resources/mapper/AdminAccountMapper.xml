@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.algotalk.userservice.repository.IAdminAccountMapper">
 
     <!-- 관리자 가입 신청 -->
-    <insert id="insertAdminAccount"
-            parameterType="AdminAccountCommand">
+    <insert id="insertAdminAccount" parameterType="AdminAccountCommand">
         INSERT INTO ADMIN_ACCOUNT (
             USER_ID,
             APPROVAL_STATUS,
@@ -29,9 +26,7 @@
     </insert>
 
     <!-- 관리자 승인 상태 조회 -->
-    <select id="getAdminAccount"
-            parameterType="AdminAccountCommand"
-            resultType="AdminAccountCommand">
+    <select id="getAdminAccount" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
         SELECT
             USER_ID,
             APPROVAL_STATUS,
@@ -45,9 +40,7 @@
     </select>
 
     <!-- 관리자 가입 신청 목록 -->
-    <select id="getAdminAccountLists"
-            parameterType="AdminAccountCommand"
-            resultType="AdminAccountCommand">
+    <select id="getAdminAccountLists" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
         SELECT
         aa.USER_ID AS userId,
         uc.LOGIN_ID AS loginId,
@@ -72,8 +65,7 @@
     </select>
 
     <!-- 관리자 대시보드 요약 -->
-    <select id="getDashboardSummary"
-            resultType="com.algotalk.userservice.dto.response.AdminDashboardSummaryResponseDTO">
+    <select id="getDashboardSummary" resultType="AdminDashboardSummaryResponseDTO">
         SELECT
             (
                 SELECT COUNT(DISTINCT u.USER_ID)
@@ -105,8 +97,7 @@
     </select>
 
     <!-- 관리자 계정 승인 -->
-    <update id="approveAdmin"
-            parameterType="AdminAccountCommand">
+    <update id="approveAdmin" parameterType="AdminAccountCommand">
         UPDATE ADMIN_ACCOUNT
         SET APPROVAL_STATUS = 'APPROVED',
             ADMIN_GRADE = 'GENERAL',
@@ -120,8 +111,7 @@
     </update>
 
     <!-- 관리자 계정 반려 -->
-    <update id="rejectAdmin"
-            parameterType="AdminAccountCommand">
+    <update id="rejectAdmin" parameterType="AdminAccountCommand">
         UPDATE ADMIN_ACCOUNT
         SET APPROVAL_STATUS = 'REJECTED',
             REJECT_REASON = #{rejectReason},
@@ -134,8 +124,7 @@
     </update>
 
     <!-- 관리자 역할 변경 -->
-    <update id="updateAdminRole"
-            parameterType="AdminAccountCommand">
+    <update id="updateAdminRole" parameterType="AdminAccountCommand">
         UPDATE USER_ROLES
         SET ROLE = #{role},
             UPDATED_AT = NOW(),
