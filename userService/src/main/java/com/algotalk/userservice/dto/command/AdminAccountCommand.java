@@ -1,13 +1,17 @@
 package com.algotalk.userservice.dto.command;
 
 import com.algotalk.common.pagination.Pagination;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdminAccountCommand {
     private Long userId; // PK
     private String loginId;

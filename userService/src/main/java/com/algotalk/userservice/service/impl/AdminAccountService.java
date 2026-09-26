@@ -1,6 +1,7 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.domain.enums.AdminGrade;
 import com.algotalk.userservice.dto.command.AdminAccountCommand;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.AdminApplicationListRequestDTO;
@@ -8,6 +9,7 @@ import com.algotalk.userservice.dto.request.AdminSignUpRequestDTO;
 import com.algotalk.userservice.dto.request.CheckLoginIdRequestDTO;
 import com.algotalk.userservice.dto.request.CheckNicknameRequestDTO;
 import com.algotalk.userservice.dto.response.AdminApplicationResponseDTO;
+import com.algotalk.userservice.dto.response.AdminDashboardSummaryResponseDTO;
 import com.algotalk.userservice.dto.response.AdminSignUpResponseDTO;
 import com.algotalk.userservice.dto.response.AdminStatusResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
@@ -59,28 +61,56 @@ public class AdminAccountService implements IAdminAccountService {
     }
 
     @Override
-    public AdminStatusResponseDTO getStatus(Long userId) throws Exception {
-        AdminAccountCommand pCommand = requireAccount(userId);
-        return new AdminStatusResponseDTO(pCommand.getUserId(), pCommand.getApprovalStatus(),
-                pCommand.getAdminGrade(), pCommand.getApprovedAt(), pCommand.getRejectReason());
+    public AdminStatusResponseDTO getStatus(Long userId)
+            throws Exception {
+        AdminAccountCommand account = requireAccount(userId);
+
+        return new AdminStatusResponseDTO(
+                account.getUserId(),
+                account.getApprovalStatus(),
+                account.getAdminGrade(),
+                AdminGrade.getLabel(account.getAdminGrade()),
+                account.getApprovedAt(),
+                account.getRejectReason()
+        );
     }
 
     @Override
-    public List<AdminApplicationResponseDTO> getApplications(AdminApplicationListRequestDTO rDTO) throws Exception {
-        AdminAccountCommand pCommand = AdminAccountCommand.builder()
-                .approvalStatus(rDTO.status() == null ? null : rDTO.status().name())
-                .pagination(rDTO.toPagination()).build();
+    public List<AdminApplicationResponseDTO> getApplications(
+            AdminApplicationListRequestDTO request
+    ) throws Exception {
+        AdminAccountCommand command =
+                AdminAccountCommand.builder()
+                        .approvalStatus(
+                                request.status() == null
+                                        ? null
+                                        : request.status().name()
+                        )
+                        .pagination(request.toPagination())
+                        .build();
 
-        return adminAccountMapper.getAdminAccountLists(pCommand).stream()
-                .map(row -> new AdminApplicationResponseDTO(row.getUserId()
-                        , row.getLoginId()
-                        , row.getNickname()
-                        , row.getName()
-                        , row.getApprovalStatus()
-                        , row.getAdminGrade()
-                        , row.getCreatedAt()
-                        , row.getTotalCount()))
+        return adminAccountMapper.getAdminAccountLists(command)
+                .stream()
+                .map(row -> new AdminApplicationResponseDTO(
+                        row.getUserId(),
+                        row.getLoginId(),
+                        row.getNickname(),
+                        row.getName(),
+                        row.getApprovalStatus(),
+                        row.getAdminGrade(),
+                        AdminGrade.getLabel(
+                                row.getAdminGrade()
+                        ),
+                        row.getCreatedAt(),
+                        row.getTotalCount()
+                ))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminDashboardSummaryResponseDTO getDashboardSummary() throws Exception {
+        return adminAccountMapper.getDashboardSummary();
     }
 
     @Override

@@ -60,6 +60,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/api/user/v1/reg/**",
             "/api/user/v1/signup",
             "/api/user/v1/signup/social",
+            "/api/admin/v1/signup",
             "/api/cs-categories/v1/**", // 내부 서비스 간 통신
             "/api/user/v1/info/**",     // 내부 서비스 간 통신
             "/api/user/v1/login",
