@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.algotalk.userservice.repository.IAdminUserMapper">
+
+    <select id="getUserById" resultType="AdminUserCommand">
+        SELECT
+            u.USER_ID AS userId,
+            uc.LOGIN_ID AS loginId,
+            u.NICKNAME AS nickname,
+            u.NAME AS name,
+            u.EMAIL AS email,
+            uc.PASSWORD_SET_YN AS passwordSetYn
+        FROM USERS u
+                 JOIN USER_CREDENTIAL uc
+                      ON uc.USER_ID = u.USER_ID
+                 JOIN USER_ROLES ur
+                      ON ur.USER_ID = u.USER_ID
+        WHERE u.USER_ID = #{userId}
+          AND u.DELETED_YN = 'N'
+          AND ur.ROLE = 'ROLE_USER'
+    </select>
+
+</mapper>

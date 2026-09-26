@@ -1,16 +1,17 @@
 package com.algotalk.userservice.service.impl;
 
 import com.algotalk.common.exception.BusinessException;
+import com.algotalk.userservice.auth.CustomUserDetails;
 import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
+import com.algotalk.userservice.dto.auth.UserAuthDTO;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
-import com.algotalk.userservice.dto.response.LoginResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.service.IJwtTokenService;
+import com.algotalk.userservice.service.ILoginAttemptService;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import jakarta.servlet.http.Cookie;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,49 +19,53 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
-@Slf4j
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT) // 엄격한 검증 수행하지 않도록 설정(LENIENT, STRICT_STUBS, DEFAULT 중 선택)
 class UserLoginServiceMockTest {
 
     @InjectMocks
-    UserLoginService userLoginService;
+    private UserLoginService userLoginService;
 
-    @Mock IUserLoginMapper userLoginMapper;
-    @Mock IJwtTokenService jwtTokenService;
-    @Mock IRefreshTokenService refreshTokenService;
-    @Mock PasswordEncoder passwordEncoder;
-    @Mock StringRedisTemplate stringRedisTemplate;
-    @Mock ValueOperations<String, String> valueOperations;
+    @Mock
+    private IUserLoginMapper userLoginMapper;
+
+    @Mock
+    private IJwtTokenService jwtTokenService;
+
+    @Mock
+    private IRefreshTokenService refreshTokenService;
+
+    @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
+    private ILoginAttemptService loginAttemptService;
+
+    @Mock
+    private Authentication authentication;
 
     @BeforeEach
     void setUp() {
-        // 내부 상태 설정(내부의 private 필드에 직접 값 주입)
         ReflectionTestUtils.setField(userLoginService, "accessCookieName", "AccessToken");
         ReflectionTestUtils.setField(userLoginService, "refreshCookieName", "RefreshToken");
         ReflectionTestUtils.setField(userLoginService, "cookieSecure", false);
         ReflectionTestUtils.setField(userLoginService, "sameSite", "Lax");
-        ReflectionTestUtils.setField(userLoginService, "maxFailCount", 5);
-        ReflectionTestUtils.setField(userLoginService, "lockMinutes", 1L);
         ReflectionTestUtils.setField(userLoginService, "accessTokenExpiration", 600000L);
     }
 
@@ -68,115 +73,140 @@ class UserLoginServiceMockTest {
     @DisplayName("로그인 성공")
     void login_success() throws Exception {
         // given
-        UserInfoCommand userInfo = UserInfoCommand.builder()
-                .userId(1L)
-                .loginId("testuser")
-                .password("encodedPassword")
-                .passwordSetYn("Y")
-                .nickname("테스터")
-                .deletedYn("N")
-                .role("ROLE_USER")
-                .build();
+        UserInfoCommand userInfo = createUserInfo();
 
-        given(stringRedisTemplate.hasKey(anyString())).willReturn(false); // 잠금 없음
-        given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
+        CustomUserDetails userDetails = new CustomUserDetails(
+                new UserAuthDTO(
+                        1L,
+                        "testuser",
+                        "encodedPassword",
+                        List.of("ROLE_USER")
+                )
+        );
+
+        given(loginAttemptService.isLocked("testuser")).willReturn(false);
+        given(authenticationManager.authenticate(any(Authentication.class)))
+                .willReturn(authentication);
+        given(authentication.getPrincipal()).willReturn(userDetails);
         given(userLoginMapper.getUserAuthInfo(any())).willReturn(userInfo);
-        given(passwordEncoder.matches(anyString(), anyString())).willReturn(true);
-        given(jwtTokenService.generateAccessToken(any(), anyString())).willReturn("mock.access.token");
-        given(jwtTokenService.issueRefreshToken(any())).willReturn(
+        given(jwtTokenService.issueRefreshToken(userInfo)).willReturn(
                 new RefreshTokenIssue(
-                        "mock.refresh.token", "session-a",
-                        Instant.now().plusSeconds(600), Instant.now().plusSeconds(3600)));
+                        "mock.refresh.token",
+                        "session-a",
+                        Instant.now().plusSeconds(600),
+                        Instant.now().plusSeconds(3600)
+                )
+        );
+        given(jwtTokenService.generateAccessToken(userInfo, "session-a"))
+                .willReturn("mock.access.token");
 
-        LoginRequestDTO pDTO = LoginRequestDTO.builder()
+        LoginRequestDTO request = LoginRequestDTO.builder()
                 .loginId("testuser")
                 .password("Test1234!")
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // when
-        userLoginService.login(pDTO, response);
+        userLoginService.login(request, response);
 
         // then
+        verify(loginAttemptService).resetAttempts("testuser");
         verify(jwtTokenService).generateAccessToken(userInfo, "session-a");
-        verify(refreshTokenService).saveRefreshToken(anyLong(), anyString(), anyString(), any()); // RefreshToken 저장 여부 검증
+        verify(refreshTokenService).saveRefreshToken(
+                eq(1L),
+                eq("session-a"),
+                eq("mock.refresh.token"),
+                any(Instant.class)
+        );
 
-        String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
+        String cookies = String.join("\n", response.getHeaders("Set-Cookie"));
 
-        assertThat(allSetCookie).isNotBlank();
-        assertThat(allSetCookie).contains("AccessToken=");
-        assertThat(allSetCookie).contains("RefreshToken=");
-        assertThat(allSetCookie).contains("HttpOnly");
-        assertThat(allSetCookie).contains("SameSite=Lax");
+        assertThat(cookies).isNotBlank();
+        assertThat(cookies).contains("AccessToken=");
+        assertThat(cookies).contains("RefreshToken=");
+        assertThat(cookies).contains("HttpOnly");
+        assertThat(cookies).contains("SameSite=Lax");
     }
 
     @Test
     @DisplayName("로그인 실패 - 계정 잠금")
     void login_fail_accountLocked() {
-        // given: 계정 잠금 상태
-        given(stringRedisTemplate.hasKey(anyString())).willReturn(true);
+        // given
+        given(loginAttemptService.isLocked("testuser")).willReturn(true);
 
-        LoginRequestDTO pDTO = LoginRequestDTO.builder()
+        LoginRequestDTO request = LoginRequestDTO.builder()
                 .loginId("testuser")
                 .password("Test1234!")
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // when & then
-        assertThatThrownBy(() -> userLoginService.login(pDTO, response))
+        // when, then
+        assertThatThrownBy(() -> userLoginService.login(request, response))
                 .isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(UserErrorCode.ACCOUNT_LOCKED));
+                .satisfies(error -> {
+                    BusinessException exception = (BusinessException) error;
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(UserErrorCode.ACCOUNT_LOCKED);
+                });
+
+        verifyNoInteractions(authenticationManager);
     }
 
     @Test
     @DisplayName("로그인 실패 - 존재하지 않는 사용자")
-    void login_fail_userNotFound() throws Exception {
-        // given: DB 조회 결과 null
-        given(stringRedisTemplate.hasKey(anyString())).willReturn(false);
-        given(userLoginMapper.getUserAuthInfo(any())).willReturn(null);
+    void login_fail_userNotFound() {
+        // given
+        given(loginAttemptService.isLocked("not_exist")).willReturn(false);
+        given(authenticationManager.authenticate(any(Authentication.class)))
+                .willThrow(new UsernameNotFoundException("not_exist"));
 
-        LoginRequestDTO pDTO = LoginRequestDTO.builder()
+        LoginRequestDTO request = LoginRequestDTO.builder()
                 .loginId("not_exist")
                 .password("Test1234!")
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // when & then
-        assertThatThrownBy(() -> userLoginService.login(pDTO, response))
+        // when, then
+        assertThatThrownBy(() -> userLoginService.login(request, response))
                 .isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(UserErrorCode.USER_NOT_FOUND));
+                .satisfies(error -> {
+                    BusinessException exception = (BusinessException) error;
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(UserErrorCode.USER_NOT_FOUND);
+                });
+
+        verify(loginAttemptService, never()).recordFailure(anyString());
     }
 
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
-    void login_fail_wrongPassword() throws Exception {
+    void login_fail_wrongPassword() {
         // given
-        UserInfoCommand userInfo = UserInfoCommand.builder()
-                .userId(1L)
-                .loginId("testuser")
-                .password("encodedPassword")
-                .deletedYn("N")
-                .build();
+        given(loginAttemptService.isLocked("testuser")).willReturn(false);
+        given(authenticationManager.authenticate(any(Authentication.class)))
+                .willThrow(new BadCredentialsException("비밀번호 불일치"));
 
-        given(stringRedisTemplate.hasKey(anyString())).willReturn(false);
-        given(stringRedisTemplate.opsForValue()).willReturn(valueOperations);
-        given(valueOperations.increment(anyString())).willReturn(1L);
-        given(userLoginMapper.getUserAuthInfo(any())).willReturn(userInfo);
-        given(passwordEncoder.matches(anyString(), anyString())).willReturn(false);
-
-        LoginRequestDTO pDTO = LoginRequestDTO.builder()
+        LoginRequestDTO request = LoginRequestDTO.builder()
                 .loginId("testuser")
                 .password("WrongPassword!")
                 .build();
+
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        // when & then
-        assertThatThrownBy(() -> userLoginService.login(pDTO, response))
+        // when, then
+        assertThatThrownBy(() -> userLoginService.login(request, response))
                 .isInstanceOf(BusinessException.class)
-                .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                        .isEqualTo(UserErrorCode.LOGIN_FAIL));
+                .satisfies(error -> {
+                    BusinessException exception = (BusinessException) error;
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(UserErrorCode.LOGIN_FAIL);
+                });
+
+        verify(loginAttemptService).recordFailure("testuser");
+        verify(loginAttemptService, never()).resetAttempts(anyString());
     }
 
     @Test
@@ -185,9 +215,12 @@ class UserLoginServiceMockTest {
         // given
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setCookies(new Cookie("RefreshToken", "refresh-token"));
+
         MockHttpServletResponse response = new MockHttpServletResponse();
+
         given(jwtTokenService.getUserIdFromToken("refresh-token")).willReturn(1L);
-        given(jwtTokenService.getSessionIdFromToken("refresh-token")).willReturn("session-a");
+        given(jwtTokenService.getSessionIdFromToken("refresh-token"))
+                .willReturn("session-a");
 
         // when
         userLoginService.logout(1L, request, response);
@@ -195,24 +228,41 @@ class UserLoginServiceMockTest {
         // then
         verify(refreshTokenService).deleteRefreshToken(1L, "session-a");
 
-        String allSetCookie = String.join("\n", response.getHeaders("Set-Cookie"));
+        String cookies = String.join("\n", response.getHeaders("Set-Cookie"));
 
-        assertThat(allSetCookie).isNotBlank();
-        assertThat(allSetCookie).contains("AccessToken=");
-        assertThat(allSetCookie).contains("RefreshToken=");
-        assertThat(allSetCookie).contains("HttpOnly");
-        assertThat(allSetCookie).contains("SameSite=Lax");
-        assertThat(allSetCookie).contains("Max-Age=0");
+        assertThat(cookies).isNotBlank();
+        assertThat(cookies).contains("AccessToken=");
+        assertThat(cookies).contains("RefreshToken=");
+        assertThat(cookies).contains("HttpOnly");
+        assertThat(cookies).contains("SameSite=Lax");
+        assertThat(cookies).contains("Max-Age=0");
     }
 
     @Test
-    @DisplayName("모든 기기 로그아웃")
+    @DisplayName("모든 기기 로그아웃 성공")
     void logoutAll_success() throws Exception {
+        // given
         MockHttpServletResponse response = new MockHttpServletResponse();
 
+        // when
         userLoginService.logoutAll(1L, response);
 
+        // then
         verify(refreshTokenService).deleteAllRefreshTokens(1L);
-        assertThat(String.join("\n", response.getHeaders("Set-Cookie"))).contains("Max-Age=0");
+
+        String cookies = String.join("\n", response.getHeaders("Set-Cookie"));
+        assertThat(cookies).contains("Max-Age=0");
+    }
+
+    private UserInfoCommand createUserInfo() {
+        return UserInfoCommand.builder()
+                .userId(1L)
+                .loginId("testuser")
+                .password("encodedPassword")
+                .passwordSetYn("Y")
+                .nickname("테스터")
+                .deletedYn("N")
+                .role("ROLE_USER")
+                .build();
     }
 }

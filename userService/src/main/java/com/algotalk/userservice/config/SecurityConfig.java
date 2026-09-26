@@ -85,7 +85,9 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/v1/signup").permitAll() // 관리자 회원가입은 누구나 가능
                         .requestMatchers(HttpMethod.GET, "/admin/v1/signup/status") // 관리자 회원가입 상태 조회는 누구나 가능
-                        .hasAnyRole("ADMIN_PENDING", "ADMIN", "SUPER_ADMIN") // 관리자 회원가입 상태 조회는 승인 대기, 승인, 슈퍼관리자만 가능
+                                .hasAnyRole("ADMIN_PENDING", "ADMIN", "SUPER_ADMIN") // 관리자 회원가입 상태 조회는 승인 대기, 승인, 슈퍼관리자만 가능
+                        .requestMatchers("/admin/v1/users/**")
+                                .hasRole("SUPER_ADMIN") // 관리자 계정 조회/승인/거절은 슈퍼관리자만 가능
                         .requestMatchers("/admin/v1/applications/**").hasRole("SUPER_ADMIN") // 관리자 신청 승인/거절은 슈퍼관리자만 가능
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN") // 관리자 관련 API는 관리자, 슈퍼관리자만 가능
                         .anyRequest().authenticated()
