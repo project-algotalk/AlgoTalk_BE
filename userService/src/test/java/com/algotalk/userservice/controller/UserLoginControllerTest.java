@@ -21,13 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
 
+import static com.algotalk.userservice.exception.UserErrorCode.LOGIN_FAIL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @Slf4j
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 public class UserLoginControllerTest {
     @Autowired
     MockMvc mockMvc;
@@ -108,7 +109,10 @@ public class UserLoginControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pDTO)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("USER_004"));
+                .andExpect(
+                        jsonPath("$.code")
+                                .value(LOGIN_FAIL.getCode())
+                );
     }
 
     @Test

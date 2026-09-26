@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class UserUpdateServiceTest {
 
     @Autowired
