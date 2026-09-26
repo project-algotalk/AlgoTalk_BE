@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -35,6 +37,34 @@ public class LoginAttemptService
         String lockKey = LOGIN_LOCK_KEY + loginId;
 
         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(lockKey));
+    }
+
+    @Override
+    public Map<String, Boolean> getLockStatuses(
+            List<String> loginIds
+    ) {
+        if (loginIds == null || loginIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<String> lockKeys = loginIds.stream()
+                .map(loginId -> LOGIN_LOCK_KEY + loginId)
+                .toList();
+
+        List<String> lockValues = stringRedisTemplate
+                .opsForValue()
+                .multiGet(lockKeys);
+
+        Map<String, Boolean> statuses = new LinkedHashMap<>();
+        for (int index = 0; index < loginIds.size(); index++) {
+            boolean locked = lockValues != null
+                    && index < lockValues.size()
+                    && lockValues.get(index) != null;
+
+            statuses.put(loginIds.get(index), locked);
+        }
+
+        return statuses;
     }
 
     @Override

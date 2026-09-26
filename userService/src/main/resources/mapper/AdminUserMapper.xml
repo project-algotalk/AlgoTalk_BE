@@ -3,20 +3,57 @@
 
 <mapper namespace="com.algotalk.userservice.repository.IAdminUserMapper">
 
-    <select id="getUserById" resultType="AdminUserCommand">
-        SELECT
+    <sql id="adminUserFromWhere">
+        FROM USERS u
+        JOIN USER_CREDENTIAL uc
+          ON uc.USER_ID = u.USER_ID
+        JOIN USER_ROLES ur
+          ON ur.USER_ID = u.USER_ID
+        WHERE u.DELETED_YN = 'N'
+          AND ur.ROLE = 'ROLE_USER'
+        <if test="keyword != null and keyword != ''">
+            AND (
+                uc.LOGIN_ID LIKE CONCAT('%', #{keyword}, '%')
+                OR u.NAME LIKE CONCAT('%', #{keyword}, '%')
+                OR u.NICKNAME LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+    </sql>
+
+    <select id="getUsers"
+            parameterType="AdminUserCommand"
+            resultType="AdminUserCommand">
+        SELECT DISTINCT
             u.USER_ID AS userId,
             uc.LOGIN_ID AS loginId,
             u.NICKNAME AS nickname,
             u.NAME AS name,
-            u.EMAIL AS email,
-            uc.PASSWORD_SET_YN AS passwordSetYn
+            u.CREATED_AT AS createdAt
+        <include refid="adminUserFromWhere" />
+        ORDER BY u.CREATED_AT DESC, u.USER_ID DESC
+        LIMIT #{pagination.size}
+        OFFSET #{pagination.offset}
+    </select>
+
+    <select id="countUsers"
+            parameterType="AdminUserCommand"
+            resultType="long">
+        SELECT COUNT(DISTINCT u.USER_ID)
+        <include refid="adminUserFromWhere" />
+    </select>
+
+    <select id="getUserByLoginId" resultType="AdminUserCommand">
+        SELECT
+            u.USER_ID AS userId,
+            uc.LOGIN_ID AS loginId,
+            u.NICKNAME AS nickname,
+            u.NAME AS name
         FROM USERS u
-                 JOIN USER_CREDENTIAL uc
-                      ON uc.USER_ID = u.USER_ID
-                 JOIN USER_ROLES ur
-                      ON ur.USER_ID = u.USER_ID
-        WHERE u.USER_ID = #{userId}
+        JOIN USER_CREDENTIAL uc
+          ON uc.USER_ID = u.USER_ID
+        JOIN USER_ROLES ur
+          ON ur.USER_ID = u.USER_ID
+        WHERE uc.LOGIN_ID = #{loginId}
           AND u.DELETED_YN = 'N'
           AND ur.ROLE = 'ROLE_USER'
     </select>

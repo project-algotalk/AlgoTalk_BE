@@ -1,7 +1,11 @@
 package com.algotalk.userservice.controller;
 
 import com.algotalk.common.response.ApiResponse;
+import com.algotalk.userservice.dto.request.AdminUserListRequestDTO;
+import com.algotalk.userservice.dto.request.AdminUserUnlockRequestDTO;
+import com.algotalk.userservice.dto.response.AdminUserPageResponseDTO;
 import com.algotalk.userservice.service.IAdminUserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,13 +19,24 @@ public class AdminUserController {
 
     private final IAdminUserService adminUserService;
 
-    @PatchMapping("/{userId}/unlock")
+    @GetMapping
+    public ResponseEntity<ApiResponse<AdminUserPageResponseDTO>> getUsers(
+            @Valid @ModelAttribute AdminUserListRequestDTO request
+    ) throws Exception {
+        return ResponseEntity.ok(
+                ApiResponse.ok(adminUserService.getUsers(request))
+        );
+    }
+
+    @PatchMapping("/unlock")
     public ResponseEntity<ApiResponse<Void>> unlockUser(
-            @PathVariable Long userId,
+            @Valid @RequestBody AdminUserUnlockRequestDTO request,
             @AuthenticationPrincipal Jwt jwt
     ) throws Exception {
-
-        adminUserService.unlockUser(userId, Long.valueOf(jwt.getSubject()));
+        adminUserService.unlockUser(
+                request.loginId(),
+                Long.valueOf(jwt.getSubject())
+        );
 
         return ResponseEntity.ok(ApiResponse.ok());
     }

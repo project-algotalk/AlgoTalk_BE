@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +64,38 @@ class LoginAttemptServiceTest {
 
         // then
         assertThat(result).isFalse();
+    }
+
+    @Test
+    @DisplayName("여러 계정 잠금 여부 조회 성공")
+    void getLockStatuses_success() {
+        // given
+        List<String> loginIds = List.of("user01", "user02");
+        given(valueOperations.multiGet(List.of(
+                "login:lock:user01",
+                "login:lock:user02"
+        ))).willReturn(java.util.Arrays.asList("Y", null));
+
+        // when
+        Map<String, Boolean> result = loginAttemptService
+                .getLockStatuses(loginIds);
+
+        // then
+        assertThat(result)
+                .containsEntry("user01", true)
+                .containsEntry("user02", false);
+    }
+
+    @Test
+    @DisplayName("여러 계정 잠금 여부 조회 성공 - 회원 목록 없음")
+    void getLockStatuses_success_empty() {
+        // when
+        Map<String, Boolean> result = loginAttemptService
+                .getLockStatuses(List.of());
+
+        // then
+        assertThat(result).isEmpty();
+        verify(valueOperations, never()).multiGet(anyList());
     }
 
     @Test
