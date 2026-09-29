@@ -5,10 +5,10 @@ import com.algotalk.userservice.auth.CustomUserDetails;
 import com.algotalk.userservice.dto.auth.RefreshTokenIssue;
 import com.algotalk.userservice.dto.command.UserInfoCommand;
 import com.algotalk.userservice.dto.request.LoginRequestDTO;
-import com.algotalk.userservice.dto.response.LoginResponseDTO;
 import com.algotalk.userservice.exception.UserErrorCode;
 import com.algotalk.userservice.repository.IUserLoginMapper;
 import com.algotalk.userservice.service.IJwtTokenService;
+import com.algotalk.userservice.service.ILoginAttemptService;
 import com.algotalk.userservice.service.IRefreshTokenService;
 import com.algotalk.userservice.service.IUserLoginService;
 import com.algotalk.userservice.util.CmmUtil;
@@ -18,7 +18,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,12 +25,10 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.TimeUnit;
 
 import static com.algotalk.userservice.exception.UserErrorCode.LOGOUT_ALL_FAIL;
 
@@ -43,18 +40,8 @@ public class UserLoginService implements IUserLoginService {
     private final IUserLoginMapper userLoginMapper;
     private final IJwtTokenService jwtTokenService;
     private final IRefreshTokenService refreshTokenService;
-    private final PasswordEncoder passwordEncoder;
-    private final StringRedisTemplate stringRedisTemplate;
     private final AuthenticationManager authenticationManager;
-
-    private static final String LOGIN_FAIL_KEY = "login:fail:"; // 로그인 실패 횟수
-    private static final String LOGIN_LOCK_KEY = "login:lock:"; // 로그인 잠금 여부
-
-    @Value("${login.max-fail-count}")
-    private int maxFailCount;
-
-    @Value("${login.lock-minutes}")
-    private long lockMinutes; // 로그인 잠금 시간
+    private final ILoginAttemptService loginAttemptService;
 
     @Value("${jwt.access.token.expiration}")
     private long accessTokenExpiration;
@@ -78,8 +65,9 @@ public class UserLoginService implements IUserLoginService {
         String loginId = CmmUtil.nvl(pDTO.loginId());
 
         // 1. 계정 잠금 확인
-        if (isAccountLocked(loginId)) {
+        if (loginAttemptService.isLocked(loginId)) {
             log.warn("계정이 잠금 상태입니다: loginId={}", loginId);
+
             throw new BusinessException(UserErrorCode.ACCOUNT_LOCKED);
         }
 
@@ -93,7 +81,7 @@ public class UserLoginService implements IUserLoginService {
             );
         } catch (BadCredentialsException e) {
             log.warn("비밀번호가 일치하지 않습니다: loginId={}", loginId);
-            handleLoginFail(loginId);
+            loginAttemptService.recordFailure(loginId);
             throw new BusinessException(UserErrorCode.LOGIN_FAIL);
         } catch (UsernameNotFoundException e) {
             log.warn("사용자 정보가 존재하지 않습니다: loginId={}", loginId);
@@ -114,7 +102,7 @@ public class UserLoginService implements IUserLoginService {
         }
 
         // 5. 로그인 성공 시 로그인 실패 횟수 초기화
-        stringRedisTemplate.delete(LOGIN_FAIL_KEY + loginId);
+        loginAttemptService.resetAttempts(loginId);
 
         // 7. 로그인 세션을 먼저 생성하고 Access Token에도 동일한 sessionId를 포함
         RefreshTokenIssue refreshTokenIssue = jwtTokenService.issueRefreshToken(rCommand);
@@ -179,30 +167,6 @@ public class UserLoginService implements IUserLoginService {
         expireRefreshTokenCookie(response);
 
         log.info("{}.logoutAll End!", this.getClass().getName());
-    }
-
-    private boolean isAccountLocked(String loginId) {
-        log.info("{}.isAccountLocked Start!", this.getClass().getName());
-        String lockKey = LOGIN_LOCK_KEY + loginId;
-
-        log.info("{}.isAccountLocked End!", this.getClass().getName());
-        return stringRedisTemplate.hasKey(lockKey);
-    }
-
-    private void handleLoginFail(String loginId) {
-        String failKey = LOGIN_FAIL_KEY + loginId;
-
-        // 실패 횟수 증가
-        Long failCount = stringRedisTemplate.opsForValue().increment(failKey);
-        log.info("로그인 실패 횟수 증가: key={}, failCount={}", failKey, failCount);
-        stringRedisTemplate.expire(failKey, lockMinutes, TimeUnit.MINUTES);
-
-        // 최대 실패 횟수 초과 시 계정 잠금
-        if(failCount != null && failCount >= maxFailCount) {
-            String lockKey = LOGIN_LOCK_KEY + loginId;
-            stringRedisTemplate.opsForValue().set(lockKey, "Y", lockMinutes, TimeUnit.MINUTES);
-            log.warn("계정 잠금 처리: key={}, lockMinutes={}분", lockKey, lockMinutes);
-        }
     }
 
     private void setAccessTokenHeader(String accessToken, HttpServletResponse response) {

@@ -25,7 +25,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 public class UserLoginServiceTest {
 
     @Autowired
@@ -113,7 +113,8 @@ public class UserLoginServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .satisfies(e -> {
                     BusinessException be = (BusinessException) e;
-                    assertThat(be.getErrorCode()).isEqualTo(UserErrorCode.USER_NOT_FOUND);
+                    assertThat(be.getErrorCode())
+                            .isEqualTo(UserErrorCode.LOGIN_FAIL);
                 });
     }
 

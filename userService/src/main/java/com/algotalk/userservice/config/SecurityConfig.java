@@ -64,6 +64,7 @@ public class SecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // OAuth2 로그인 시 세션 생성, JWT 인증 시 세션 미사용
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+//                        .requestMatchers("/test/**").permitAll()
                         .requestMatchers(
                                 "/user/v1/reg/**",
                                 "/user/v1/signup",
@@ -82,7 +83,16 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/questions"
                         ).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/admin/v1/signup").permitAll() // 관리자 회원가입은 누구나 가능
+                        .requestMatchers(HttpMethod.GET, "/admin/v1/signup/status") // 관리자 회원가입 상태 조회는 누구나 가능
+                                .hasAnyRole("ADMIN_PENDING", "ADMIN", "SUPER_ADMIN") // 관리자 회원가입 상태 조회는 승인 대기, 승인, 슈퍼관리자만 가능
+                        .requestMatchers(
+                                "/admin/v1/users",
+                                "/admin/v1/users/**"
+                        )
+                                .hasAnyRole("ADMIN", "SUPER_ADMIN") // 일반 회원 조회/잠금 해제는 관리자만 가능
+                        .requestMatchers("/admin/v1/applications/**").hasRole("SUPER_ADMIN") // 관리자 신청 승인/거절은 슈퍼관리자만 가능
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN") // 관리자 관련 API는 관리자, 슈퍼관리자만 가능
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth

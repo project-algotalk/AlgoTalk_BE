@@ -11,6 +11,7 @@ import com.algotalk.userservice.dto.response.TargetJobInfoResponseDTO;
 import com.algotalk.userservice.repository.IUserUpdateMapper;
 import com.algotalk.userservice.service.IEmailService;
 import com.algotalk.userservice.service.IMypageService;
+import com.algotalk.userservice.service.IS3Service;
 import com.algotalk.userservice.util.CmmUtil;
 import com.algotalk.userservice.util.DateUtil;
 import com.algotalk.userservice.util.EncryptUtil;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +36,7 @@ public class MypageService implements IMypageService {
     private final IUserUpdateMapper userUpdateMapper;
     private final PasswordEncoder passwordEncoder;
     private final IEmailService emailService;
+    private final IS3Service s3Service;
 
     @Override
     public MyPageResponseDTO getMyPage(Long userId) throws Exception {
@@ -82,6 +85,7 @@ public class MypageService implements IMypageService {
                 .nickname(user.getNickname())
                 .name(user.getName())
                 .email(EncryptUtil.decAES128CBC(CmmUtil.nvl(user.getEmail())))
+                .profileImgUrl(getProfileImgUrlQuietly(user.getProfileImgUrl()))
                 .addr1(user.getAddr1())
                 .addr2(user.getAddr2())
                 .createdAt(user.getCreatedAt())
@@ -434,6 +438,105 @@ public class MypageService implements IMypageService {
 
         log.info("{}.updateEmployments End!", this.getClass().getName());
         return 1;
+    }
+
+    @Transactional
+    @Override
+    public String updateProfileImg(Long userId, MultipartFile file) throws Exception {
+        log.info("{}.updateProfileImg Start!", this.getClass().getName());
+
+        // 1. 기본 정보 조회
+        UserInfoCommand pCommand = userUpdateMapper.getMyPageSummaryByUserId(userId);
+        if (pCommand == null) {
+            throw new BusinessException(USER_NOT_FOUND);
+        }
+
+        // 2. S3에 새 이미지 업로드
+        String newProfileImgUrl = s3Service.uploadProfileImg(userId, file);
+        try {
+            // 3. DB에 새 이미지 URL 업데이트
+            int updatedCount = userUpdateMapper.updateProfileImg(UserInfoCommand.builder()
+                    .userId(userId)
+                    .profileImgUrl(newProfileImgUrl)
+                    .build());
+
+            // 4. 업데이트 실패 시 새 이미지 삭제
+            if (updatedCount != 1) {
+                throw new BusinessException(PROFILE_IMG_UPDATE_FAIL);
+            }
+
+        } catch (Exception e) {
+            // DB 업데이트 실패 시 새 이미지 삭제
+            deleteUploadedImageQuietly(newProfileImgUrl);
+            throw e;
+        }
+
+        // 5. DB 변경이 성공한 뒤에만 기존 이미지를 정리
+        // 정리 실패는 새 이미지 변경을 취소하지 않음
+        deleteOldProfileImageQuietly(pCommand.getProfileImgUrl());
+        log.info("{}.updateProfileImg End!", this.getClass().getName());
+        return s3Service.getProfileImgUrl(newProfileImgUrl);
+    }
+
+    @Override
+    public void deleteProfileImg(Long userId) throws Exception {
+        log.info("{}.deleteProfileImg Start!", this.getClass().getName());
+
+        // 1. 기본 정보 조회
+        UserInfoCommand pCommand = userUpdateMapper.getMyPageSummaryByUserId(userId);
+        if (pCommand == null) {
+            throw new BusinessException(USER_NOT_FOUND);
+        }
+
+        String oldProfileImgUrl = pCommand.getProfileImgUrl();
+        if (oldProfileImgUrl == null || oldProfileImgUrl.isBlank()) {
+            log.info("삭제할 프로필 이미지가 없습니다.");
+            return;
+        }
+
+        // 2. DB에서 프로필 이미지 URL 제거
+        int updatedCount = userUpdateMapper.updateProfileImg(UserInfoCommand.builder()
+                .userId(userId)
+                .profileImgUrl(null)
+                .build());
+
+        if (updatedCount != 1) {
+            throw new BusinessException(PROFILE_IMG_UPDATE_FAIL);
+        }
+
+        // 3. 기존 이미지를 정리
+        deleteOldProfileImageQuietly(pCommand.getProfileImgUrl());
+        log.info("{}.deleteProfileImg End!", this.getClass().getName());
+    }
+
+    // 기존 프로필 이미지 정리
+    private void deleteOldProfileImageQuietly(String profileImgUrl) {
+        if (profileImgUrl == null || profileImgUrl.isBlank()) {
+            return;
+        }
+        deleteUploadedImageQuietly(profileImgUrl);
+    }
+
+    // 새로 업로드한 이미지 정리
+    private void deleteUploadedImageQuietly(String profileImgUrl) {
+        try {
+            s3Service.deleteProfileImg(profileImgUrl);
+        } catch (Exception e) {
+            log.warn("S3 프로필 이미지 정리에 실패했습니다. url: {}", profileImgUrl, e);
+        }
+    }
+
+    private String getProfileImgUrlQuietly(String profileImgUrl) {
+        if (profileImgUrl == null || profileImgUrl.isBlank()) {
+            return null;
+        }
+
+        try {
+            return s3Service.getProfileImgUrl(profileImgUrl);
+        } catch (Exception e) {
+            log.warn("프로필 이미지 Presigned URL 생성 실패. url: {}", profileImgUrl, e);
+            return null;
+        }
     }
 
     @Override

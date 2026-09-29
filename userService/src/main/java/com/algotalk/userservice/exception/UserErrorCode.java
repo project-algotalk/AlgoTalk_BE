@@ -24,6 +24,12 @@ public enum UserErrorCode implements ErrorCode {
     INVALID_DATE_FORMAT     ("USER_024", "날짜 형식이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
     SIGN_UP_FAIL            ("USER_030", "회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
 
+    // 관리자 회원가입 및 승인
+    ADMIN_APPLICATION_NOT_FOUND("ADMIN_001", "관리자 가입 신청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    ADMIN_APPLICATION_ALREADY_PROCESSED("ADMIN_002", "이미 처리된 관리자 가입 신청입니다.", HttpStatus.CONFLICT),
+    ADMIN_SIGN_UP_FAIL      ("ADMIN_003", "관리자 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    ADMIN_USER_NOT_FOUND    ("ADMIN_004", "관리할 회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
     // 회원 정보 변경
     // 아이디/비밀번호 변경,
     LOGIN_ID_UPDATE_FAIL            ("USER_031", "아이디 변경이 실패했습니다.", HttpStatus.BAD_REQUEST),
@@ -43,6 +49,7 @@ public enum UserErrorCode implements ErrorCode {
     TARGET_JOB_LIMIT_EXCEEDED       ("USER_044", "목표 직무는 최대 3개까지 등록 가능합니다.", HttpStatus.BAD_REQUEST),
     TARGET_JOB_UPDATE_FAIL          ("USER_045", "목표 직무 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
     EMPLOYMENT_UPDATE_FAIL          ("USER_046", "재직 이력 수정에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    PROFILE_IMG_UPDATE_FAIL         ("USER_047", "프로필 이미지 변경에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // 소셜
     SOCIAL_ALREADY_LINKED   ("USER_050", "이미 연동된 소셜 계정입니다.", HttpStatus.CONFLICT),
@@ -78,7 +85,18 @@ public enum UserErrorCode implements ErrorCode {
     EMAIL_NOT_VERIFIED      ("EMAIL_003", "이메일 인증이 완료되지 않았습니다.", HttpStatus.BAD_REQUEST),
     EMAIL_SEND_FAIL         ("EMAIL_004", "이메일 인증 처리 중 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    // 파일
+    FILE_UPLOAD_FAIL        ("FILE_001", "파일 업로드에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_DELETE_FAIL        ("FILE_002", "파일 삭제에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+    FILE_IS_EMPTY            ("FILE_003", "파일이 비어있습니다.", HttpStatus.BAD_REQUEST),
+    FILE_SIZE_EXCEEDED      ("FILE_004", "파일 크기가 초과되었습니다.", HttpStatus.BAD_REQUEST),
+    FILE_TYPE_NOT_ALLOWED   ("FILE_005", "허용되지 않는 파일 형식입니다.", HttpStatus.BAD_REQUEST),
+    FILE_NOT_FOUND          ("FILE_006", "파일을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    PROFILE_IMG_URL_GENERATE_FAIL ("FILE_007", "프로필 이미지 URL 생성에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+
+
     ;
+
     private final String code;
     private final String message;
     private final HttpStatus httpStatus;

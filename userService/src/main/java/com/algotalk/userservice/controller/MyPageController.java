@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -170,6 +171,34 @@ public class MyPageController {
 
         log.info("{}.updateEmail End!", this.getClass().getName());
         return ResponseEntity.ok(ApiResponse.ok());
+    }
+
+    @PostMapping(value = "/update-profile-img", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<String>> updateProfileImg(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestPart("file") MultipartFile file
+    ) throws Exception {
+        log.info("{}.updateProfileImg Start!", this.getClass().getName());
+
+        String profileImgUrl = mypageService.updateProfileImg(Long.valueOf(jwt.getSubject()), file);
+
+        log.info("{}.updateProfileImg End!", this.getClass().getName());
+        return ResponseEntity.ok(ApiResponse.ok(profileImgUrl));
+    }
+
+    @DeleteMapping("/delete-profile-img")
+    public ResponseEntity<ApiResponse<Void>> deleteProfileImg(
+            @AuthenticationPrincipal Jwt jwt
+    ) throws Exception {
+        log.info("{}.deleteProfileImg Start!", this.getClass().getName());
+
+        mypageService.deleteProfileImg(
+                Long.valueOf(jwt.getSubject())
+        );
+
+        log.info("{}.deleteProfileImg End!", this.getClass().getName());
+
+        return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
     @PostMapping("/social/link/{provider}")
