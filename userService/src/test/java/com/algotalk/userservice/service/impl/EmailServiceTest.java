@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 class EmailServiceTest {
 
     @Autowired

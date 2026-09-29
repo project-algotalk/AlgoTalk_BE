@@ -49,16 +49,25 @@ class MypageProfileImgServiceTest {
                 "file", "profile.png", "image/png", "image".getBytes());
         String oldUrl = "https://bucket.s3.region.amazonaws.com/profile/1/old.png";
         String newUrl = "https://bucket.s3.region.amazonaws.com/profile/1/new.png";
+
         given(userUpdateMapper.getMyPageSummaryByUserId(1L))
-                .willReturn(UserInfoCommand.builder().userId(1L).profileImgUrl(oldUrl).build());
-        given(s3Service.uploadProfileImg(1L, file)).willReturn(newUrl);
+                .willReturn(UserInfoCommand.builder()
+                        .userId(1L)
+                        .profileImgUrl(oldUrl)
+                        .build());
+        given(s3Service.uploadProfileImg(1L, file))
+                .willReturn(newUrl);
+        given(s3Service.getProfileImgUrl(newUrl))
+                .willReturn(newUrl);
         given(userUpdateMapper.updateProfileImg(argThat(command ->
-                command.getUserId().equals(1L) && command.getProfileImgUrl().equals(newUrl))))
+                command.getUserId().equals(1L)
+                        && command.getProfileImgUrl().equals(newUrl))))
                 .willReturn(1);
 
         String result = mypageService.updateProfileImg(1L, file);
 
         assertThat(result).isEqualTo(newUrl);
+        verify(s3Service).getProfileImgUrl(newUrl);
         verify(s3Service).deleteProfileImg(oldUrl);
     }
 

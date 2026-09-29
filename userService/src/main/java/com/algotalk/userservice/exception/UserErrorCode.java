@@ -28,6 +28,7 @@ public enum UserErrorCode implements ErrorCode {
     ADMIN_APPLICATION_NOT_FOUND("ADMIN_001", "관리자 가입 신청을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     ADMIN_APPLICATION_ALREADY_PROCESSED("ADMIN_002", "이미 처리된 관리자 가입 신청입니다.", HttpStatus.CONFLICT),
     ADMIN_SIGN_UP_FAIL      ("ADMIN_003", "관리자 회원가입 처리 중 오류가 발생했습니다.", HttpStatus.BAD_REQUEST),
+    ADMIN_USER_NOT_FOUND    ("ADMIN_004", "관리할 회원 정보를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
     // 회원 정보 변경
     // 아이디/비밀번호 변경,

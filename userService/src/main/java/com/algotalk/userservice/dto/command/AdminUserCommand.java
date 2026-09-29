@@ -9,21 +9,18 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder(toBuilder = true)
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminAccountCommand {
-    private Long userId; // PK
+public class AdminUserCommand {
+
+    private Long userId;
     private String loginId;
     private String nickname;
     private String name;
-    private String approvalStatus;
-    private String adminGrade;
-    private String role;
-    private Long approvedBy;
-    private LocalDateTime approvedAt;
-    private String rejectReason;
+    private String email;
+    private String passwordSetYn;
     private LocalDateTime createdAt;
-    private Long totalCount;
+    private String keyword;
     private Pagination pagination;
 }

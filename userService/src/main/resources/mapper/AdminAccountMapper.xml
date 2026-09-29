@@ -3,47 +3,97 @@
 
 <mapper namespace="com.algotalk.userservice.repository.IAdminAccountMapper">
 
-    <!-- 관리자 가입 신청  -->
+    <!-- 관리자 가입 신청 -->
     <insert id="insertAdminAccount" parameterType="AdminAccountCommand">
         INSERT INTO ADMIN_ACCOUNT (
-            USER_ID, APPROVAL_STATUS, ADMIN_GRADE,
-            CREATED_AT, CREATED_BY, UPDATED_AT, UPDATED_BY
-        ) VALUES (
-                     #{userId}, 'PENDING', 'GENERAL',
-                     NOW(), #{userId}, NOW(), #{userId}
-                 )
+            USER_ID,
+            APPROVAL_STATUS,
+            ADMIN_GRADE,
+            CREATED_AT,
+            CREATED_BY,
+            UPDATED_AT,
+            UPDATED_BY
+        )
+        VALUES (
+                   #{userId},
+                   'PENDING',
+                   'GENERAL',
+                   NOW(),
+                   #{userId},
+                   NOW(),
+                   #{userId}
+               )
     </insert>
 
-    <!--  관리자 승인상태 조회  -->
+    <!-- 관리자 승인 상태 조회 -->
     <select id="getAdminAccount" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
-        SELECT USER_ID, APPROVAL_STATUS,
-               ADMIN_GRADE, APPROVED_BY,
-               APPROVED_AT, REJECT_REASON,
-               CREATED_AT
+        SELECT
+            USER_ID,
+            APPROVAL_STATUS,
+            ADMIN_GRADE,
+            APPROVED_BY,
+            APPROVED_AT,
+            REJECT_REASON,
+            CREATED_AT
         FROM ADMIN_ACCOUNT
         WHERE USER_ID = #{userId}
     </select>
 
-    <!-- 관리자 가입신청 목록 -->
-    <select id="getAdminApplications" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
+    <!-- 관리자 가입 신청 목록 -->
+    <select id="getAdminAccountLists" parameterType="AdminAccountCommand" resultType="AdminAccountCommand">
         SELECT
-            aa.USER_ID AS userId,
-            uc.LOGIN_ID AS loginId,
-            u.NICKNAME AS nickname,
-            u.NAME AS name,
-            aa.APPROVAL_STATUS AS approvalStatus,
-            aa.ADMIN_GRADE AS adminGrade,
-            aa.CREATED_AT AS createdAt,
-            COUNT(*) OVER() AS totalCount
+        aa.USER_ID AS userId,
+        uc.LOGIN_ID AS loginId,
+        u.NICKNAME AS nickname,
+        u.NAME AS name,
+        aa.APPROVAL_STATUS AS approvalStatus,
+        aa.ADMIN_GRADE AS adminGrade,
+        aa.CREATED_AT AS createdAt,
+        COUNT(*) OVER() AS totalCount
         FROM ADMIN_ACCOUNT aa
-        JOIN USERS u ON u.USER_ID = aa.USER_ID
-        JOIN USER_CREDENTIAL uc ON uc.USER_ID = aa.USER_ID
+        JOIN USERS u
+        ON u.USER_ID = aa.USER_ID
+        JOIN USER_CREDENTIAL uc
+        ON uc.USER_ID = aa.USER_ID
         WHERE u.DELETED_YN = 'N'
         <if test="approvalStatus != null and approvalStatus != ''">
             AND aa.APPROVAL_STATUS = #{approvalStatus}
         </if>
         ORDER BY aa.CREATED_AT DESC
-        LIMIT #{pagination.size} OFFSET #{pagination.offset}
+        LIMIT #{pagination.size}
+        OFFSET #{pagination.offset}
+    </select>
+
+    <!-- 관리자 대시보드 요약 -->
+    <select id="getDashboardSummary" resultType="AdminDashboardSummaryResponseDTO">
+        SELECT
+            (
+                SELECT COUNT(DISTINCT u.USER_ID)
+                FROM USERS u
+                         JOIN USER_ROLES ur
+                              ON ur.USER_ID = u.USER_ID
+                WHERE u.DELETED_YN = 'N'
+                  AND ur.ROLE = 'ROLE_USER'
+            ) AS userCount,
+            (
+                SELECT COUNT(DISTINCT u.USER_ID)
+                FROM USERS u
+                         JOIN USER_ROLES ur
+                              ON ur.USER_ID = u.USER_ID
+                WHERE u.DELETED_YN = 'N'
+                  AND ur.ROLE IN (
+                                  'ROLE_ADMIN',
+                                  'ROLE_SUPER_ADMIN'
+                    )
+            ) AS adminCount,
+            (
+                SELECT COUNT(DISTINCT aa.USER_ID)
+                FROM ADMIN_ACCOUNT aa
+                         JOIN USERS u
+                              ON u.USER_ID = aa.USER_ID
+                WHERE u.DELETED_YN = 'N'
+                  AND aa.APPROVAL_STATUS = 'PENDING'
+            ) AS pendingAdminRequestCount
     </select>
 
     <!-- 관리자 계정 승인 -->
@@ -73,7 +123,7 @@
           AND APPROVAL_STATUS = 'PENDING'
     </update>
 
-    <!--    관리자 계정 상태 변경 -->
+    <!-- 관리자 역할 변경 -->
     <update id="updateAdminRole" parameterType="AdminAccountCommand">
         UPDATE USER_ROLES
         SET ROLE = #{role},
@@ -82,4 +132,5 @@
         WHERE USER_ID = #{userId}
           AND ROLE = 'ROLE_ADMIN_PENDING'
     </update>
+
 </mapper>
